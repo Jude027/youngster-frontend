@@ -70,7 +70,7 @@
         forgotPasswordForm.classList.add('hidden');
     });
 
-    const API_BASE = 'http://localhost:5000/api';
+    const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
     // LOGIN
     if (loginForm) {
