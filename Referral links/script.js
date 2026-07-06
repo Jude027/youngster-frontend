@@ -1,5 +1,5 @@
 // referral links page – connected to backend API
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
 // ─── Auth helpers ────────────────────────────────────────────────────────────
 function authHeaders() {
@@ -144,73 +144,6 @@ async function loadReferralBalance() {
     } catch (err) {
         console.error('Failed to load referral balance:', err);
         balanceEl.textContent = 'GHS 0.00';
-    }
-}
-
-function formatDateLabel(date) {
-    if (!date) return 'No orders yet';
-    const d = new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-function renderReferralList(listId, referrals, emptyText) {
-    const listEl = document.getElementById(listId);
-    if (!listEl) return;
-
-    if (!Array.isArray(referrals) || referrals.length === 0) {
-        listEl.innerHTML = `<li style="padding:12px 0;color:#6b7280;">${emptyText}</li>`;
-        return;
-    }
-
-    listEl.innerHTML = referrals.map(ref => {
-        const label = ref.label || 'Anonymous referral';
-        const orderCount = ref.orderCount || 0;
-        const lastOrder = ref.lastOrder ? formatDateLabel(ref.lastOrder) : 'No recent order';
-        return `
-            <li style="padding:14px 0;border-bottom:1px solid #e5e7eb;">
-                <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-                    <span style="font-weight:700;color:#111827;">${label}</span>
-                    <span style="font-size:0.92rem;color:#6b7280;">${orderCount} order${orderCount === 1 ? '' : 's'}</span>
-                </div>
-                <div style="margin-top:6px;font-size:0.92rem;color:#4b5563;">Last order: ${lastOrder}</div>
-            </li>`;
-    }).join('');
-}
-
-async function loadReferralMetrics() {
-    const totalEl = document.getElementById('totalReferralsValue');
-    const activeStatEl = document.getElementById('activeReferralsValue');
-    const inactiveStatEl = document.getElementById('inactiveReferralsValue');
-    const referredCountEl = document.getElementById('referredUsersCount');
-
-    try {
-        const res = await authFetch(`${API_BASE}/referral-metrics`, { headers: authHeaders(), cache: 'no-store' });
-        if (!res || !res.ok) {
-            if (totalEl) totalEl.textContent = '0';
-            if (activeStatEl) activeStatEl.textContent = '0';
-            if (inactiveStatEl) inactiveStatEl.textContent = '0';
-            if (referredCountEl) referredCountEl.textContent = '(0)';
-            renderReferralList('activeReferralsList', [], 'No active referrals yet.');
-            renderReferralList('inactiveReferralsList', [], 'No inactive referrals yet.');
-            return;
-        }
-
-        const data = await res.json();
-        if (totalEl) totalEl.textContent = String(data.totalReferrals || 0);
-        if (activeStatEl) activeStatEl.textContent = String(data.activeReferrals || 0);
-        if (inactiveStatEl) inactiveStatEl.textContent = String(data.inactiveReferrals || 0);
-        if (referredCountEl) referredCountEl.textContent = `(${data.totalReferrals || 0})`;
-
-        renderReferralList('activeReferralsList', data.activeReferralsList || [], 'No active referrals in the last 30 days.');
-        renderReferralList('inactiveReferralsList', data.inactiveReferralsList || [], 'No inactive referrals yet.');
-    } catch (err) {
-        console.error('Failed to load referral metrics:', err);
-        if (totalEl) totalEl.textContent = '0';
-        if (activeStatEl) activeStatEl.textContent = '0';
-        if (inactiveStatEl) inactiveStatEl.textContent = '0';
-        if (referredCountEl) referredCountEl.textContent = '(0)';
-        renderReferralList('activeReferralsList', [], 'No active referrals in the last 30 days.');
-        renderReferralList('inactiveReferralsList', [], 'No inactive referrals yet.');
     }
 }
 
@@ -407,9 +340,8 @@ async function initializeAndLoadLinks() {
 
     const { permittedClientTypes, storeSlug } = await loadPermittedClientTypes();
 
-    // Load live balance and referral metrics for the dashboard.
+    // Load live balance data for the referral dashboard.
     await loadReferralBalance();
-    await loadReferralMetrics();
 
     // Render the correct link sections based on admin-configured permissions.
     renderReferralLinkSections(permittedClientTypes, storeSlug);
