@@ -259,7 +259,7 @@ async function applyUserStoreBranding() {
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const response = await fetch('http://localhost:5000/api/store-settings', {
+        const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -341,22 +341,19 @@ function showPaymentModal(orderDetails) {
 
                 <!-- MoMo phone input -->
                 <div id="payModalStep1">
-                    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;">
-                        <div>
-                            <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Select Network</label>
-                            <select id="momoNetwork" style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fff;outline:none;">
-                                <option value="MTN">MTN</option>
-                                <option value="Telecel">Telecel</option>
-                                <option value="AirtelTigo">AirtelTigo</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">MoMo Phone Number</label>
-                            <input type="tel" id="momoPhone" placeholder="024 XXX XXXX"
-                                inputmode="numeric" maxlength="10"
-                                style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;
-                                border-radius:8px;font-size:15px;outline:none;">
-                        </div>
+                    <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">
+                        MoMo Phone Number
+                    </label>
+                    <div style="display:flex;gap:8px;margin-bottom:6px;">
+                        <select id="momoNetwork" style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;background:#fff;">
+                            <option value="MTN">MTN</option>
+                            <option value="Telecel">Telecel</option>
+                            <option value="AirtelTigo">AirtelTigo</option>
+                        </select>
+                        <input type="tel" id="momoPhone" placeholder="0XX XXX XXXX"
+                            inputmode="numeric" maxlength="10"
+                            style="flex:1;padding:10px 14px;border:2px solid #e0e0e0;
+                            border-radius:8px;font-size:15px;outline:none;">
                     </div>
                     <p style="font-size:12px;color:#888;margin:0 0 16px;">
                         A payment prompt will be sent to this number. Enter your MoMo PIN to confirm.
@@ -444,7 +441,7 @@ function showPaymentModal(orderDetails) {
         step2.style.display = 'block';
 
         const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000/api' : `https://${window.location.hostname}/api`;
+            ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
@@ -460,13 +457,10 @@ function showPaymentModal(orderDetails) {
                 body: JSON.stringify({
                     gatewayName:  'Moolre',
                     phoneNumber:  phone,
-                    beneficiary:  orderDetails.beneficiary,
                     amount:       orderDetails.amount,
                     provider:     network,
-                    paymentNetwork: network,
-                    orderProvider:  orderDetails.package || 'MTN',
                     description:  `${orderDetails.package} ${orderDetails.bundle_size}`,
-                    packageName:  orderDetails.bundle_size,
+                    packageName:  orderDetails.package,
                     bundle_size:  orderDetails.bundle_size,
                     storeSlug:    new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
                     clientType:   localStorage.getItem('clientType') || 'Customers',
@@ -481,23 +475,35 @@ function showPaymentModal(orderDetails) {
 
             transactionId = data.transactionId;
 
-            localStorage.setItem('paymentTransactionId', transactionId);
-            localStorage.setItem('pendingOrderData', JSON.stringify({
-                package:     orderDetails.package,
-                bundle_size: orderDetails.bundle_size,
-                amount:      orderDetails.amount,
-                beneficiary: orderDetails.beneficiary,
-                phoneNumber: phone,
-                transactionId: transactionId,
-                storeSlug:   new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                clientType:  localStorage.getItem('clientType') || 'Customers'
-            }));
+            // Poll for payment confirmation every 5 seconds, timeout after 3 minutes
+            const deadline = Date.now() + 180000;
+            pollTimer = setInterval(async () => {
+                try {
+                    const statusRes = await fetch(`${API_BASE}/payment/status/${transactionId}`, { headers });
+                    const statusData = await statusRes.json();
+                    const status = statusData.status || statusData.transaction?.status || 'pending';
 
-            const returnUrl = `/Dashboard/payment-processing.html?transactionId=${transactionId}`;
-            localStorage.setItem('otpTransactionId', transactionId);
-            localStorage.setItem('otpPhoneNumber',   phone);
-            localStorage.setItem('otpReturnUrl',     returnUrl);
-            window.location.href = `../payment-otp.html?txid=${transactionId}&phone=${encodeURIComponent(phone)}&return=${encodeURIComponent(returnUrl)}`;
+                    document.getElementById('payModalMsg').textContent =
+                        status === 'pending' ? 'Check your phone and enter your MoMo PIN to approve.' :
+                        status === 'processing' ? 'Processing your payment...' : 'Checking payment...';
+
+                    if (status === 'success') {
+                        clearInterval(pollTimer);
+                        showResult(true, '✅', 'Payment Successful!',
+                            `Your ${orderDetails.bundle_size} bundle for ${orderDetails.beneficiary} is being processed.`);
+                    } else if (status === 'failed' || status === 'cancelled') {
+                        clearInterval(pollTimer);
+                        showResult(false, '❌', 'Payment Failed',
+                            'The payment was not completed. Please try again.');
+                    } else if (Date.now() >= deadline) {
+                        clearInterval(pollTimer);
+                        showResult(false, '⏱️', 'Payment Timed Out',
+                            'No response received. If you approved the payment, please contact support.');
+                    }
+                } catch (e) {
+                    console.warn('Poll error:', e);
+                }
+            }, 5000);
 
         } catch (err) {
             step2.style.display = 'none';
