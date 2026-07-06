@@ -11,7 +11,7 @@
  * until status is "success" or "failed".
  */
 
-const ORDER_API = 'http://localhost:5000/api';
+const ORDER_API = 'https://youngster-backend-production.up.railway.app/api';
 
 function orderAuthHeaders() {
     const token = localStorage.getItem('token');
@@ -57,13 +57,10 @@ async function submitOrder(orderData) {
             body:    JSON.stringify({
                 gatewayName: 'Moolre',
                 phoneNumber: orderData.paymentPhone || orderData.beneficiary,
-                beneficiary: orderData.beneficiary,
                 amount:      orderData.amount,
-                provider:    orderData.paymentNetwork || orderData.network || orderData.package,
-                paymentNetwork: orderData.paymentNetwork || orderData.network || orderData.package,
-                orderProvider:  orderData.package,
+                provider:    orderData.network || orderData.package,
                 description: `${orderData.package} ${orderData.bundle_size} bundle`,
-                packageName: orderData.bundle_size,
+                packageName: orderData.package,
                 bundle_size: orderData.bundle_size,
                 storeSlug:   storeSlug  || null,
                 clientType:  clientType || 'Customers',
