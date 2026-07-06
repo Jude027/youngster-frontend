@@ -10,13 +10,6 @@ function authHeaders() {
     return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` };
 }
 
-function normalizeStatusDisplay(status) {
-    const normalized = String(status || 'pending').trim().toLowerCase();
-    if (!normalized) return 'Pending';
-    if (normalized === 'complete') return 'Completed';
-    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-}
-
 // ========== Helper: Show Modal ==========
 let modal, modalTitle, modalFields, editForm, modalCallback;
 
@@ -34,12 +27,12 @@ function initializeModal() {
             modal.style.display = 'none';
         });
     }
-
+    
     const modalClose = document.querySelector('.modal .close');
     if (modalClose) {
         modalClose.addEventListener('click', () => modal.style.display = 'none');
     }
-
+    
     window.onclick = (e) => { if (e.target === modal) modal.style.display = 'none'; };
 }
 
@@ -74,12 +67,12 @@ function initializeTabSwitching() {
     const navBtns = document.querySelectorAll('.nav-btn');
     const tabs = document.querySelectorAll('.tab-content');
     console.log('[DEBUG] Found', navBtns.length, 'nav buttons and', tabs.length, 'tabs');
-
+    
     if (navBtns.length === 0) {
         console.error('[ERROR] No nav buttons found!');
         return;
     }
-
+    
     navBtns.forEach((btn, idx) => {
         console.log(`[DEBUG] Attaching listener to button ${idx}:`, btn.dataset.tab);
         btn.addEventListener('click', (e) => {
@@ -90,11 +83,11 @@ function initializeTabSwitching() {
             btn.classList.add('active');
             tabs.forEach(tab => tab.classList.remove('active'));
             const tabIdMap = {
-                'payment-gateways': 'paymentGatewaysTab',
-                'base-prices': 'base-pricesTab',
-                'master-prices': 'master-pricesTab',
+                'payment-gateways':   'paymentGatewaysTab',
+                'base-prices':        'base-pricesTab',
+                'master-prices':      'master-pricesTab',
                 'role-price-mapping': 'role-price-mappingTab',
-                'provider-api': 'provider-apiTab'
+                'provider-api':       'provider-apiTab'
             };
             const tabElId = tabIdMap[tabId] || (tabId + 'Tab');
             const tabEl = document.getElementById(tabElId);
@@ -125,14 +118,13 @@ async function loadStats() {
         const res = await fetch(`${API_BASE}/admin/stats`, { headers: authHeaders() });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const stats = await res.json();
+        // Server returns totalVolume (sum of order amounts), not totalRevenue
         const revenue = ((stats.totalRevenue ?? stats.totalVolume) || 0).toFixed(2);
-        const commission = (stats.totalCommission || 0).toFixed(2);
         grid.innerHTML = `
             <div class="stat-card"><div class="stat-info"><h3>${stats.totalUsers ?? 0}</h3><p>Total Users</p></div><div class="stat-icon"><i class="fas fa-users"></i></div></div>
             <div class="stat-card"><div class="stat-info"><h3>${stats.totalOrders ?? 0}</h3><p>Orders</p></div><div class="stat-icon"><i class="fas fa-shopping-cart"></i></div></div>
             <div class="stat-card"><div class="stat-info"><h3>${stats.pendingWithdrawals ?? 0}</h3><p>Pending Withdrawals</p></div><div class="stat-icon"><i class="fas fa-clock"></i></div></div>
             <div class="stat-card"><div class="stat-info"><h3>GHS ${revenue}</h3><p>Total Revenue</p></div><div class="stat-icon"><i class="fas fa-chart-line"></i></div></div>
-            <div class="stat-card"><div class="stat-info"><h3>GHS ${commission}</h3><p>Total Commission</p></div><div class="stat-icon"><i class="fas fa-coins"></i></div></div>
         `;
     } catch (err) {
         console.error('loadStats:', err);
@@ -243,34 +235,34 @@ async function loadOrders() {
         "'": '&#39;'
     }[ch]));
     const badgeStyle = {
-        completed: 'background:#dcfce7;color:#16a34a;',
-        complete: 'background:#dcfce7;color:#16a34a;',
-        processing: 'background:#dbeafe;color:#1d4ed8;',
-        pending: 'background:#fef9c3;color:#854d0e;',
-        failed: 'background:#fee2e2;color:#dc2626;',
-        cancelled: 'background:#f3f4f6;color:#6b7280;',
-        'cancelled/refunded': 'background:#f3f4f6;color:#6b7280;',
-        resolved: 'background:#ede9fe;color:#7c3aed;',
+        completed:          'background:#dcfce7;color:#16a34a;',
+        complete:           'background:#dcfce7;color:#16a34a;',
+        processing:         'background:#dbeafe;color:#1d4ed8;',
+        pending:            'background:#fef9c3;color:#854d0e;',
+        failed:             'background:#fee2e2;color:#dc2626;',
+        cancelled:          'background:#f3f4f6;color:#6b7280;',
+        'cancelled/refunded':'background:#f3f4f6;color:#6b7280;',
+        resolved:           'background:#ede9fe;color:#7c3aed;',
     };
 
     orders.forEach(order => {
         const bundle = order.packageName || order.bundle_size || order.bundleSize || order.bundle || '-';
-        const st = (order.status || 'pending').toLowerCase();
+        const st     = (order.status || 'pending').toLowerCase();
         const bStyle = (badgeStyle[st] || 'background:#f3f4f6;color:#374151;') + 'border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:600;display:inline-block;';
         const row = tbody.insertRow();
-        row.insertCell(0).innerText = order._id.slice(-6);
-        row.insertCell(1).innerText = order.userId?.username || '-';
-        row.insertCell(2).innerText = order.beneficiary || '-';
-        row.insertCell(3).innerText = order.package || '-';
-        row.insertCell(4).innerText = bundle;
-        row.insertCell(5).innerText = `GHS ${parseFloat(order.amount || 0).toFixed(2)}`;
+        row.insertCell(0).innerText  = order._id.slice(-6);
+        row.insertCell(1).innerText  = order.userId?.username || '-';
+        row.insertCell(2).innerText  = order.beneficiary || '-';
+        row.insertCell(3).innerText  = order.package || '-';
+        row.insertCell(4).innerText  = bundle;
+        row.insertCell(5).innerText  = `GHS ${parseFloat(order.amount || 0).toFixed(2)}`;
         const reportNote = order.report
             ? `<div style="margin-top:6px;color:#b45309;font-size:0.75rem;line-height:1.25;max-width:220px;white-space:normal;">${esc(order.report)}</div>`
             : '';
-        row.insertCell(6).innerHTML = `<span style="${bStyle}">${order.status || 'pending'}</span>${reportNote}`;
-        row.insertCell(7).innerText = fmtDT(order.created);
-        row.insertCell(8).innerText = fmtDT(order.completed);
-        row.insertCell(9).innerHTML = `<button class="action-btn edit-btn" onclick="editOrder('${order._id}')"><i class="fas fa-edit"></i></button>`;
+        row.insertCell(6).innerHTML  = `<span style="${bStyle}">${order.status || 'pending'}</span>${reportNote}`;
+        row.insertCell(7).innerText  = fmtDT(order.created);
+        row.insertCell(8).innerText  = fmtDT(order.completed);
+        row.insertCell(9).innerHTML  = `<button class="action-btn edit-btn" onclick="editOrder('${order._id}')"><i class="fas fa-edit"></i></button>`;
     });
 }
 
@@ -304,14 +296,13 @@ async function loadTransactions() {
     const txns = await res.json();
     tbody.innerHTML = '';
     txns.forEach(txn => {
-        const displayStatus = normalizeStatusDisplay(txn.status);
         const row = tbody.insertRow();
         row.insertCell(0).innerText = txn._id.slice(-6);
         row.insertCell(1).innerText = txn.userId?.username || '-';
         row.insertCell(2).innerText = txn.description;
         row.insertCell(3).innerText = `GHS ${txn.amount}`;
         row.insertCell(4).innerText = txn.method;
-        row.insertCell(5).innerHTML = `<span class="status-badge status-${displayStatus.toLowerCase()}">${displayStatus}</span>`;
+        row.insertCell(5).innerHTML = `<span class="status-badge status-${txn.status}">${txn.status}</span>`;
         row.insertCell(6).innerText = new Date(txn.created).toLocaleString();
         row.insertCell(7).innerHTML = `<button class="action-btn edit-btn" onclick="editTransaction('${txn._id}')"><i class="fas fa-edit"></i></button>`;
     });
@@ -323,7 +314,7 @@ window.editTransaction = async (id) => {
     showModal('Edit Transaction', `
         <div class="input-group"><label>Status</label><select id="status">
             <option value="pending">Pending</option>
-            <option value="completed">Completed</option>
+            <option value="complete">Complete</option>
             <option value="failed">Failed</option>
         </select></div>
     `, async () => {
@@ -331,8 +322,7 @@ window.editTransaction = async (id) => {
         await fetch(`${API_BASE}/admin/transactions/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status }) });
         loadTransactions();
     });
-    const normalizedValue = String(txn.status || 'pending').trim().toLowerCase();
-    document.getElementById('status').value = normalizedValue === 'complete' ? 'completed' : normalizedValue;
+    document.getElementById('status').value = txn.status;
 };
 
 // ========== REFERRAL PRICES ==========
@@ -593,7 +583,7 @@ function renderBasePricesTable() {
         providerContainer.style.display = 'flex';
         providerContainer.style.flexDirection = 'column';
         providerContainer.style.gap = '8px';
-
+        
         // Top row: provider name and edit button
         const nameRow = document.createElement('div');
         nameRow.style.display = 'flex';
@@ -787,17 +777,17 @@ async function openDisplayConfigModal(providerName) {
 
     modal.querySelector('#dcSaveBtn').onclick = async () => {
         const config = {
-            headerColor: document.getElementById('dcHeaderColor').value,
-            pageTitle: document.getElementById('dcPageTitle').value.trim(),
-            pageSubtitle: document.getElementById('dcPageSubtitle').value.trim(),
-            noteText: document.getElementById('dcNoteText').value.trim(),
-            showPortedCheckbox: document.getElementById('dcShowPorted').checked,
-            showPrefixes: document.getElementById('dcShowPrefixes').checked,
-            validPrefixes: document.getElementById('dcValidPrefixes').value.trim(),
-            bundleLabel: document.getElementById('dcBundleLabel').value.trim() || 'Bundle',
-            purchaseLabel: document.getElementById('dcPurchaseLabel').value.trim() || 'Purchase Bundle',
-            deliveryText: document.getElementById('dcDeliveryText').value.trim() || 'Fast delivery',
-            validity: document.getElementById('dcValidity').value.trim()
+            headerColor:        document.getElementById('dcHeaderColor').value,
+            pageTitle:           document.getElementById('dcPageTitle').value.trim(),
+            pageSubtitle:        document.getElementById('dcPageSubtitle').value.trim(),
+            noteText:            document.getElementById('dcNoteText').value.trim(),
+            showPortedCheckbox:  document.getElementById('dcShowPorted').checked,
+            showPrefixes:        document.getElementById('dcShowPrefixes').checked,
+            validPrefixes:       document.getElementById('dcValidPrefixes').value.trim(),
+            bundleLabel:         document.getElementById('dcBundleLabel').value.trim() || 'Bundle',
+            purchaseLabel:       document.getElementById('dcPurchaseLabel').value.trim() || 'Purchase Bundle',
+            deliveryText:        document.getElementById('dcDeliveryText').value.trim() || 'Fast delivery',
+            validity:            document.getElementById('dcValidity').value.trim()
         };
 
         try {
@@ -950,7 +940,7 @@ async function loadProviders() {
         row.insertCell(2).innerHTML = `<input type="text" id="logoUrl_${prov._id}" value="${prov.logoUrl || ''}" style="width:200px;"><button class="update-provider-logo" data-id="${prov._id}" data-name="${prov.name}">Update</button>`;
         row.insertCell(3).innerHTML = `<button class="delete-provider" data-id="${prov._id}" data-name="${prov.name}">Delete</button>`;
     });
-
+    
     // Edit provider name
     document.querySelectorAll('.edit-provider-btn').forEach(btn => {
         btn.onclick = async () => {
@@ -967,7 +957,7 @@ async function loadProviders() {
             }
         };
     });
-
+    
     document.querySelectorAll('.update-provider-logo').forEach(btn => {
         btn.onclick = async () => {
             const id = btn.dataset.id;
@@ -996,6 +986,7 @@ document.getElementById('addProviderBtn')?.addEventListener('click', () => {
         fetch(`${API_BASE}/admin/providers`, { method: 'POST', headers: authHeaders(), body: JSON.stringify({ name, logoUrl: '' }) }).then(() => loadProviders());
     }
 });
+document.getElementById('refreshProviders')?.addEventListener('click', loadProviders);
 
 // ========== WITHDRAWALS ==========
 async function loadWithdrawals() {
@@ -1097,12 +1088,12 @@ async function loadConfiguredProviders() {
     try {
         const res = await fetch(`${API_BASE}/providers`, { headers: authHeaders() });
         const providers = await res.json();
-
+        
         configuredProviders = {};
         for (const provider of providers) {
             try {
-                const configRes = await fetch(`${API_BASE}/admin/provider-api-config/${provider.name}`, {
-                    headers: authHeaders()
+                const configRes = await fetch(`${API_BASE}/admin/provider-api-config/${provider.name}`, { 
+                    headers: authHeaders() 
                 });
                 const data = await configRes.json();
                 if (data.apiConfig?.enabled) {
@@ -1121,7 +1112,7 @@ async function loadConfiguredProviders() {
 function displayConfiguredProviders() {
     const container = document.getElementById('configuredProvidersContainer');
     const configured = Object.keys(configuredProviders).filter(p => configuredProviders[p]);
-
+    
     if (configured.length === 0) {
         container.innerHTML = '<p style="color: #999; font-style: italic;">No providers configured yet</p>';
     } else {
@@ -1154,7 +1145,7 @@ document.getElementById('addNewAPIConfigBtn')?.addEventListener('click', async (
 
         // Get list of unconfigured providers
         const unconfigured = allProviders.filter(p => !configuredProviders[p.name]);
-
+        
         if (unconfigured.length === 0) {
             alert('All providers already have API configurations!');
             return;
@@ -1163,104 +1154,15 @@ document.getElementById('addNewAPIConfigBtn')?.addEventListener('click', async (
         // Show selection modal
         const providerList = unconfigured.map(p => p.name).join('\n');
         const selected = prompt(`Select a provider to configure:\n\n${providerList}`, unconfigured[0]?.name || '');
-
+        
         if (selected) {
-            // Set provider dropdown and trigger change to load its config form
-            const select = document.getElementById('providerSelect');
-            if (select) {
-                select.value = selected;
-                select.dispatchEvent(new Event('change'));
-            }
+            // Set provider and show form
+            document.getElementById('providerSelect').value = selected;
+            document.getElementById('providerSelect').dispatchEvent(new Event('change'));
         }
     } catch (err) {
         console.error(err);
-        alert('Could not load providers: ' + err.message);
-    }
-});
-
-// ========== WITHDRAWALS ==========
-async function loadWithdrawals() {
-    const tbody = document.querySelector('#withdrawalsTable tbody');
-    tbody.innerHTML = '<tr><td colspan="8">Loading...</td></tr>';
-    const res = await fetch(`${API_BASE}/admin/withdrawals`, { headers: authHeaders() });
-    const wds = await res.json();
-    tbody.innerHTML = '';
-    wds.forEach(wd => {
-        const row = tbody.insertRow();
-        row.insertCell(0).innerText = wd.userId?.username || '-';
-        row.insertCell(1).innerText = `GHS ${wd.amount}`;
-        row.insertCell(2).innerText = wd.provider;
-        row.insertCell(3).innerText = wd.phoneNumber;
-        row.insertCell(4).innerText = wd.accountName;
-        row.insertCell(5).innerHTML = `<span class="status-badge status-${wd.status}">${wd.status}</span>`;
-        row.insertCell(6).innerText = new Date(wd.createdAt).toLocaleDateString();
-        row.insertCell(7).innerHTML = wd.status === 'pending' ? `<button class="action-btn approve-btn" onclick="approveWithdrawal('${wd._id}')">Approve</button><button class="action-btn reject-btn" onclick="rejectWithdrawal('${wd._id}')">Reject</button>` : '-';
-    });
-}
-
-window.approveWithdrawal = async (id) => {
-    if (confirm('Approve this withdrawal?')) {
-        await fetch(`${API_BASE}/admin/withdrawals/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status: 'approved', adminNotes: 'Approved' }) });
-        loadWithdrawals();
-        loadStats();
-    }
-};
-window.rejectWithdrawal = async (id) => {
-    if (confirm('Reject this withdrawal?')) {
-        await fetch(`${API_BASE}/admin/withdrawals/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status: 'rejected', adminNotes: 'Rejected' }) });
-        loadWithdrawals();
-    }
-};
-
-// ========== STORE SETTINGS ==========
-async function loadStores() {
-    const tbody = document.querySelector('#storesTable tbody');
-    tbody.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
-    const res = await fetch(`${API_BASE}/admin/store-settings`, { headers: authHeaders() });
-    const stores = await res.json();
-    tbody.innerHTML = '';
-    stores.forEach(store => {
-        const row = tbody.insertRow();
-        row.insertCell(0).innerText = store.userId?.username || store.userId;
-        row.insertCell(1).innerText = store.storeName;
-        row.insertCell(2).innerText = store.storeDescription?.substring(0, 50) + '...';
-        row.insertCell(3).innerText = store.whatsappNumber;
-        row.insertCell(4).innerText = store.whatsappGroupLink?.substring(0, 30);
-        row.insertCell(5).innerHTML = `<button class="action-btn edit-btn" onclick="editStore('${store._id}')"><i class="fas fa-edit"></i></button>`;
-    });
-}
-
-window.editStore = async (id) => {
-    const res = await fetch(`${API_BASE}/admin/store-settings/${id}`, { headers: authHeaders() });
-    const store = await res.json();
-    showModal('Edit Store', `
-        <div class="input-group"><label>Store Name</label><input type="text" id="storeName" value="${store.storeName || ''}"></div>
-        <div class="input-group"><label>Description</label><textarea id="description" rows="3">${store.storeDescription || ''}</textarea></div>
-        <div class="input-group"><label>WhatsApp Number</label><input type="text" id="whatsappNumber" value="${store.whatsappNumber || ''}"></div>
-        <div class="input-group"><label>WhatsApp Group Link</label><input type="text" id="groupLink" value="${store.whatsappGroupLink || ''}"></div>
-    `, async () => {
-        await fetch(`${API_BASE}/admin/store-settings/${id}`, {
-            method: 'PUT', headers: authHeaders(),
-            body: JSON.stringify({
-                storeName: document.getElementById('storeName').value,
-                storeDescription: document.getElementById('description').value,
-                whatsappNumber: document.getElementById('whatsappNumber').value,
-                whatsappGroupLink: document.getElementById('groupLink').value
-            })
-        });
-        loadStores();
-    });
-};
-
-// WhatsApp Session Reset
-document.getElementById('resetWhatsAppSessionBtn')?.addEventListener('click', async () => {
-    if (!confirm('This will close the WhatsApp browser session and delete the saved login. You will need to scan a QR code on the next WhatsApp order. Continue?')) return;
-    try {
-        const res = await fetch(`${API_BASE}/admin/whatsapp/reset-session`, { method: 'POST', headers: authHeaders() });
-        const result = await res.json();
-        alert(result.message || 'WhatsApp session reset successfully.');
-    } catch (err) {
-        alert('Error resetting WhatsApp session: ' + err.message);
+        alert('Error loading providers');
     }
 });
 
@@ -1272,34 +1174,13 @@ document.getElementById('providerSelect')?.addEventListener('change', async (e) 
         return;
     }
 
-    // Always reset all fields first so switching providers never shows stale data
-    document.getElementById('apiEnabled').checked = false;
-    document.getElementById('apiType').value = 'bearer-token';
-    document.getElementById('baseUrl').value = '';
-    document.getElementById('authHeaderName').value = 'Authorization';
-    document.getElementById('authHeaderValue').value = '';
-    document.getElementById('orderEndpoint').value = '';
-    document.getElementById('orderMethod').value = 'POST';
-    document.getElementById('statusEndpoint').value = '';
-    document.getElementById('balanceEndpoint').value = '';
-    document.getElementById('successField').value = 'success';
-    document.getElementById('dataField').value = 'data';
-    document.getElementById('phoneFormat').value = 'international';
-    document.getElementById('payloadMapping').value = '';
-    document.getElementById('orderHandler').value = 'auto';
-    document.getElementById('whatsappMinGb').value = '';
-    document.getElementById('whatsappMaxGb').value = '';
-    document.getElementById('apiMinGb').value = '';
-    document.getElementById('apiMaxGb').value = '';
-
     selectedProviderForAPI = providerName;
     try {
         const res = await fetch(`${API_BASE}/admin/provider-api-config/${providerName}`, { headers: authHeaders() });
         const data = await res.json();
-
+        
         // Populate form with existing config
-        const config = data.apiConfig || {};
-        const routing = data.orderRouting || {};
+        const config = data.apiConfig;
         document.getElementById('apiEnabled').checked = config.enabled || false;
         document.getElementById('apiType').value = config.type || 'bearer-token';
         document.getElementById('baseUrl').value = config.baseUrl || '';
@@ -1311,18 +1192,11 @@ document.getElementById('providerSelect')?.addEventListener('change', async (e) 
         document.getElementById('balanceEndpoint').value = config.balanceEndpoint || '';
         document.getElementById('successField').value = config.successField || 'success';
         document.getElementById('dataField').value = config.dataField || 'data';
-        document.getElementById('phoneFormat').value = config.phoneFormat || 'international';
-        document.getElementById('orderHandler').value = routing.handler || '';
-        document.getElementById('whatsappMinGb').value = routing.whatsappMinGb ?? '';
-        document.getElementById('whatsappMaxGb').value = routing.whatsappMaxGb ?? '';
-        document.getElementById('apiMinGb').value = routing.apiMinGb ?? '';
-        document.getElementById('apiMaxGb').value = routing.apiMaxGb ?? '';
-
-        document.getElementById('payloadMapping').value =
-            config.requestPayloadMapping && Object.keys(config.requestPayloadMapping).length > 0
-                ? JSON.stringify(config.requestPayloadMapping, null, 2)
-                : '';
-
+        
+        if (config.requestPayloadMapping && Object.keys(config.requestPayloadMapping).length > 0) {
+            document.getElementById('payloadMapping').value = JSON.stringify(config.requestPayloadMapping, null, 2);
+        }
+        
         document.getElementById('apiConfigForm').style.display = 'block';
         loadAPILogs(providerName);
     } catch (err) {
@@ -1356,26 +1230,18 @@ document.getElementById('saveApiConfig')?.addEventListener('click', async () => 
             balanceEndpoint: document.getElementById('balanceEndpoint').value,
             successField: document.getElementById('successField').value,
             dataField: document.getElementById('dataField').value,
-            phoneFormat: document.getElementById('phoneFormat').value,
             requestPayloadMapping: payloadMapping
-        };
-        const orderRouting = {
-            handler: document.getElementById('orderHandler').value,
-            whatsappMinGb: document.getElementById('whatsappMinGb').value,
-            whatsappMaxGb: document.getElementById('whatsappMaxGb').value,
-            apiMinGb: document.getElementById('apiMinGb').value,
-            apiMaxGb: document.getElementById('apiMaxGb').value
         };
 
         const res = await fetch(`${API_BASE}/admin/provider-api-config/${selectedProviderForAPI}`, {
             method: 'PUT',
             headers: authHeaders(),
-            body: JSON.stringify({ apiConfig, orderRouting })
+            body: JSON.stringify({ apiConfig })
         });
 
         const result = await res.json();
         alert(result.message);
-
+        
         // Reload configured providers list
         await loadConfiguredProviders();
     } catch (err) {
@@ -1394,7 +1260,7 @@ document.getElementById('testApiConfig')?.addEventListener('click', async () => 
         alert('Testing API connection for ' + selectedProviderForAPI);
         const res = await fetch(`${API_BASE}/admin/provider-balance/${selectedProviderForAPI}`, { headers: authHeaders() });
         const result = await res.json();
-
+        
         if (result.success) {
             alert('API Connection Successful!\nBalance: ' + result.balance + ' ' + (result.currency || 'GHS'));
         } else {
@@ -1410,10 +1276,10 @@ async function loadAPILogs(providerName) {
     try {
         const res = await fetch(`${API_BASE}/admin/provider-api-logs/${providerName}`, { headers: authHeaders() });
         const logs = await res.json();
-
+        
         const tbody = document.querySelector('#apiLogsTable tbody');
         tbody.innerHTML = '';
-
+        
         logs.forEach(log => {
             const row = tbody.insertRow();
             row.insertCell(0).innerText = new Date(log.requestTime).toLocaleString();
@@ -1422,7 +1288,7 @@ async function loadAPILogs(providerName) {
             row.insertCell(3).innerText = log.responseStatus || '-';
             row.insertCell(4).innerHTML = `<button class="action-btn" onclick="viewAPILogDetails('${log._id}')">View</button>`;
         });
-
+        
         document.getElementById('apiLogsContainer').style.display = 'block';
     } catch (err) {
         console.error(err);
@@ -1507,10 +1373,10 @@ document.getElementById('testOrderBtn')?.addEventListener('click', () => {
         </div>
     `, async () => {
         const phoneNumber = document.getElementById('to_phone').value.trim();
-        const provider = document.getElementById('to_provider').value;
-        const bundle = document.getElementById('to_bundle').value;
-        const amount = parseFloat(document.getElementById('to_amount').value) || 5.00;
-        const status = document.getElementById('to_status').value;
+        const provider    = document.getElementById('to_provider').value;
+        const bundle      = document.getElementById('to_bundle').value;
+        const amount      = parseFloat(document.getElementById('to_amount').value) || 5.00;
+        const status      = document.getElementById('to_status').value;
 
         if (!phoneNumber) { alert('Please enter a phone number'); return; }
 
@@ -1542,19 +1408,19 @@ let _pgSelectListenerAttached = false;
 async function loadPaymentGateways() {
     const tbody = document.getElementById('gatewaysTableBody');
     if (!tbody) return;
-
+    
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> Fetching gateway connections...</td></tr>`;
-
+    
     try {
         const res = await fetch(`${API_BASE}/admin/payment-gateways`, { headers: authHeaders() });
         if (!res.ok) throw new Error('Failed to retrieve gateway states');
         const gateways = await res.json();
-
+        
         if (!gateways || gateways.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#aaa;">No payment gateways found in database. Run initialization script.</td></tr>`;
             return;
         }
-
+        
         tbody.innerHTML = gateways.map(g => {
             return `
                 <tr>
@@ -1614,7 +1480,7 @@ async function editGatewayConfig(gatewayName) {
         const res = await fetch(`${API_BASE}/admin/payment-gateway-config/${encodeURIComponent(gatewayName)}`, { headers: authHeaders() });
         if (!res.ok) throw new Error('Failed to load gateway configs');
         const data = await res.json();
-
+        
         // API may return config directly or wrapped as { success, config }
         const g = data.config ?? data;
         if (!g || typeof g !== 'object') throw new Error('Invalid config response from server');
@@ -1652,9 +1518,9 @@ async function editGatewayConfig(gatewayName) {
             </div>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px;">
-                    Account Number <small style="color:#666;">(Moolre Wallet ID — e.g. 420500413146)</small>
+                    API Key <small style="color:#666;">(X-API-KEY)</small>
                 </label>
-                <input type="text" id="edit_gateway_apikey" class="form-control" placeholder="${g.apiKey ? 'Already set — leave blank to keep' : 'Enter Moolre Wallet Account Number'}" style="width:100%; padding:8px; border-radius:4px; border:2px solid #e67e22;">
+                <input type="password" id="edit_gateway_apikey" class="form-control" placeholder="${g.apiKey ? 'Already set — leave blank to keep' : 'Enter API Key'}" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
             </div>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px;">
@@ -1664,9 +1530,9 @@ async function editGatewayConfig(gatewayName) {
             </div>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px;">
-                    VAS Key <small style="color:#666;">(X-API-VASKEY — only needed for VAS/data bundle disbursements, not required for collections)</small>
+                    VAS Key <small style="color:#666;">(X-API-VASKEY — for data/airtime bundles)</small>
                 </label>
-                <input type="password" id="edit_gateway_vaskey" class="form-control" placeholder="${g.vasKey ? 'Already set — leave blank to keep' : 'Enter VAS Key (optional)'}" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
+                <input type="password" id="edit_gateway_vaskey" class="form-control" placeholder="${g.vasKey ? 'Already set — leave blank to keep' : 'Enter VAS Key'}" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
             </div>
 
             <p style="font-weight:bold; color:#2980b9; margin:16px 0 8px; border-bottom:1px solid #eee; padding-bottom:6px;">
@@ -1694,12 +1560,6 @@ async function editGatewayConfig(gatewayName) {
                     ⚠ Callback URL <small style="color:#666;">(paste your Cloudflare/public URL here)</small>
                 </label>
                 <input type="text" id="edit_gateway_callback" class="form-control" value="${g.callbackUrl || ''}" placeholder="https://xxxx.trycloudflare.com/api/webhook/payment/Moolre" style="width:100%; padding:8px; border-radius:4px; border:2px solid #e74c3c;">
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label style="display:block; font-weight:bold; margin-bottom:4px; color:#27ae60;">
-                    🔗 Moolre POS Payment Link <small style="color:#666;">(customers are redirected here to complete payment)</small>
-                </label>
-                <input type="text" id="edit_gateway_poslink" class="form-control" value="${g.posLink || 'https://pos.moolre.com/OBsl0jRg95WiLfytc7Tu33434'}" placeholder="https://pos.moolre.com/xxxxx" style="width:100%; padding:8px; border-radius:4px; border:2px solid #27ae60;">
             </div>
             <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:12px;">
                 <div>
@@ -1733,34 +1593,33 @@ async function editGatewayConfig(gatewayName) {
         `;
 
         showModal(`Configure ${gatewayName}`, fieldsHtml, async () => {
-            const apiKeyVal = document.getElementById('edit_gateway_apikey').value.trim();
-            const pubKeyVal = document.getElementById('edit_gateway_pubkey').value.trim();
-            const vasKeyVal = document.getElementById('edit_gateway_vaskey').value.trim();
+            const apiKeyVal  = document.getElementById('edit_gateway_apikey').value.trim();
+            const pubKeyVal  = document.getElementById('edit_gateway_pubkey').value.trim();
+            const vasKeyVal  = document.getElementById('edit_gateway_vaskey').value.trim();
 
             const payload = {
-                enabled: document.getElementById('edit_gateway_enabled').value === 'true',
-                isTestMode: document.getElementById('edit_gateway_mode').value === 'true',
-                apiBaseUrl: document.getElementById('edit_gateway_url').value.trim(),
-                apiUser: document.getElementById('edit_gateway_apiuser').value.trim(),
-                posLink: document.getElementById('edit_gateway_poslink')?.value.trim() || '',
+                enabled:         document.getElementById('edit_gateway_enabled').value === 'true',
+                isTestMode:      document.getElementById('edit_gateway_mode').value === 'true',
+                apiBaseUrl:      document.getElementById('edit_gateway_url').value.trim(),
+                apiUser:         document.getElementById('edit_gateway_apiuser').value.trim(),
                 collectEndpoint: document.getElementById('edit_gateway_collect').value.trim(),
-                statusEndpoint: document.getElementById('edit_gateway_status').value.trim(),
-                callbackUrl: document.getElementById('edit_gateway_callback').value.trim(),
-                minAmount: parseFloat(document.getElementById('edit_gateway_min').value || 0.5),
-                maxAmount: parseFloat(document.getElementById('edit_gateway_max').value || 10000),
-                authMethod: 'moolre-headers',
+                statusEndpoint:  document.getElementById('edit_gateway_status').value.trim(),
+                callbackUrl:     document.getElementById('edit_gateway_callback').value.trim(),
+                minAmount:       parseFloat(document.getElementById('edit_gateway_min').value || 0.5),
+                maxAmount:       parseFloat(document.getElementById('edit_gateway_max').value || 10000),
+                authMethod:      'moolre-headers',
                 networkMapping: {
-                    'MTN': document.getElementById('edit_net_mtn').value.trim() || 'MTN',
-                    'Telecel': document.getElementById('edit_net_telecel').value.trim() || 'VODAFONE',
-                    'AirtelTigo': document.getElementById('edit_net_at').value.trim() || 'AIRTELTIGO',
-                    'Vodafone': document.getElementById('edit_net_telecel').value.trim() || 'VODAFONE',
-                    'AT': document.getElementById('edit_net_at').value.trim() || 'AIRTELTIGO',
+                    'MTN':        document.getElementById('edit_net_mtn').value.trim()     || 'MTN',
+                    'Telecel':    document.getElementById('edit_net_telecel').value.trim() || 'VODAFONE',
+                    'AirtelTigo': document.getElementById('edit_net_at').value.trim()      || 'AIRTELTIGO',
+                    'Vodafone':   document.getElementById('edit_net_telecel').value.trim() || 'VODAFONE',
+                    'AT':         document.getElementById('edit_net_at').value.trim()      || 'AIRTELTIGO',
                 }
             };
             // Only send secrets if actually entered (not blank)
-            if (apiKeyVal) payload.apiKey = apiKeyVal;
-            if (pubKeyVal) payload.pubKey = pubKeyVal;
-            if (vasKeyVal) payload.vasKey = vasKeyVal;
+            if (apiKeyVal) payload.apiKey  = apiKeyVal;
+            if (pubKeyVal) payload.pubKey  = pubKeyVal;
+            if (vasKeyVal) payload.vasKey  = vasKeyVal;
 
             try {
                 const saveRes = await fetch(`${API_BASE}/admin/payment-gateway-config/${encodeURIComponent(gatewayName)}`, {
@@ -1770,7 +1629,7 @@ async function editGatewayConfig(gatewayName) {
                 });
                 const saveResult = await saveRes.json();
                 if (!saveRes.ok) throw new Error(saveResult.message || 'Error committing configurations');
-
+                
                 alert('Gateway configuration saved successfully!');
                 loadPaymentGateways();
             } catch (err) {
@@ -1846,38 +1705,38 @@ async function loadPaymentGatewayConfig(gatewayName) {
                 <div class="form-group">
                     <label><strong>Gateway Type</strong></label>
                     <select id="pgType">
-                        <option value="collections"      ${cfg.type === 'collections' ? 'selected' : ''}>Collections (Mobile Money)</option>
-                        <option value="hosted-checkout"  ${cfg.type === 'hosted-checkout' ? 'selected' : ''}>Hosted Checkout</option>
-                        <option value="direct-card"      ${cfg.type === 'direct-card' ? 'selected' : ''}>Direct Card</option>
+                        <option value="collections"      ${cfg.type==='collections'      ?'selected':''}>Collections (Mobile Money)</option>
+                        <option value="hosted-checkout"  ${cfg.type==='hosted-checkout'  ?'selected':''}>Hosted Checkout</option>
+                        <option value="direct-card"      ${cfg.type==='direct-card'      ?'selected':''}>Direct Card</option>
                     </select>
                 </div>
 
                 <div class="form-group" style="display:flex;align-items:center;gap:10px;padding-top:24px;">
-                    <input type="checkbox" id="pgEnabled" ${cfg.enabled ? 'checked' : ''} style="width:18px;height:18px;">
+                    <input type="checkbox" id="pgEnabled" ${cfg.enabled?'checked':''} style="width:18px;height:18px;">
                     <label for="pgEnabled" style="margin:0;cursor:pointer;"><strong>Enabled</strong></label>
                     &nbsp;&nbsp;
-                    <input type="checkbox" id="pgTestMode" ${cfg.isTestMode ? 'checked' : ''} style="width:18px;height:18px;">
+                    <input type="checkbox" id="pgTestMode" ${cfg.isTestMode?'checked':''} style="width:18px;height:18px;">
                     <label for="pgTestMode" style="margin:0;cursor:pointer;">Test Mode</label>
                 </div>
 
                 <div class="form-group" style="grid-column:1/-1;">
                     <label><strong>Callback URL</strong> <small style="color:#e74c3c;">⚠ Required — set this on Korba dashboard too</small></label>
-                    <input type="text" id="pgCallbackUrl" value="${cfg.callbackUrl || ''}" placeholder="https://yoursite.com/api/webhook/payment/${gatewayName}" style="border-color:#e74c3c;">
+                    <input type="text" id="pgCallbackUrl" value="${cfg.callbackUrl||''}" placeholder="https://yoursite.com/api/webhook/payment/${gatewayName}" style="border-color:#e74c3c;">
                 </div>
 
                 <div class="form-group">
                     <label><strong>API Base URL</strong></label>
-                    <input type="text" id="pgBaseUrl" value="${cfg.apiBaseUrl || ''}" placeholder="https://testxchange.korba365.com/api/v1.0">
+                    <input type="text" id="pgBaseUrl" value="${cfg.apiBaseUrl||''}" placeholder="https://testxchange.korba365.com/api/v1.0">
                 </div>
 
                 <div class="form-group">
                     <label><strong>Collect Endpoint</strong></label>
-                    <input type="text" id="pgCollectEndpoint" value="${cfg.collectEndpoint || '/collect'}" placeholder="/collect">
+                    <input type="text" id="pgCollectEndpoint" value="${cfg.collectEndpoint||'/collect'}" placeholder="/collect">
                 </div>
 
                 <div class="form-group">
                     <label><strong>Client Key / Merchant ID</strong></label>
-                    <input type="text" id="pgClientKey" value="${cfg.clientKey || ''}" placeholder="Your merchant / client ID">
+                    <input type="text" id="pgClientKey" value="${cfg.clientKey||''}" placeholder="Your merchant / client ID">
                 </div>
 
                 <div class="form-group">
@@ -1887,7 +1746,7 @@ async function loadPaymentGatewayConfig(gatewayName) {
 
                 <div class="form-group">
                     <label><strong>Test Client Key</strong></label>
-                    <input type="text" id="pgTestClientKey" value="${cfg.testClientKey || ''}" placeholder="Test merchant ID">
+                    <input type="text" id="pgTestClientKey" value="${cfg.testClientKey||''}" placeholder="Test merchant ID">
                 </div>
 
                 <div class="form-group">
@@ -1897,40 +1756,40 @@ async function loadPaymentGatewayConfig(gatewayName) {
 
                 <div class="form-group">
                     <label><strong>Redirect URL</strong></label>
-                    <input type="text" id="pgRedirectUrl" value="${cfg.redirectUrl || ''}" placeholder="https://yoursite.com/payment-success">
+                    <input type="text" id="pgRedirectUrl" value="${cfg.redirectUrl||''}" placeholder="https://yoursite.com/payment-success">
                 </div>
 
                 <div class="form-group">
                     <label><strong>Min Amount (GHS)</strong></label>
-                    <input type="number" id="pgMinAmount" value="${cfg.minAmount ?? 0.5}" step="0.01" min="0">
+                    <input type="number" id="pgMinAmount" value="${cfg.minAmount??0.5}" step="0.01" min="0">
                 </div>
 
                 <div class="form-group">
                     <label><strong>Max Amount (GHS)</strong></label>
-                    <input type="number" id="pgMaxAmount" value="${cfg.maxAmount ?? 10000}" step="0.01" min="0">
+                    <input type="number" id="pgMaxAmount" value="${cfg.maxAmount??10000}" step="0.01" min="0">
                 </div>
 
                 <div class="form-group">
                     <label><strong>Transaction Fee (Fixed GHS)</strong></label>
-                    <input type="number" id="pgFeeFixed" value="${cfg.transactionFee ?? 0}" step="0.01" min="0">
+                    <input type="number" id="pgFeeFixed" value="${cfg.transactionFee??0}" step="0.01" min="0">
                 </div>
 
                 <div class="form-group">
                     <label><strong>Transaction Fee (%)</strong></label>
-                    <input type="number" id="pgFeePercent" value="${cfg.transactionFeePercent ?? 0}" step="0.01" min="0">
+                    <input type="number" id="pgFeePercent" value="${cfg.transactionFeePercent??0}" step="0.01" min="0">
                 </div>
 
                 <div class="form-group" style="grid-column:1/3;">
                     <label><strong>Network Mapping</strong> <small>(JSON — maps provider names to gateway network codes)</small></label>
-                    <textarea id="pgNetworkMapping" rows="4" style="font-family:monospace;">${JSON.stringify(cfg.networkMapping || { MTN: 'MTN', Telecel: 'VOD', AirtelTigo: 'AIR', Vodafone: 'VOD' }, null, 2)}</textarea>
+                    <textarea id="pgNetworkMapping" rows="4" style="font-family:monospace;">${JSON.stringify(cfg.networkMapping||{MTN:'MTN',Telecel:'VOD',AirtelTigo:'AIR',Vodafone:'VOD'}, null, 2)}</textarea>
                 </div>
 
                 <div class="form-group">
                     <label><strong>Auth Method</strong></label>
                     <select id="pgAuthMethod">
-                        <option value="hmac"         ${cfg.authMethod === 'hmac' ? 'selected' : ''}>HMAC-SHA256 (Korba)</option>
-                        <option value="bearer-token" ${cfg.authMethod === 'bearer-token' ? 'selected' : ''}>Bearer Token</option>
-                        <option value="api-key"      ${cfg.authMethod === 'api-key' ? 'selected' : ''}>API Key</option>
+                        <option value="hmac"         ${cfg.authMethod==='hmac'         ?'selected':''}>HMAC-SHA256 (Korba)</option>
+                        <option value="bearer-token" ${cfg.authMethod==='bearer-token' ?'selected':''}>Bearer Token</option>
+                        <option value="api-key"      ${cfg.authMethod==='api-key'      ?'selected':''}>API Key</option>
                     </select>
                 </div>
 
@@ -1938,9 +1797,9 @@ async function loadPaymentGatewayConfig(gatewayName) {
                     <div style="flex:1;">
                         <label><strong>Payment Methods</strong></label>
                         <div style="display:flex;gap:16px;padding-top:4px;">
-                            <label><input type="checkbox" id="pgMM"   ${cfg.paymentMethods?.mobileMoney ? 'checked' : ''}> Mobile Money</label>
-                            <label><input type="checkbox" id="pgCard" ${cfg.paymentMethods?.card ? 'checked' : ''}> Card</label>
-                            <label><input type="checkbox" id="pgBank" ${cfg.paymentMethods?.bankTransfer ? 'checked' : ''}> Bank</label>
+                            <label><input type="checkbox" id="pgMM"   ${cfg.paymentMethods?.mobileMoney  ?'checked':''}> Mobile Money</label>
+                            <label><input type="checkbox" id="pgCard" ${cfg.paymentMethods?.card         ?'checked':''}> Card</label>
+                            <label><input type="checkbox" id="pgBank" ${cfg.paymentMethods?.bankTransfer ?'checked':''}> Bank</label>
                         </div>
                     </div>
                 </div>
@@ -1985,34 +1844,34 @@ async function savePaymentGatewayConfig(gatewayName) {
         let networkMapping = {};
         try { networkMapping = JSON.parse(networkMappingRaw); } catch { alert('Network Mapping is not valid JSON'); return; }
 
-        const secretKey = document.getElementById('pgSecretKey').value;
+        const secretKey    = document.getElementById('pgSecretKey').value;
         const testSecretKey = document.getElementById('pgTestSecretKey').value;
 
         const body = {
-            type: document.getElementById('pgType').value,
-            enabled: document.getElementById('pgEnabled').checked,
-            isTestMode: document.getElementById('pgTestMode').checked,
-            apiBaseUrl: document.getElementById('pgBaseUrl').value.trim(),
-            collectEndpoint: document.getElementById('pgCollectEndpoint').value.trim(),
-            clientKey: document.getElementById('pgClientKey').value.trim(),
-            testClientKey: document.getElementById('pgTestClientKey').value.trim(),
-            callbackUrl: document.getElementById('pgCallbackUrl').value.trim(),
-            redirectUrl: document.getElementById('pgRedirectUrl').value.trim(),
-            minAmount: parseFloat(document.getElementById('pgMinAmount').value),
-            maxAmount: parseFloat(document.getElementById('pgMaxAmount').value),
-            transactionFee: parseFloat(document.getElementById('pgFeeFixed').value),
-            transactionFeePercent: parseFloat(document.getElementById('pgFeePercent').value),
-            authMethod: document.getElementById('pgAuthMethod').value,
+            type:                 document.getElementById('pgType').value,
+            enabled:              document.getElementById('pgEnabled').checked,
+            isTestMode:           document.getElementById('pgTestMode').checked,
+            apiBaseUrl:           document.getElementById('pgBaseUrl').value.trim(),
+            collectEndpoint:      document.getElementById('pgCollectEndpoint').value.trim(),
+            clientKey:            document.getElementById('pgClientKey').value.trim(),
+            testClientKey:        document.getElementById('pgTestClientKey').value.trim(),
+            callbackUrl:          document.getElementById('pgCallbackUrl').value.trim(),
+            redirectUrl:          document.getElementById('pgRedirectUrl').value.trim(),
+            minAmount:            parseFloat(document.getElementById('pgMinAmount').value),
+            maxAmount:            parseFloat(document.getElementById('pgMaxAmount').value),
+            transactionFee:       parseFloat(document.getElementById('pgFeeFixed').value),
+            transactionFeePercent:parseFloat(document.getElementById('pgFeePercent').value),
+            authMethod:           document.getElementById('pgAuthMethod').value,
             networkMapping,
             paymentMethods: {
-                mobileMoney: document.getElementById('pgMM').checked,
-                card: document.getElementById('pgCard').checked,
+                mobileMoney:  document.getElementById('pgMM').checked,
+                card:         document.getElementById('pgCard').checked,
                 bankTransfer: document.getElementById('pgBank').checked
             }
         };
 
         // Only send keys if admin actually typed something
-        if (secretKey) body.secretKey = secretKey;
+        if (secretKey)     body.secretKey     = secretKey;
         if (testSecretKey) body.testSecretKey = testSecretKey;
 
         const res = await fetch(`${API_BASE}/admin/payment-gateway-config/${encodeURIComponent(gatewayName)}`, {
@@ -2066,9 +1925,9 @@ async function loadPaymentGatewayLogs(gatewayName) {
             html += `<tr>
                 <td>${new Date(l.initiatedAt).toLocaleString()}</td>
                 <td><small>${l.transactionId}</small></td>
-                <td>GHS ${(l.totalAmount || l.amount || 0).toFixed(2)}</td>
-                <td>${l.provider || '-'}</td>
-                <td>${l.phoneNumber || '-'}</td>
+                <td>GHS ${(l.totalAmount||l.amount||0).toFixed(2)}</td>
+                <td>${l.provider||'-'}</td>
+                <td>${l.phoneNumber||'-'}</td>
                 <td><span class="status-badge status-${l.status}">${l.status}</span></td>
             </tr>`;
         });
