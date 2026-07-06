@@ -1,5 +1,5 @@
 // Referral Prices page – original prices are now role-specific (from BasePrice via /api/my-original-prices)
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
 function authHeaders() {
     const token = localStorage.getItem('token');
@@ -12,32 +12,6 @@ function checkAuth() {
         return false;
     }
     return true;
-}
-
-/**
- * Wrapper for fetch() that automatically detects 401 responses and logs out the user.
- * If the token has expired or is invalid, this will clear localStorage and redirect to login.
- */
-async function authFetch(url, options = {}) {
-    try {
-        const response = await fetch(url, options);
-        
-        // If we get a 401 (Unauthorized), the token is invalid/expired
-        if (response.status === 401) {
-            console.warn('[Auth] Received 401 - token expired. Logging out...');
-            localStorage.clear();
-            showNotification('Your session has expired. Please log in again.', 'error');
-            setTimeout(() => {
-                window.location.href = '../Registration form/login_and_signup.html';
-            }, 1500);
-            return null;
-        }
-        
-        return response;
-    } catch (err) {
-        console.error('[authFetch] Network error:', err);
-        throw err;
-    }
 }
 
 // ========== Theme & Sidebar ==========
@@ -111,94 +85,59 @@ async function loadUserData() {
     } catch (err) { console.error(err); }
 }
 
-async function loadClientTypes(retries = 3) {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const res = await fetch(`${API_BASE}/client-types`, { headers: authHeaders(), cache: 'no-store' });
-            let types = await res.json();
-            if (!types || types.length === 0) {
-                types = ['Dealers', 'Super-agents', 'Agents', 'Sub-agents', 'Customers'];
-            }
-            allClientTypes = types;
-            return;
-        } catch (err) {
-            console.error(`Attempt ${attempt}/${retries} - Failed to load client types:`, err);
-            if (attempt < retries) {
-                await new Promise(r => setTimeout(r, 500 * attempt));
-            }
+async function loadClientTypes() {
+    try {
+        const res = await fetch(`${API_BASE}/client-types`, { headers: authHeaders() });
+        let types = await res.json();
+        if (!types || types.length === 0) {
+            types = ['Dealers', 'Super-agents', 'Agents', 'Sub-agents', 'Customers'];
         }
+        allClientTypes = types;
+    } catch (err) {
+        allClientTypes = ['Dealers', 'Super-agents', 'Agents', 'Sub-agents', 'Customers'];
     }
-    allClientTypes = ['Dealers', 'Super-agents', 'Agents', 'Sub-agents', 'Customers'];
 }
 
-async function loadProviders(retries = 3) {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const res = await fetch(`${API_BASE}/providers`, { headers: authHeaders(), cache: 'no-store' });
-            if (res.ok) {
-                const data = await res.json();
-                allProviders = data.map(p => ({ name: p.name, logoUrl: p.logoUrl || '' }));
-                return;
-            } else if (attempt < retries) {
-                await new Promise(r => setTimeout(r, 500 * attempt));
-            }
-        } catch (err) {
-            console.error(`Attempt ${attempt}/${retries} - Failed to load providers:`, err);
-            if (attempt < retries) {
-                await new Promise(r => setTimeout(r, 500 * attempt));
-            }
+async function loadProviders() {
+    try {
+        const res = await fetch(`${API_BASE}/providers`, { headers: authHeaders() });
+        if (res.ok) {
+            const data = await res.json();
+            allProviders = data.map(p => ({ name: p.name, logoUrl: p.logoUrl || '' }));
+        } else {
+            throw new Error('API not ready');
         }
-    }
-    // Derive providers from originalPrices as fallback
-    if (originalPrices.length) {
-        const unique = [...new Set(originalPrices.map(op => op.provider))];
-        allProviders = unique.map(name => ({ name, logoUrl: '' }));
-    } else {
-        console.warn('Failed to load providers after all retries and no fallback available');
+    } catch (err) {
+        // Derive providers from originalPrices as fallback
+        if (originalPrices.length) {
+            const unique = [...new Set(originalPrices.map(op => op.provider))];
+            allProviders = unique.map(name => ({ name, logoUrl: '' }));
+        }
     }
 }
 
 // KEY CHANGE: load the role-specific original prices instead of master prices.
 // The server looks up this user's role, finds the admin-configured BasePrice column,
 // and returns [{ provider, packageName, originalPrice }].
-// Includes retry logic for transient network failures.
-async function loadOriginalPrices(retries = 3) {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const res = await fetch(`${API_BASE}/my-original-prices`, { headers: authHeaders(), cache: 'no-store' });
-            if (res.ok) {
-                originalPrices = await res.json();
-                return;
-            } else if (attempt < retries) {
-                await new Promise(r => setTimeout(r, 500 * attempt));
-                continue;
-            }
-        } catch (err) {
-            console.error(`Attempt ${attempt}/${retries} - Could not load original prices:`, err);
-            if (attempt < retries) {
-                await new Promise(r => setTimeout(r, 500 * attempt));
-            }
+async function loadOriginalPrices() {
+    try {
+        const res = await fetch(`${API_BASE}/my-original-prices`, { headers: authHeaders() });
+        if (res.ok) {
+            originalPrices = await res.json();
+        } else {
+            originalPrices = [];
         }
+    } catch (err) {
+        console.error('Could not load original prices:', err);
+        originalPrices = [];
     }
-    console.warn('Failed to load original prices after all retries');
-    originalPrices = [];
 }
 
-async function loadReferralPrices(retries = 3) {
-    for (let attempt = 1; attempt <= retries; attempt++) {
-        try {
-            const res = await fetch(`${API_BASE}/referral-prices`, { headers: authHeaders(), cache: 'no-store' });
-            referralPrices = await res.json();
-            return;
-        } catch (err) {
-            console.error(`Attempt ${attempt}/${retries} - Failed to load referral prices:`, err);
-            if (attempt < retries) {
-                await new Promise(r => setTimeout(r, 500 * attempt));
-            }
-        }
-    }
-    console.warn('Failed to load referral prices after all retries');
-    referralPrices = [];
+async function loadReferralPrices() {
+    try {
+        const res = await fetch(`${API_BASE}/referral-prices`, { headers: authHeaders() });
+        referralPrices = await res.json();
+    } catch (err) { console.error(err); }
 }
 
 // ========== Build Tables ==========
@@ -208,15 +147,11 @@ function buildTables() {
     container.innerHTML = '';
 
     if (!allProviders.length) {
-        container.innerHTML = '<div class="alert" style="padding:20px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;color:#991b1b;"><i class="fas fa-exclamation-triangle"></i> No providers found. <button onclick="location.reload()" style="margin-left:10px;padding:6px 12px;background:#991b1b;color:white;border:none;border-radius:4px;cursor:pointer;">Retry</button></div>';
+        container.innerHTML = '<div class="alert">No providers found. Contact admin.</div>';
         return;
     }
     if (!allClientTypes.length) {
-        container.innerHTML = '<div class="alert" style="padding:20px;background:#fee2e2;border:1px solid #fca5a5;border-radius:6px;color:#991b1b;"><i class="fas fa-exclamation-triangle"></i> No client types defined. Contact admin.</div>';
-        return;
-    }
-    if (!originalPrices.length) {
-        container.innerHTML = '<div class="alert" style="padding:20px;background:#fef9c3;border:1px solid #fcd34d;border-radius:6px;color:#854d0e;"><i class="fas fa-info-circle"></i> No packages are currently available for your account. Please check back later or contact the administrator. <button onclick="location.reload()" style="margin-left:10px;padding:6px 12px;background:#854d0e;color:white;border:none;border-radius:4px;cursor:pointer;">Retry</button></div>';
+        container.innerHTML = '<div class="alert">No client types defined. Contact admin.</div>';
         return;
     }
 
@@ -318,8 +253,8 @@ async function refreshAll() {
     await loadUserData();
     await loadClientTypes();
     await loadOriginalPrices();   // role-specific — replaces loadMasterPrices()
-    await loadProviders();        // must come before buildTables so new packages appear immediately
     await loadReferralPrices();
+    await loadProviders();
     buildTables();
     applyColumnVisibility();
 }
@@ -467,14 +402,10 @@ function createPreviewSection() {
         <div class="customer-preview-wrapper">
             <div class="preview-sidebar">
                 <div class="preview-sidebar-header">
-                    <div class="preview-sidebar-title" id="preview-sidebar-name">Youngster Data Shop</div>
                     <div class="preview-sidebar-logo"><img src="default-logo.png" alt="Logo" id="preview-sidebar-logo"></div>
+                    <div class="preview-sidebar-title" id="preview-sidebar-name">Youngster Data Shop</div>
                 </div>
-                <div class="preview-sidebar-menu">
-                    <div class="preview-sidebar-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</div>
-                    <div class="preview-sidebar-item"><i class="fas fa-shopping-cart"></i> Orders</div>
-                    <div class="preview-sidebar-item"><i class="fas fa-exchange-alt"></i> Transactions</div>
-                </div>
+                <div class="preview-sidebar-menu"><div class="preview-sidebar-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</div></div>
             </div>
             <div class="customer-preview-container">
                 <div class="preview-header"><div class="preview-header-title"><h1 class="preview-store-name" id="preview-business-name">Youngster Data Shop</h1><p class="preview-store-desc" id="preview-store-desc">Your trusted partner for data services</p></div></div>
@@ -598,65 +529,6 @@ function updateSaveButtonHandler() {
     });
 }
 
-// ========== Refresh Mechanism ==========
-async function refreshPricesData() {
-    const container = document.getElementById('dynamicTablesContainer');
-    if (container) {
-        container.innerHTML = '<div style="text-align:center;padding:24px;opacity:.5;"><i class="fas fa-spinner fa-spin"></i> Loading packages...</div>';
-    }
-    
-    await refreshAll();
-    showNotification('Packages refreshed!', 'success');
-}
-
-function addRefreshButton() {
-    // Check if button already exists
-    if (document.getElementById('refreshPricesBtn')) return;
-
-    const container = document.getElementById('dynamicTablesContainer');
-    if (!container || !container.previousElementSibling) return;
-
-    const refreshBtn = document.createElement('button');
-    refreshBtn.id = 'refreshPricesBtn';
-    refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh Packages';
-    refreshBtn.style.cssText = `
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 16px;
-        margin: 12px 0 12px 0;
-        background: #3498db;
-        color: white;
-        border: none;
-        border-radius: 6px;
-        cursor: pointer;
-        font-size: 0.95rem;
-        transition: all 0.3s;
-    `;
-
-    refreshBtn.addEventListener('mouseenter', function() {
-        this.style.background = '#2980b9';
-    });
-    refreshBtn.addEventListener('mouseleave', function() {
-        this.style.background = '#3498db';
-    });
-
-    refreshBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        refreshBtn.disabled = true;
-        const origText = refreshBtn.innerHTML;
-        refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
-
-        await refreshPricesData();
-
-        refreshBtn.innerHTML = origText;
-        refreshBtn.disabled = false;
-    });
-
-    // Insert before the tables container
-    container.parentNode.insertBefore(refreshBtn, container);
-}
-
 // ========== Initialization ==========
 document.addEventListener('DOMContentLoaded', async () => {
     if (!checkAuth()) return;
@@ -665,7 +537,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Sync slug on every page load to ensure DB is always up to date
     await fetch(`${API_BASE}/sync-my-slug`, { headers: authHeaders() }).catch(() => {});
     await refreshAll();
-    addRefreshButton();
     await loadSellerData();
     initializeSellerForm();
     updateSaveButtonHandler();
