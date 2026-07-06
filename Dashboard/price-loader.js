@@ -2,7 +2,7 @@
 // Utility to load referral prices dynamically for package pages
 // Supports both logged-in users and public referral visits
 
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
 /**
  * Detect if this is a referral/storefront visit
@@ -40,21 +40,8 @@ async function loadPricesForProvider(provider, clientType = null) {
             
             const allPrices = await res.json();
             // Filter by provider (case-insensitive match)
-            return allPrices.filter(p => {
-                const dbProvider = (p.provider || '').toLowerCase();
-
-                if (provider.toLowerCase() === 'at ishare') {
-                    return [
-                        'at',
-                        'at ishare',
-                        'airteltigo',
-                        'airtel tigo'
-                    ].includes(dbProvider);
-                }
-
-                return dbProvider === provider.toLowerCase();
-            });     
-       } else {
+            return allPrices.filter(p => p.provider && p.provider.toLowerCase() === provider.toLowerCase());
+        } else {
             // Logged-in user — fetch their own referral prices
             const token = localStorage.getItem('token');
             if (!token) {
