@@ -1,5 +1,5 @@
 // transactions.js – Wallet Top‑Up orders
-const API_BASE = 'http://localhost:5000/api';
+const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
 function authHeaders() {
     const token = localStorage.getItem('token');
@@ -33,31 +33,17 @@ function renderTransactions(transactions) {
     let html = '';
     transactions.forEach(txn => {
         let statusClass = 'status-pending';
-        let displayStatus = txn.status || '';
-        const s = displayStatus.toLowerCase();
-        if (s === 'complete' || s === 'completed') {
-            statusClass = 'status-complete';
-            displayStatus = 'Completed';
-        } else if (s === 'failed') {
-            statusClass = 'status-failed';
-            displayStatus = 'Failed';
-        } else if (s === 'processing') {
-            statusClass = 'status-processing';
-            displayStatus = 'Processing';
-        } else if (s === 'pending') {
-            statusClass = 'status-pending';
-            displayStatus = 'Pending';
-        } else {
-            displayStatus = displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
-        }
+        if (txn.status === 'complete') statusClass = 'status-complete';
+        else if (txn.status === 'failed') statusClass = 'status-failed';
         const date = new Date(txn.created).toLocaleString();
         html += `<tr>
             <td>${txn.beneficiary_phone || '-'}</td>
             <td>${txn.description || 'Wallet Topup'}</td>
+            <td>GHC ${txn.balance_before || 0}</td>
             <td>GHC ${txn.amount}</td>
             <td>${txn.method || '-'}</td>
             <td>${date}</td>
-            <td><span class="status-badge ${statusClass}">${displayStatus}</span></td>
+            <td><span class="status-badge ${statusClass}">${txn.status}</span></td>
             <td><a href="#" class="action-btn refresh-txn" data-id="${txn._id}"><i class="fa-solid fa-rotate"></i> Refresh</a></td>
         </tr>`;
     });
@@ -66,31 +52,11 @@ function renderTransactions(transactions) {
     if (mobileContainer) {
         let cards = '';
         transactions.forEach(txn => {
-            let mobileStatusClass = 'status-pending';
-            let displayStatus = txn.status || '';
-            const ms = displayStatus.toLowerCase();
-            if (ms === 'complete' || ms === 'completed') {
-                mobileStatusClass = 'status-complete';
-                displayStatus = 'Completed';
-            } else if (ms === 'failed') {
-                mobileStatusClass = 'status-failed';
-                displayStatus = 'Failed';
-            } else if (ms === 'processing') {
-                mobileStatusClass = 'status-processing';
-                displayStatus = 'Processing';
-            } else if (ms === 'pending') {
-                mobileStatusClass = 'status-pending';
-                displayStatus = 'Pending';
-            } else {
-                displayStatus = displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1);
-            }
             cards += `<div class="order-card">
                 <div class="card-row"><span class="card-label">NUMBER:</span><span class="card-value">${txn.beneficiary_phone || '-'}</span></div>
-                <div class="card-row"><span class="card-label">DESCRIPTION:</span><span class="card-value">${txn.description || 'Wallet Topup'}</span></div>
                 <div class="card-row"><span class="card-label">AMOUNT:</span><span class="card-value">GHC ${txn.amount}</span></div>
-                <div class="card-row"><span class="card-label">METHOD:</span><span class="card-value">${txn.method || '-'}</span></div>
                 <div class="card-row"><span class="card-label">DATE:</span><span class="card-value">${new Date(txn.created).toLocaleString()}</span></div>
-                <div class="card-row"><span class="card-label">STATUS:</span><span class="card-value"><span class="status-badge ${mobileStatusClass}">${displayStatus}</span></span></div>
+                <div class="card-row"><span class="card-label">STATUS:</span><span class="card-value"><span class="status-badge ${statusClass}">${txn.status}</span></span></div>
                 <div class="card-row"><span class="card-label">ACTIONS:</span><span class="card-value"><a href="#" class="action-btn refresh-txn" data-id="${txn._id}"><i class="fa-solid fa-rotate"></i> Refresh</a></span></div>
             </div>`;
         });
@@ -160,7 +126,7 @@ function initializeLogout() {
     logoutBtn.addEventListener('click', () => {
         if (confirm('Log out?')) {
             localStorage.clear();
-            window.location.href = '../Registration%20form/login_and_signup.html';
+            window.location.href = '../Registration form/login_and_signup.html';
         }
     });
 }
@@ -221,7 +187,7 @@ function initializeRefresh() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('token')) window.location.href = '../Registration%20form/login_and_signup.html';
+    if (!localStorage.getItem('token')) window.location.href = '../Registration form/login_and_signup.html';
     initializeTheme();
     initializeSidebar();
     initializeLogout();
