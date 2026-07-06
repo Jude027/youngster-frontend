@@ -6,7 +6,7 @@
 // into the existing dashboard IDs.
 // When visited normally (no slug), does nothing — defaults remain.
 
-const STOREFRONT_API = 'http://localhost:5000/api';
+const STOREFRONT_API = 'https://youngster-backend-production.up.railway.app/api';
 
 // ─── Detect slug ──────────────────────────────────────────────────────────────
 // Supports:
@@ -139,18 +139,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         // This ensures mtn.html, telecel.html etc. know which dealer's prices
         // to load. clientType flows via localStorage (set above), so it never
         // appears in these sub-page URLs.
-        // Note: handlePackageCardClick links use onclick= and href="#" — those
-        // are handled inside dashboard.js which reads store/client from
-        // localStorage directly. Only patch real href links here.
         const resolvedSlug = store.storeSlug || slug;
         document.querySelectorAll('a[href]').forEach(a => {
             const href = a.getAttribute('href');
-            // Skip anchor-only, external, and already-patched links
-            if (!href || href === '#' || href.startsWith('http') || href.includes('?store=')) return;
-            // Only target relative links to .html pages
-            if (!href.includes('.html')) return;
-            const sep = href.includes('?') ? '&' : '?';
-            a.setAttribute('href', href + sep + 'store=' + encodeURIComponent(resolvedSlug));
+            // Target relative links to bundle pages (contain .html, not external)
+            if (href && href.includes('.html') && !href.startsWith('http') && !href.includes('?store=')) {
+                const sep = href.includes('?') ? '&' : '?';
+                a.setAttribute('href', href + sep + 'store=' + encodeURIComponent(resolvedSlug));
+            }
         });
 
     } catch (err) {
