@@ -344,17 +344,18 @@ function showPaymentModal(orderDetails) {
                     <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">
                         MoMo Phone Number
                     </label>
-                    <div style="display:flex;gap:8px;margin-bottom:6px;">
-                        <select id="momoNetwork" style="padding:10px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;background:#fff;">
-                            <option value="MTN">MTN</option>
-                            <option value="Telecel">Telecel</option>
-                            <option value="AirtelTigo">AirtelTigo</option>
-                        </select>
-                        <input type="tel" id="momoPhone" placeholder="0XX XXX XXXX"
-                            inputmode="numeric" maxlength="10"
-                            style="flex:1;padding:10px 14px;border:2px solid #e0e0e0;
-                            border-radius:8px;font-size:15px;outline:none;">
-                    </div>
+                    <input type="tel" id="momoPhone" placeholder="Enter MoMo number (e.g. 0241234567)"
+                        inputmode="numeric" maxlength="10"
+                        style="width:100%;box-sizing:border-box;padding:10px 14px;border:2px solid #e0e0e0;
+                        border-radius:8px;font-size:15px;outline:none;margin-bottom:10px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">
+                        Select Network
+                    </label>
+                    <select id="momoNetwork" style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;background:#fff;margin-bottom:6px;">
+                        <option value="MTN">MTN</option>
+                        <option value="Telecel">Telecel</option>
+                        <option value="AirtelTigo">AirtelTigo</option>
+                    </select>
                     <p style="font-size:12px;color:#888;margin:0 0 16px;">
                         A payment prompt will be sent to this number. Enter your MoMo PIN to confirm.
                     </p>
@@ -411,8 +412,7 @@ function showPaymentModal(orderDetails) {
     const momoPhone = document.getElementById('momoPhone');
     const momoNetwork = document.getElementById('momoNetwork');
 
-    // Pre-fill phone if beneficiary is on same network
-    momoPhone.value = orderDetails.beneficiary || '';
+    // Leave MoMo phone blank — paying customer enters their own number
 
     // Numeric only
     momoPhone.addEventListener('input', () => {
@@ -664,15 +664,57 @@ document.addEventListener('DOMContentLoaded', function() {
             const amount = parseFloat(selectedOption?.getAttribute('data-price')) || parseFloat(selectedBundlePrice) || 0;
             const params = new URLSearchParams(window.location.search);
             const provider = params.get('provider') || 'MTN';
+            const isPorted = portedNumberCheckbox ? portedNumberCheckbox.checked : false;
 
-            // Open Moolre payment modal — customer enters their MoMo number
-            // and gets a USSD push prompt to approve the payment
+            // ── Step 1: Verify beneficiary number with DataHub ────────────────
+            const originalBtnHtml = orderBtn.innerHTML;
+            orderBtn.disabled = true;
+            orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying number...';
+
+            try {
+                const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'https://youngster-backend-production.up.railway.app/api'
+                    : `https://${window.location.hostname}/api`;
+
+                const verifyRes = await fetch(`${API_BASE}/payment/verify-beneficiary`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(localStorage.getItem('token') ? { 'Authorization': `Bearer ${localStorage.getItem('token')}` } : {})
+                    },
+                    body: JSON.stringify({ phone: phoneNumber, is_ported_number: isPorted })
+                });
+
+                const verifyData = await verifyRes.json();
+
+                if (!verifyRes.ok || verifyData.success === false) {
+                    const reason = verifyData.message || verifyData.error || 'Number could not be verified.';
+                    alert(`❌ Verification failed: ${reason}
+
+Please check the number and try again.`);
+                    orderBtn.disabled = false;
+                    orderBtn.innerHTML = originalBtnHtml;
+                    return;
+                }
+            } catch (verifyErr) {
+                console.warn('[verify-beneficiary] request failed:', verifyErr);
+                // Network failure during verification — block the purchase to be safe
+                alert('Could not verify the number at this time. Please check your connection and try again.');
+                orderBtn.disabled = false;
+                orderBtn.innerHTML = originalBtnHtml;
+                return;
+            }
+
+            orderBtn.disabled = false;
+            orderBtn.innerHTML = originalBtnHtml;
+
+            // ── Step 2: Number verified — open payment modal ──────────────────
             showPaymentModal({
                 beneficiary: phoneNumber,
                 package:     provider,
                 bundle_size: bundleName,
                 amount:      amount,
-                isPorted:    portedNumberCheckbox ? portedNumberCheckbox.checked : false,
+                isPorted:    isPorted,
             });
         });
     }
