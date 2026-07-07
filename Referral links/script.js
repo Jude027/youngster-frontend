@@ -16,32 +16,6 @@ function checkAuth() {
     return true;
 }
 
-/**
- * Wrapper for fetch() that automatically detects 401 responses and logs out the user.
- * If the token has expired or is invalid, this will clear localStorage and redirect to login.
- */
-async function authFetch(url, options = {}) {
-    try {
-        const response = await fetch(url, options);
-        
-        // If we get a 401 (Unauthorized), the token is invalid/expired
-        if (response.status === 401) {
-            console.warn('[Auth] Received 401 - token expired. Logging out...');
-            localStorage.clear();
-            showNotification('Your session has expired. Please log in again.', 'error');
-            setTimeout(() => {
-                window.location.href = '../Registration form/login_and_signup.html';
-            }, 1500);
-            return null;
-        }
-        
-        return response;
-    } catch (err) {
-        console.error('[authFetch] Network error:', err);
-        throw err;
-    }
-}
-
 // ─── Theme ───────────────────────────────────────────────────────────────────
 function initializeTheme() {
     const currentTheme = localStorage.getItem('theme') || 'light';
@@ -124,26 +98,6 @@ async function loadCurrentUser() {
         }
     } catch (err) {
         console.error('Failed to load user:', err);
-    }
-}
-
-async function loadReferralBalance() {
-    const balanceEl = document.getElementById('commissionEarnedValue');
-    if (!balanceEl) return;
-
-    try {
-        const res = await authFetch(`${API_BASE}/balance`, { headers: authHeaders(), cache: 'no-store' });
-        if (!res || !res.ok) {
-            balanceEl.textContent = 'GHS 0.00';
-            return;
-        }
-
-        const data = await res.json();
-        const availableBalance = Number(data.availableBalance || 0);
-        balanceEl.textContent = `GHS ${availableBalance.toFixed(2)}`;
-    } catch (err) {
-        console.error('Failed to load referral balance:', err);
-        balanceEl.textContent = 'GHS 0.00';
     }
 }
 
@@ -339,9 +293,6 @@ async function initializeAndLoadLinks() {
     await loadCurrentUser();
 
     const { permittedClientTypes, storeSlug } = await loadPermittedClientTypes();
-
-    // Load live balance data for the referral dashboard.
-    await loadReferralBalance();
 
     // Render the correct link sections based on admin-configured permissions.
     renderReferralLinkSections(permittedClientTypes, storeSlug);
