@@ -620,7 +620,7 @@ async function applyUserStoreBranding() {
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const response = await fetch('http://localhost:5000/api/store-settings', {
+        const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -655,7 +655,7 @@ async function applyUserStoreBranding() {
 async function getMoolrePaymentLink() {
     try {
         const h = window.location.hostname;
-        const api = (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000/api' : `http://${h}:5000/api`;
+        const api = (h === 'localhost' || h === '127.0.0.1') ? 'https://youngster-backend-production.up.railway.app/api' : `http://${h}:5000/api`;
         const res = await fetch(`${api}/payment-gateways`);
         if (res.ok) {
             const gateways = await res.json();
@@ -713,7 +713,7 @@ async function loadAFAPrice() {
 
     try {
         const res = await fetch(
-            `http://localhost:5000/api/storefront-prices` +
+            `https://youngster-backend-production.up.railway.app/api/storefront-prices` +
             `?store=${encodeURIComponent(store)}` +
             `&clientType=${encodeURIComponent(clientType)}`
         );
