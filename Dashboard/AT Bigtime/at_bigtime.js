@@ -262,7 +262,7 @@ async function applyUserStoreBranding() {
         }
         
         console.log('Fetching store details...');
-        const response = await fetch('http://localhost:5000/api/store-settings', {
+        const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -302,7 +302,7 @@ async function applyUserStoreBranding() {
 async function getMoolrePaymentLink() {
     try {
         const h = window.location.hostname;
-        const api = (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000/api' : `http://${h}:5000/api`;
+        const api = (h === 'localhost' || h === '127.0.0.1') ? 'https://youngster-backend-production.up.railway.app/api' : `http://${h}:5000/api`;
         const res = await fetch(`${api}/payment-gateways`);
         if (res.ok) {
             const gateways = await res.json();
@@ -468,7 +468,7 @@ function showPaymentModal(orderDetails) {
         step2.style.display = 'block';
 
         const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'http://localhost:5000/api' : `https://${window.location.hostname}/api`;
+            ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
