@@ -113,7 +113,7 @@ let currentUser = null;
 // e.g. 'https://youngster-frontend-production.up.railway.app/Dashboard/dashboard2?store=kwame-data-hub'
 const referralBaseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? window.location.origin + '/Dashboard/dashboard2?store='   // local dev
-    : 'https://youngster-frontend-production.up.railway.app/Dashboard/dashboard2?store=';     // ← replace with your real domain
+    : 'https://youngster-frontend-production.up.railway.app/Dashboard/dashboard2?.htmlstore=';     // ← replace with your real domain
 
 async function loadCurrentUser() {
     try {
