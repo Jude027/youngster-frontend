@@ -264,14 +264,13 @@
                 localStorage.removeItem('otpPhoneNumber');
                 localStorage.removeItem('otpReturnUrl');
 
-                // Redirect back to the page the user came from after short delay
+                // Redirect to payment processing page — polls until MoMo PIN
+                // approved/rejected after the USSD prompt Moolre just sent
                 setTimeout(() => {
-                    if (returnUrl) {
-                        window.location.href = returnUrl;
-                    } else {
-                        history.back();
-                    }
-                }, 3000);
+                    window.location.href = '/Dashboard/payment-processing.html'
+                        + '?transactionId=' + encodeURIComponent(transactionId)
+                        + '&verified=1';
+                }, 2000);
             } else {
                 showStatus('error', data.message || 'OTP verification failed. Please try again.');
                 inputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
