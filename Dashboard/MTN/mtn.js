@@ -444,8 +444,7 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
+        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
@@ -696,8 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
             orderBtn.disabled = true;
             orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying number...';
 
-            const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
+            const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
             const token = localStorage.getItem('token');
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
