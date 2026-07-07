@@ -341,17 +341,19 @@ function showPaymentModal(orderDetails) {
 
                 <!-- MoMo phone input -->
                 <div id="payModalStep1">
-                    <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">
+                    <label for="momoPhone" style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">
                         MoMo Phone Number
                     </label>
-                    <input type="tel" id="momoPhone" placeholder="Enter MoMo number (e.g. 0241234567)"
+                    <input type="tel" id="momoPhone" placeholder="0XX XXX XXXX"
                         inputmode="numeric" maxlength="10"
-                        style="width:100%;box-sizing:border-box;padding:10px 14px;border:2px solid #e0e0e0;
-                        border-radius:8px;font-size:15px;outline:none;margin-bottom:10px;">
-                    <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">
-                        Select Network
+                        style="width:100%;box-sizing:border-box;padding:12px 14px;border:2px solid #e0e0e0;
+                        border-radius:8px;font-size:15px;outline:none;margin-bottom:12px;">
+
+                    <label for="momoNetwork" style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">
+                        Network
                     </label>
-                    <select id="momoNetwork" style="width:100%;box-sizing:border-box;padding:10px 12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;background:#fff;margin-bottom:6px;">
+                    <select id="momoNetwork" style="width:100%;box-sizing:border-box;padding:12px;
+                        border:2px solid #e0e0e0;border-radius:8px;font-size:14px;background:#fff;margin-bottom:6px;">
                         <option value="MTN">MTN</option>
                         <option value="Telecel">Telecel</option>
                         <option value="AirtelTigo">AirtelTigo</option>
@@ -412,7 +414,9 @@ function showPaymentModal(orderDetails) {
     const momoPhone = document.getElementById('momoPhone');
     const momoNetwork = document.getElementById('momoNetwork');
 
-    // Leave MoMo phone blank — paying customer enters their own number
+    // Leave blank — the paying customer types their own MoMo number here.
+    // (orderDetails.beneficiary is the recipient of the data bundle, not the payer.)
+    momoPhone.value = '';
 
     // Numeric only
     momoPhone.addEventListener('input', () => {
@@ -666,49 +670,47 @@ document.addEventListener('DOMContentLoaded', function() {
             const provider = params.get('provider') || 'MTN';
             const isPorted = portedNumberCheckbox ? portedNumberCheckbox.checked : false;
 
-            // ── Step 1: Verify beneficiary number with DataHub ────────────────
-            const originalBtnHtml = orderBtn.innerHTML;
+            // Verify the beneficiary number with DataHub before opening the payment modal
+            const originalBtnHTML = orderBtn.innerHTML;
             orderBtn.disabled = true;
             orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying number...';
 
-            try {
-                const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                    ? 'https://youngster-backend-production.up.railway.app/api'
-                    : `https://${window.location.hostname}/api`;
+            const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
+            const token = localStorage.getItem('token');
+            const headers = { 'Content-Type': 'application/json' };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
 
+            try {
                 const verifyRes = await fetch(`${API_BASE}/payment/verify-beneficiary`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(localStorage.getItem('token') ? { 'Authorization': `Bearer ${localStorage.getItem('token')}` } : {})
-                    },
-                    body: JSON.stringify({ phone: phoneNumber, is_ported_number: isPorted })
+                    headers,
+                    body: JSON.stringify({
+                        phone: phoneNumber,
+                        is_ported_number: isPorted
+                    })
                 });
+                const verifyResult = await verifyRes.json();
 
-                const verifyData = await verifyRes.json();
-
-                if (!verifyRes.ok || verifyData.success === false) {
-                    const reason = verifyData.message || verifyData.error || 'Number could not be verified.';
-                    alert(`❌ Verification failed: ${reason}
-
-Please check the number and try again.`);
+                if (!verifyRes.ok || !verifyResult.success) {
+                    alert(verifyResult.message || 'This number could not be verified. Please check it and try again.');
                     orderBtn.disabled = false;
-                    orderBtn.innerHTML = originalBtnHtml;
+                    orderBtn.innerHTML = originalBtnHTML;
                     return;
                 }
-            } catch (verifyErr) {
-                console.warn('[verify-beneficiary] request failed:', verifyErr);
-                // Network failure during verification — block the purchase to be safe
-                alert('Could not verify the number at this time. Please check your connection and try again.');
+            } catch (err) {
+                console.error('Beneficiary verification failed:', err);
+                alert('Could not verify this number right now. Please try again.');
                 orderBtn.disabled = false;
-                orderBtn.innerHTML = originalBtnHtml;
+                orderBtn.innerHTML = originalBtnHTML;
                 return;
             }
 
             orderBtn.disabled = false;
-            orderBtn.innerHTML = originalBtnHtml;
+            orderBtn.innerHTML = originalBtnHTML;
 
-            // ── Step 2: Number verified — open payment modal ──────────────────
+            // Open Moolre payment modal — customer enters their MoMo number
+            // and gets a USSD push prompt to approve the payment
             showPaymentModal({
                 beneficiary: phoneNumber,
                 package:     provider,
