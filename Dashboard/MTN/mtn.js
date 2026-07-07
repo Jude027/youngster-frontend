@@ -444,7 +444,8 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
@@ -477,6 +478,27 @@ function showPaymentModal(orderDetails) {
             }
 
             transactionId = data.transactionId;
+
+            // ── TP14: OTP required — redirect to OTP page ─────────────────────
+            if (data.requiresOtp) {
+                clearInterval(pollTimer);
+                // Store context so OTP page can read it
+                localStorage.setItem('otpTransactionId', transactionId);
+                localStorage.setItem('otpPhoneNumber', phone);
+                // Build return URL — after OTP verified, go to a processing/status page
+                const returnUrl = window.location.pathname + '?store=' +
+                    encodeURIComponent(new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '');
+                localStorage.setItem('otpReturnUrl', returnUrl);
+
+                const otpUrl = '/Dashboard/payment-otp.html' +
+                    '?txid=' + encodeURIComponent(transactionId) +
+                    '&phone=' + encodeURIComponent(phone) +
+                    '&return=' + encodeURIComponent(returnUrl);
+
+                modal.remove();
+                window.location.href = otpUrl;
+                return;
+            }
 
             // Poll for payment confirmation every 5 seconds, timeout after 3 minutes
             const deadline = Date.now() + 180000;
@@ -674,7 +696,8 @@ document.addEventListener('DOMContentLoaded', function() {
             orderBtn.disabled = true;
             orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying number...';
 
-            const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+            const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
             const token = localStorage.getItem('token');
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
