@@ -444,8 +444,7 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
+        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
@@ -675,8 +674,7 @@ document.addEventListener('DOMContentLoaded', function() {
             orderBtn.disabled = true;
             orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying number...';
 
-            const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-                ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
+            const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
             const token = localStorage.getItem('token');
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -690,29 +688,20 @@ document.addEventListener('DOMContentLoaded', function() {
                         is_ported_number: isPorted
                     })
                 });
+                const verifyResult = await verifyRes.json();
 
-                if (verifyRes.ok) {
-                    const verifyResult = await verifyRes.json();
-                    // Only block if DataHub explicitly says the number is invalid (4xx)
-                    // A 5xx means the verification service itself failed — let the purchase through
-                    if (!verifyResult.success) {
-                        alert(verifyResult.message || 'This number could not be verified. Please check it and try again.');
-                        orderBtn.disabled = false;
-                        orderBtn.innerHTML = originalBtnHTML;
-                        return;
-                    }
-                } else if (verifyRes.status >= 400 && verifyRes.status < 500) {
-                    // 4xx = bad number — block it
-                    const verifyResult = await verifyRes.json().catch(() => ({}));
+                if (!verifyRes.ok || !verifyResult.success) {
                     alert(verifyResult.message || 'This number could not be verified. Please check it and try again.');
                     orderBtn.disabled = false;
                     orderBtn.innerHTML = originalBtnHTML;
                     return;
                 }
-                // 5xx or network error = verification service down — proceed anyway
             } catch (err) {
-                // Network/fetch error reaching our own backend — don't block the purchase
-                console.warn('Beneficiary verification unreachable, proceeding:', err.message);
+                console.error('Beneficiary verification failed:', err);
+                alert('Could not verify this number right now. Please try again.');
+                orderBtn.disabled = false;
+                orderBtn.innerHTML = originalBtnHTML;
+                return;
             }
 
             orderBtn.disabled = false;
