@@ -1,8 +1,5 @@
 // transactions.js – Wallet Top‑Up orders
-const API_BASE = (() => {
-    const h = window.location.hostname;
-    return (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000/api' : `http://${h}:5000/api`;
-})();
+const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
 function authHeaders() {
     const token = localStorage.getItem('token');
@@ -11,38 +8,11 @@ function authHeaders() {
 
 let allTransactions = [];
 
-function getTransactionNumber(txn) {
-    return txn.paymentPhoneNumber || txn.payment_phone || txn.phoneNumber || txn.beneficiary_phone || '-';
-}
-
-function getStatusDisplay(status = '') {
-    const normalized = String(status).trim().toLowerCase();
-    if (normalized === 'complete' || normalized === 'completed') {
-        return { text: 'Completed', className: 'status-completed' };
-    }
-    if (normalized === 'failed') {
-        return { text: 'Failed', className: 'status-failed' };
-    }
-    if (normalized === 'processing') {
-        return { text: 'Processing', className: 'status-processing' };
-    }
-    if (normalized === 'pending') {
-        return { text: 'Pending', className: 'status-pending' };
-    }
-
-    const text = status ? String(status).charAt(0).toUpperCase() + String(status).slice(1) : 'Pending';
-    return { text, className: 'status-pending' };
-}
-
-function isOrderTransaction(txn) {
-    return Boolean(txn.orderId) || /bundle purchase/i.test(txn.description || '');
-}
-
 async function fetchTransactions() {
     try {
         const res = await fetch(`${API_BASE}/transactions`, { headers: authHeaders() });
         if (!res.ok) throw new Error();
-        allTransactions = (await res.json()).filter(isOrderTransaction);
+        allTransactions = await res.json();
         renderTransactions(allTransactions);
     } catch (err) {
         console.error(err);
@@ -62,16 +32,18 @@ function renderTransactions(transactions) {
     // Desktop table
     let html = '';
     transactions.forEach(txn => {
-        const status = getStatusDisplay(txn.status);
-        const transactionNumber = getTransactionNumber(txn);
+        let statusClass = 'status-pending';
+        if (txn.status === 'complete') statusClass = 'status-complete';
+        else if (txn.status === 'failed') statusClass = 'status-failed';
         const date = new Date(txn.created).toLocaleString();
         html += `<tr>
-            <td>${transactionNumber}</td>
+            <td>${txn.beneficiary_phone || '-'}</td>
             <td>${txn.description || 'Wallet Topup'}</td>
+            <td>GHC ${txn.balance_before || 0}</td>
             <td>GHC ${txn.amount}</td>
             <td>${txn.method || '-'}</td>
             <td>${date}</td>
-            <td><span class="status-badge ${status.className}">${status.text}</span></td>
+            <td><span class="status-badge ${statusClass}">${txn.status}</span></td>
             <td><a href="#" class="action-btn refresh-txn" data-id="${txn._id}"><i class="fa-solid fa-rotate"></i> Refresh</a></td>
         </tr>`;
     });
@@ -80,15 +52,11 @@ function renderTransactions(transactions) {
     if (mobileContainer) {
         let cards = '';
         transactions.forEach(txn => {
-            const status = getStatusDisplay(txn.status);
-            const transactionNumber = getTransactionNumber(txn);
             cards += `<div class="order-card">
-                <div class="card-row"><span class="card-label">NUMBER:</span><span class="card-value">${transactionNumber}</span></div>
-                <div class="card-row"><span class="card-label">DESCRIPTION:</span><span class="card-value">${txn.description || 'Wallet Topup'}</span></div>
+                <div class="card-row"><span class="card-label">NUMBER:</span><span class="card-value">${txn.beneficiary_phone || '-'}</span></div>
                 <div class="card-row"><span class="card-label">AMOUNT:</span><span class="card-value">GHC ${txn.amount}</span></div>
-                <div class="card-row"><span class="card-label">METHOD:</span><span class="card-value">${txn.method || '-'}</span></div>
                 <div class="card-row"><span class="card-label">DATE:</span><span class="card-value">${new Date(txn.created).toLocaleString()}</span></div>
-                <div class="card-row"><span class="card-label">STATUS:</span><span class="card-value"><span class="status-badge ${status.className}">${status.text}</span></span></div>
+                <div class="card-row"><span class="card-label">STATUS:</span><span class="card-value"><span class="status-badge ${statusClass}">${txn.status}</span></span></div>
                 <div class="card-row"><span class="card-label">ACTIONS:</span><span class="card-value"><a href="#" class="action-btn refresh-txn" data-id="${txn._id}"><i class="fa-solid fa-rotate"></i> Refresh</a></span></div>
             </div>`;
         });
@@ -106,7 +74,7 @@ function renderTransactions(transactions) {
 
 function filterTransactions(searchTerm) {
     const filtered = allTransactions.filter(t => 
-        (getTransactionNumber(t).toLowerCase().includes(searchTerm) ||
+        (t.beneficiary_phone?.toLowerCase().includes(searchTerm) ||
          t.description?.toLowerCase().includes(searchTerm))
     );
     renderTransactions(filtered);
@@ -138,7 +106,17 @@ function initializeSidebar() {
     // Exclude dashboardMenuLink — it handles its own navigation + close
     document.querySelectorAll('.menu-item:not(#dashboardMenuLink)').forEach(item => item.addEventListener('click', closeSidebar));
 
-
+    // Dashboard link — navigate back to branded store dashboard with slug
+    const dashboardLink = document.getElementById('dashboardMenuLink');
+    if (dashboardLink) {
+        dashboardLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            closeSidebar();
+            const slug = localStorage.getItem('storeSlug');
+            const base = '../dashboard2.html';
+            window.location.href = slug ? base + '?store=' + encodeURIComponent(slug) : base;
+        });
+    }
 }
 
 // Initialize logout
@@ -148,12 +126,41 @@ function initializeLogout() {
     logoutBtn.addEventListener('click', () => {
         if (confirm('Log out?')) {
             localStorage.clear();
-            window.location.href = '../Registration%20form/login_and_signup.html';
+            window.location.href = '../Registration form/login_and_signup.html';
         }
     });
 }
 
+// Load and apply the logged-in user's store branding to the sidebar
+async function applyUserStoreBranding() {
+    try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const response = await fetch(`${API_BASE}/store-settings`, {
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            cache: 'no-store'
+        });
+        if (!response.ok) return;
+        const store = await response.json();
 
+        // Cache slug so dashboard link navigates back with ?store= param
+        if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+
+        const sidebarTitle = document.getElementById('sidebarTitle');
+        if (sidebarTitle) sidebarTitle.textContent = store.storeName;
+
+        const sidebarLogo = document.getElementById('sidebarLogo');
+        if (sidebarLogo) {
+            if (store.storeLogo) {
+                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+            } else if (store.storeName) {
+                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
+            }
+        }
+    } catch (err) {
+        console.warn('Could not load store branding:', err);
+    }
+}
 function initializeSearch() {
     const searchBtn = document.getElementById('searchBtn');
     const searchBar = document.getElementById('searchBar');
@@ -180,10 +187,11 @@ function initializeRefresh() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('token')) window.location.href = '../Registration%20form/login_and_signup.html';
+    if (!localStorage.getItem('token')) window.location.href = '../Registration form/login_and_signup.html';
     initializeTheme();
     initializeSidebar();
     initializeLogout();
+    applyUserStoreBranding();
     initializeSearch();
     initializeRefresh();
     fetchTransactions();
