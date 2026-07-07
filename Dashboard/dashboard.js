@@ -79,7 +79,7 @@ async function loadDynamicProviders() {
         const token = localStorage.getItem('token');
         if (!token) return; // Only load for logged-in users
         
-        const res = await fetch('http://localhost:5000/api/providers', {
+        const res = await fetch('https://youngster-backend-production.up.railway.app/api/providers', {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         });
         
@@ -164,7 +164,7 @@ async function applyUserStoreBranding() {
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const response = await fetch('http://localhost:5000/api/store-settings', {
+        const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
