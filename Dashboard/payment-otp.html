@@ -146,12 +146,7 @@
     const transactionId = params.get('txid')   || '';
     const phoneNumber   = params.get('phone')  || '';
     const returnUrl     = params.get('return') || '/';
-    const API_BASE = (() => {
-        const h = window.location.hostname;
-        return (h === 'localhost' || h === '127.0.0.1')
-            ? 'http://localhost:5000'
-            : `https://${h}`;
-    })();
+    const API_BASE = 'https://youngster-backend-production.up.railway.app';
 
     document.getElementById('phoneDisplay').textContent =
         phoneNumber ? phoneNumber.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : 'your phone';
