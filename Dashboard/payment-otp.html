@@ -146,7 +146,12 @@
     const transactionId = params.get('txid')   || '';
     const phoneNumber   = params.get('phone')  || '';
     const returnUrl     = params.get('return') || '/';
-    const API_BASE      = 'https://youngster-backend-production.up.railway.app';
+    const API_BASE = (() => {
+        const h = window.location.hostname;
+        return (h === 'localhost' || h === '127.0.0.1')
+            ? 'http://localhost:5000'
+            : `https://${h}`;
+    })();
 
     document.getElementById('phoneDisplay').textContent =
         phoneNumber ? phoneNumber.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : 'your phone';
@@ -279,7 +284,7 @@
                     </div>`;
 
                 // Poll for payment status every 5 seconds, up to 3 minutes
-                const API_BACKEND = 'https://youngster-backend-production.up.railway.app';
+                const API_BACKEND = API_BASE; // use same auto-detected URL
                 let pollCount = 0;
                 const maxPolls = 36;
                 const pollTimer = setInterval(async () => {
@@ -287,9 +292,9 @@
                     try {
                         const r    = await fetch(`${API_BACKEND}/api/payment/status/${transactionId}`);
                         const d    = await r.json();
-                        const status = d.status || d.transaction?.status || 'pending';
+                        const status = (d.status || d.transaction?.status || 'pending').toLowerCase();
 
-                        if (status === 'success') {
+                        if (status === 'success' || status === 'completed') {
                             clearInterval(pollTimer);
                             document.getElementById('waitSpinner').style.display = 'none';
                             document.getElementById('waitMsg').style.display    = 'none';
