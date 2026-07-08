@@ -460,6 +460,7 @@ function showPaymentModal(orderDetails) {
                 body: JSON.stringify({
                     gatewayName:  'Moolre',
                     phoneNumber:  phone,
+                    beneficiary:  orderDetails.beneficiary,
                     amount:       orderDetails.amount,
                     provider:     network,
                     description:  `${orderDetails.package} ${orderDetails.bundle_size}`,
@@ -489,7 +490,7 @@ function showPaymentModal(orderDetails) {
                     encodeURIComponent(new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '');
                 localStorage.setItem('otpReturnUrl', returnUrl);
 
-                const otpUrl = '../payment-otp.html' +
+                const otpUrl = '/Dashboard/payment-otp.html' +
                     '?txid=' + encodeURIComponent(transactionId) +
                     '&phone=' + encodeURIComponent(phone) +
                     '&return=' + encodeURIComponent(returnUrl);
