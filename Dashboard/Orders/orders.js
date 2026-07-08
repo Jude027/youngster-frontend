@@ -1,5 +1,10 @@
 // orders.js – All Orders page
-const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+const API_BASE = (() => {
+    const h = window.location.hostname;
+    return (h === 'localhost' || h === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://youngster-backend-production.up.railway.app/api';
+})();
 let allOrders = []; // Global collection array holding all state elements
 
 function authHeaders() {
@@ -87,6 +92,22 @@ async function fetchOrders() {
     }
 }
 
+// Helper — format a date value as "M/D/YYYY, H:MM AM/PM"
+function formatDateTime(val) {
+    if (!val) return '-';
+    const d = new Date(val);
+    if (isNaN(d)) return '-';
+    const date = d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' });
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    return `${date}, ${time}`;
+}
+
+function normalizeStatusDisplay(status) {
+    const raw = String(status || 'Pending').trim();
+    if (!raw) return 'Pending';
+    return raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+}
+
 // Dom Builder Engine
 function renderOrders(ordersList) {
     const tbody = document.getElementById('ordersTableBody');
@@ -98,24 +119,53 @@ function renderOrders(ordersList) {
     }
 
     tbody.innerHTML = ordersList.map(order => {
-        const createdDate = order.created ? new Date(order.created).toLocaleDateString() : '-';
-        const completedDate = order.completed ? new Date(order.completed).toLocaleDateString() : '-';
-        const statusClass = (order.status || 'pending').toLowerCase();
+        const createdDate   = formatDateTime(order.created);
+        const completedDate = formatDateTime(order.completed);
+        // packageName comes from referral prices (e.g. "1GB", "2GB")
+        // Only accept values that look like a data size — reject description strings
+        const _pkg = order.packageName || order.bundle_size || order.bundleSize || '';
+        const bundleSize = /\d/.test(_pkg) && !/payment|purchase|bundle|for\s/i.test(_pkg) ? _pkg : '-';
+        
+        const statusDisplay = normalizeStatusDisplay(order.status);
+        const statusClass = statusDisplay;
+        const statusRaw   = statusDisplay.toLowerCase();
+
+        // Status badge colour
+        const statusStyle = {
+            completed:  'background:#dcfce7;color:#16a34a;',
+            complete:   'background:#dcfce7;color:#16a34a;',
+            processing: 'background:#dbeafe;color:#1d4ed8;',
+            pending:    'background:#fef9c3;color:#854d0e;',
+            failed:     'background:#fee2e2;color:#dc2626;',
+            'cancelled/refunded':  'background:#f3f4f6;color:#6b7280;',
+            resolved:   'background:#ede9fe;color:#7c3aed;',
+        }[statusRaw] || 'background:#f3f4f6;color:#374151;';
+
+        // WhatsApp report button — uses store's own number saved in localStorage
+        const waNumber    = localStorage.getItem('storeWhatsapp') || '0501784283';
+        const isCompleted = statusRaw === 'Completed' || statusRaw === 'Complete';
+        const waMsg = encodeURIComponent(
+            `Hello, I'd like a report for my order:\nBeneficiary: ${order.beneficiary || '-'}\nPackage: ${order.package || '-'} ${bundleSize}\nAmount: GHS ${parseFloat(order.amount || 0).toFixed(2)}\nDate: ${createdDate}\nStatus: ${statusDisplay}`
+        );
+        const waHref = `https://wa.me/233${waNumber.replace(/^0/, '')}?text=${waMsg}`;
+        const waBtn  = isCompleted
+            ? `<a href="${waHref}" target="_blank" class="action-btn" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;background:#25d366;color:#fff;padding:6px 12px;border-radius:6px;font-size:0.8rem;font-weight:600;">
+                   <i class="fab fa-whatsapp"></i> Report
+               </a>`
+            : `<button class="action-btn" disabled title="Only available after order is completed" style="opacity:0.4;cursor:not-allowed;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:6px;font-size:0.8rem;">
+                   <i class="fab fa-whatsapp"></i> Report
+               </button>`;
 
         return `
             <tr>
                 <td data-label="BENEFICIARY">${order.beneficiary || '-'}</td>
                 <td data-label="PACKAGE">${order.package || '-'}</td>
                 <td data-label="AMOUNT">${parseFloat(order.amount || 0).toFixed(2)} GHS</td>
-                <td data-label="BUNDLE SIZE">${order.bundle_size || '-'}</td>
+                <td data-label="BUNDLE SIZE">${bundleSize}</td>
                 <td data-label="CREATED">${createdDate}</td>
                 <td data-label="COMPLETED">${completedDate}</td>
-                <td data-label="STATUS"><span class="status-badge status-${statusClass}">${order.status || 'Pending'}</span></td>
-                <td data-label="REPORT">
-                    <button class="action-btn" onclick="alert('Viewing report for order of ${order.beneficiary}')">
-                        <i class="fas fa-file-alt"></i> View
-                    </button>
-                </td>
+                <td data-label="STATUS"><span class="status-badge" style="${statusStyle}border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:600;">${statusDisplay}</span></td>
+                <td data-label="REPORT">${waBtn}</td>
             </tr>
         `;
     }).join('');
@@ -264,6 +314,9 @@ async function applyUserStoreBranding() {
 
         // Cache slug so dashboard link navigates back with ?store= param
         if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+
+        // Cache WhatsApp number so the report button uses the store's own number
+        if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
 
         const sidebarTitle = document.getElementById('sidebarTitle');
         if (sidebarTitle) sidebarTitle.textContent = store.storeName;
