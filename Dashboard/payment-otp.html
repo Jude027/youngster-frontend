@@ -278,21 +278,52 @@
                         </button>
                     </div>`;
 
-                // Poll for payment status every 5 seconds, up to 3 minutes
-                const API_BACKEND = API_BASE; // use same auto-detected URL
-                let pollCount = 0;
-                const maxPolls = 36;
-                const pollTimer = setInterval(async () => {
+                // Poll for payment status after OTP verification.
+                //
+                // Moolre won't register the transaction in its status system until
+                // the customer responds to the USSD PIN prompt — which typically
+                // takes 15–120 seconds.  Polling too early just produces a flood of
+                // SS07 "Transaction not found" responses.
+                //
+                // Strategy:
+                //   • Wait 15 s before the very first check (skip guaranteed-SS07 calls)
+                //   • Poll every 10 s for the first 2 minutes
+                //   • Poll every 15 s thereafter (customer is slow / distracted)
+                //   • Give up after 4 minutes total
+                const API_BACKEND = API_BASE;
+                let pollCount   = 0;
+                let elapsedSecs = 0;
+                const DEADLINE_SECS = 240; // 4 minutes total
+
+                const updateWaitMsg = (secs) => {
+                    const el = document.getElementById('waitMsg');
+                    if (!el) return;
+                    if (secs < 15) {
+                        el.textContent = 'Sending payment prompt to your phone…';
+                    } else if (secs < 60) {
+                        el.textContent = 'A USSD prompt has been sent. Dial the PIN on your phone to approve.';
+                    } else {
+                        el.textContent = `Still waiting for your approval… (${secs}s)`;
+                    }
+                };
+
+                // Tick the elapsed-seconds counter every second for the status message
+                const tickTimer = setInterval(() => {
+                    elapsedSecs++;
+                    updateWaitMsg(elapsedSecs);
+                }, 1000);
+
+                const doPoll = async () => {
                     pollCount++;
                     try {
-                        const r    = await fetch(`${API_BACKEND}/api/payment/status/${transactionId}`);
-                        const d    = await r.json();
+                        const r      = await fetch(`${API_BACKEND}/api/payment/status/${transactionId}`);
+                        const d      = await r.json();
                         const status = (d.status || d.transaction?.status || 'pending').toLowerCase();
 
                         if (status === 'success' || status === 'completed') {
-                            clearInterval(pollTimer);
+                            clearInterval(tickTimer);
                             document.getElementById('waitSpinner').style.display = 'none';
-                            document.getElementById('waitMsg').style.display    = 'none';
+                            document.getElementById('waitMsg').style.display     = 'none';
                             document.getElementById('waitResult').style.display  = 'block';
                             document.getElementById('waitResult').innerHTML = `
                                 <div style="background:#e8f5e9;border-radius:12px;padding:20px;margin-bottom:16px;">
@@ -310,11 +341,12 @@
                                     font-weight:600;cursor:pointer;">
                                     Done
                                 </button>`;
+                            return; // stop scheduling further polls
 
                         } else if (status === 'failed' || status === 'cancelled') {
-                            clearInterval(pollTimer);
+                            clearInterval(tickTimer);
                             document.getElementById('waitSpinner').style.display = 'none';
-                            document.getElementById('waitMsg').style.display    = 'none';
+                            document.getElementById('waitMsg').style.display     = 'none';
                             document.getElementById('waitResult').style.display  = 'block';
                             document.getElementById('waitResult').innerHTML = `
                                 <div style="background:#fdecea;border-radius:12px;padding:20px;margin-bottom:16px;">
@@ -332,19 +364,31 @@
                                     font-weight:600;cursor:pointer;">
                                     Try Again
                                 </button>`;
-
-                        } else if (pollCount >= maxPolls) {
-                            clearInterval(pollTimer);
-                            document.getElementById('waitMsg').textContent =
-                                'Timed out. If you approved the payment, please contact support.';
-                        } else {
-                            document.getElementById('waitMsg').textContent =
-                                `Waiting for your approval… (${pollCount * 5}s)`;
+                            return; // stop scheduling further polls
                         }
+
+                        // Still pending — schedule next poll if within deadline
+                        if (elapsedSecs >= DEADLINE_SECS) {
+                            clearInterval(tickTimer);
+                            const msgEl = document.getElementById('waitMsg');
+                            if (msgEl) msgEl.textContent =
+                                'Timed out. If you approved the payment, please contact support.';
+                            return;
+                        }
+
+                        // Adaptive interval: 10 s for first 2 min, then 15 s
+                        const nextInterval = elapsedSecs < 120 ? 10000 : 15000;
+                        setTimeout(doPoll, nextInterval);
+
                     } catch (e) {
                         console.warn('Poll error:', e);
+                        // Network hiccup — retry after 10 s
+                        if (elapsedSecs < DEADLINE_SECS) setTimeout(doPoll, 10000);
                     }
-                }, 5000);
+                };
+
+                // First poll after 15 s — gives Moolre time to register the transaction
+                setTimeout(doPoll, 15000);
 
             } else {
                 showStatus('error', data.message || 'OTP verification failed. Please try again.');
