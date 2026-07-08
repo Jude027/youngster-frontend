@@ -370,21 +370,30 @@
         showStatus('loading', '<span class="spinner"></span> Resending OTP…');
 
         try {
-            const res  = await fetch(`${API_BASE}/api/payment/initiate`, {
+            const res  = await fetch(`${API_BASE}/api/payment/resend-otp`, {
                 method:  'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({
-                    // The backend will create a new transaction — just trigger a fresh initiation
-                    transactionId,
-                    resend: true,
-                }),
+                body:    JSON.stringify({ transactionId }),
             });
-            // For simplicity, just tell the user to check their phone
-            showStatus('success', 'A new OTP has been sent. Please check your SMS.');
-            secondsLeft  = 5 * 60;
-            resendAllowed = false;
+            const data = await res.json();
+
+            if (data.success) {
+                showStatus('success', 'A new OTP has been sent. Please check your SMS.');
+                // Reset the countdown to give a fresh 5-minute window
+                secondsLeft   = 5 * 60;
+                resendAllowed = false;
+                resendBtn.disabled = true;  // will re-enable when countdown reaches 60s
+                submitBtn.disabled = false;
+                // Clear inputs so the customer can type the new code
+                inputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
+                inputs[0].focus();
+                checkReady();
+            } else {
+                showStatus('error', data.message || 'Could not resend OTP. Please try again.');
+                resendBtn.disabled = false;
+            }
         } catch {
-            showStatus('error', 'Could not resend OTP. Please try again.');
+            showStatus('error', 'Network error. Could not resend OTP. Please try again.');
             resendBtn.disabled = false;
         }
     }
