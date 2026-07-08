@@ -451,7 +451,6 @@ function showPaymentModal(orderDetails) {
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
         let transactionId = null;
-        let pollTimer = null;
 
         try {
             const res = await fetch(`${API_BASE}/payment/initiate`, {
@@ -481,7 +480,6 @@ function showPaymentModal(orderDetails) {
 
             // ── TP14: OTP required — redirect to OTP page ─────────────────────
             if (data.requiresOtp) {
-                clearInterval(pollTimer);
                 // Store context so OTP page can read it
                 localStorage.setItem('otpTransactionId', transactionId);
                 localStorage.setItem('otpPhoneNumber', phone);
@@ -500,35 +498,42 @@ function showPaymentModal(orderDetails) {
                 return;
             }
 
-            // Poll for payment confirmation every 5 seconds, timeout after 3 minutes
+            // Poll for payment confirmation.
+            // Give Moolre 10 s before the first check, then every 10 s up to 3 minutes.
             const deadline = Date.now() + 180000;
-            pollTimer = setInterval(async () => {
-                try {
-                    const statusRes = await fetch(`${API_BASE}/payment/status/${transactionId}`, { headers });
-                    const statusData = await statusRes.json();
-                    const status = statusData.status || statusData.transaction?.status || 'pending';
+            let firstPoll = true;
+            const scheduleNextPoll = () => {
+                const delay = firstPoll ? 10000 : 10000;
+                firstPoll = false;
+                setTimeout(async () => {
+                    try {
+                        const statusRes = await fetch(`${API_BASE}/payment/status/${transactionId}`, { headers });
+                        const statusData = await statusRes.json();
+                        const status = statusData.status || statusData.transaction?.status || 'pending';
 
-                    document.getElementById('payModalMsg').textContent =
-                        status === 'pending' ? 'Check your phone and enter your MoMo PIN to approve.' :
-                        status === 'processing' ? 'Processing your payment...' : 'Checking payment...';
+                        document.getElementById('payModalMsg').textContent =
+                            status === 'pending'    ? 'A USSD prompt has been sent. Enter your MoMo PIN to approve.' :
+                            status === 'processing' ? 'Processing your payment…' : 'Checking payment…';
 
-                    if (status === 'success') {
-                        clearInterval(pollTimer);
-                        showResult(true, '✅', 'Payment Successful!',
-                            `Your ${orderDetails.bundle_size} bundle for ${orderDetails.beneficiary} is being processed.`);
-                    } else if (status === 'failed' || status === 'cancelled') {
-                        clearInterval(pollTimer);
-                        showResult(false, '❌', 'Payment Failed',
-                            'The payment was not completed. Please try again.');
-                    } else if (Date.now() >= deadline) {
-                        clearInterval(pollTimer);
-                        showResult(false, '⏱️', 'Payment Timed Out',
-                            'No response received. If you approved the payment, please contact support.');
+                        if (status === 'success') {
+                            showResult(true, '✅', 'Payment Successful!',
+                                `Your ${orderDetails.bundle_size} bundle for ${orderDetails.beneficiary} is being processed.`);
+                        } else if (status === 'failed' || status === 'cancelled') {
+                            showResult(false, '❌', 'Payment Failed',
+                                'The payment was not completed. Please try again.');
+                        } else if (Date.now() >= deadline) {
+                            showResult(false, '⏱️', 'Payment Timed Out',
+                                'No response received. If you approved the payment, please contact support.');
+                        } else {
+                            scheduleNextPoll();
+                        }
+                    } catch (e) {
+                        console.warn('Poll error:', e);
+                        if (Date.now() < deadline) scheduleNextPoll();
                     }
-                } catch (e) {
-                    console.warn('Poll error:', e);
-                }
-            }, 5000);
+                }, delay);
+            };
+            scheduleNextPoll();
 
         } catch (err) {
             step2.style.display = 'none';
