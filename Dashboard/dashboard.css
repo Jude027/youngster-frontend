@@ -768,16 +768,16 @@ body {
     }
     
     .menu-btn, .theme-toggle {
-        width: 28px;
-        height: 28px;
+        width: 38px;
+        height: 38px;
     }
     
     .header-title h1 {
-        font-size: 0.9rem;
+        font-size: 1.9rem;
     }
     
     .header-title .subtitle {
-        font-size: 0.65rem;
+        font-size: 1.65rem;
     }
     
     .network-card {
@@ -785,12 +785,12 @@ body {
     }
     
     .network-logo {
-        width: 35px;
-        height: 35px;
+        width: 45px;
+        height: 45px;
     }
     
     .network-name {
-        font-size: 0.85rem;
+        font-size: 1.85rem;
     }
 }
 
