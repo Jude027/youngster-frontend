@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wallet Top-Up - J.D. Youngster Enterprise</title>
-    <meta name="description" content="Top up your wallet on J.D. Youngster Enterprise quickly and securely.">
+    <title>Transactions - J.D. Youngster Enterprise</title>
+    <meta name="description" content="View your transaction history.">
     <link rel="stylesheet" href="transactions.css" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
@@ -17,47 +17,28 @@
             <button class="close-btn" id="closeBtn">
                 <i class="fas fa-times"></i>
             </button>
-            <div class="sidebar-title">J.D Youngster Enterprise</div>
-            <div class="brand-logo">
-                <img src="WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="J.D You Logo">
+            <div class="sidebar-title" id="sidebarTitle">J.D Youngster Enterprise</div>
+            <div class="brand-logo" id="sidebarLogo">
+                <img src="WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="Store Logo">
             </div>
         </div>
         <ul class="menu">
-            <!-- Orders -->
-            <a href="../Orders/new_orders.html" class="menu-item">
+            <!-- Dashboard — carries ?store= so guests keep their store context -->
+            <a href="../dashboard2.html" class="menu-item" id="dashboardMenuLink">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+
+            <a href="new_orders.html" class="menu-item">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="menu-text">Orders</span>
             </a>
 
-            <!-- Transactions -->
-            <a href="../Transactions/transactions2.html" class="menu-item active">
+            <!-- Transactions — active -->
+            <a href="#" class="menu-item active">
                 <i class="fas fa-exchange-alt"></i>
                 <span class="menu-text">Transactions</span>
             </a>
-
-            <!-- Referral Prices -->
-            <a href="../Referral%20Prices/dealers_referral_prices.html" class="menu-item">
-                <i class="fas fa-tags"></i>
-                <span class="menu-text">Referral Prices</span>
-            </a>
-
-            <!-- Referral Links -->
-            <a href="../Referral%20links/dealers_referral_program.html" class="menu-item">
-                <i class="fas fa-tags"></i>
-                <span class="menu-text">Referral Links</span>
-            </a>
-
-            <!-- Withdraw Earnings -->
-            <a href="../Withdrawals/withdrawal_page.html" class="menu-item">
-                <i class="fas fa-money-bill-wave"></i>
-                <span class="menu-text">Withdraw Earnings</span>
-            </a>
-
-            <!-- Log Out -->
-            <li class="menu-item logout" id="logoutBtn">
-                <i class="fas fa-sign-out-alt"></i>
-                <span class="menu-text">Log Out</span>
-            </li>
         </ul>
     </div>
 
@@ -81,11 +62,11 @@
                         <i class="fas fa-search"></i>
                     </button>
                     <div class="search-bar" id="searchBar">
-                        <input type="text" class="search-input" placeholder="Search orders...">
+                        <input type="text" class="search-input" placeholder="Search transactions...">
                     </div>
                 </div>
             </div>
-            
+
             <div class="orders-content">
                 <div class="table-header">
                     <div class="table-title-section">
@@ -97,12 +78,12 @@
                             <p class="orders-subtitle">Recent transactions and their status</p>
                         </div>
                     </div>
-                    <button class="refresh-btn" id="refreshBtn" aria-label="Refresh orders">
+                    <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
-                
-                <!-- Desktop Table with sample data -->
+
+                <!-- Desktop Table — populated by transactions.js -->
                 <table class="orders-table">
                     <thead>
                         <tr>
