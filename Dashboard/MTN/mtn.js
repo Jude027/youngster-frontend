@@ -467,6 +467,7 @@ function showPaymentModal(orderDetails) {
                     bundle_size:  orderDetails.bundle_size,
                     storeSlug:    new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
                     clientType:   localStorage.getItem('clientType') || 'Customers',
+                    isUnverified: orderDetails.isUnverified === true,
                 }),
             });
 
@@ -718,17 +719,35 @@ document.addEventListener('DOMContentLoaded', function() {
                 const verifyResult = await verifyRes.json();
 
                 if (!verifyRes.ok || !verifyResult.success) {
-                    alert(verifyResult.message || 'This number could not be verified. Please check it and try again.');
+                    // Verification failed — ask the customer if they want to proceed anyway.
+                    // If they do, the order is flagged isUnverified=true so the backend
+                    // routes it through the secondary API config (if configured).
+                    const proceed = confirm(
+                        (verifyResult.message || 'This number could not be verified.') +
+                        '\n\nWould you like to proceed anyway? The order will be handled through an alternative route.'
+                    );
+                    if (!proceed) {
+                        orderBtn.disabled = false;
+                        orderBtn.innerHTML = originalBtnHTML;
+                        return;
+                    }
+                    // Mark order as unverified so backend picks the right API config
+                    orderBtn._isUnverified = true;
+                } else {
+                    orderBtn._isUnverified = false;
+                }
+            } catch (err) {
+                console.error('Beneficiary verification failed:', err);
+                // Network error during verification — ask if they want to continue unverified
+                const proceed = confirm(
+                    'Could not verify this number right now (network error).\n\nWould you like to proceed anyway?'
+                );
+                if (!proceed) {
                     orderBtn.disabled = false;
                     orderBtn.innerHTML = originalBtnHTML;
                     return;
                 }
-            } catch (err) {
-                console.error('Beneficiary verification failed:', err);
-                alert('Could not verify this number right now. Please try again.');
-                orderBtn.disabled = false;
-                orderBtn.innerHTML = originalBtnHTML;
-                return;
+                orderBtn._isUnverified = true;
             }
 
             orderBtn.disabled = false;
@@ -737,11 +756,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Open Moolre payment modal — customer enters their MoMo number
             // and gets a USSD push prompt to approve the payment
             showPaymentModal({
-                beneficiary: phoneNumber,
-                package:     provider,
-                bundle_size: bundleName,
-                amount:      amount,
-                isPorted:    isPorted,
+                beneficiary:  phoneNumber,
+                package:      provider,
+                bundle_size:  bundleName,
+                amount:       amount,
+                isPorted:     isPorted,
+                isUnverified: orderBtn._isUnverified === true,
             });
         });
     }
