@@ -82,7 +82,6 @@
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
-                
                 <!-- Desktop Table with sample data -->
                 <table class="orders-table">
                     <thead>
@@ -97,57 +96,12 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- Sample row 1 - complete -->
-                        <tr>
-                            <td>Payment made for MTN 10GB</td>
-                            <td>GHC 50.00</td>
-                            <td>2025-02-10 14:30</td>
-                            <td><span class="status-badge status-complete">Complete</span></td>
-                            <td><a href="/re-verify-transaction/101" class="action-btn" data-txn-id="101"><i class="fa-solid fa-rotate"></i> Refresh</a></td>
-                        </tr>
-                        <!-- Sample row 2 - pending -->
-                        </tr>
-                            <td>Payment made for MTN 30GB</td>
-                            <td>GHC 100.00</td>
-                            <td>2025-02-12 09:15</td>
-                            <td><span class="status-badge status-pending">Pending</span></td>
-                            <td><a href="/re-verify-transaction/102" class="action-btn" data-txn-id="102"><i class="fa-solid fa-rotate"></i> Refresh</a></td>
-                        </tr>
-                        <!-- Sample row 3 - failed -->
-                        <tr>
-                            <td>Payment made for MTN 40GB</td>
-                            <td>GHC 150.00</td>
-                            <td>2025-02-14 11:20</td>
-                            <td><span class="status-badge status-failed">Failed</span></td>
-                            <td><a href="/re-verify-transaction/103" class="action-btn" data-txn-id="103"><i class="fa-solid fa-rotate"></i> Refresh</a></td>
-                        </tr>
+                        <!-- Populated by transactions.js -->
                     </tbody>
                 </table>
 
-                <!-- Mobile Cards with sample data -->
-                <div class="mobile-cards">
-                    <div class="order-card">
-                        <div class="card-row"><span class="card-label">DESCRIPTION:</span><span class="card-value">Payment made for MTN 10GB</span></div>
-                        <div class="card-row"><span class="card-label">AMOUNT:</span><span class="card-value">GHC 50.00</span></div>
-                        <div class="card-row"><span class="card-label">DATE:</span><span class="card-value">2025-02-10 14:30</span></div>
-                        <div class="card-row"><span class="card-label">STATUS:</span><span class="card-value"><span class="status-badge status-complete">Complete</span></span></div>
-                        <div class="card-row"><span class="card-label">ACTIONS:</span><span class="card-value"><a href="/re-verify-transaction/101" class="action-btn"><i class="fa-solid fa-rotate"></i> Refresh</a></span></div>
-                    </div>
-                    <div class="order-card">
-                        <div class="card-row"><span class="card-label">DESCRIPTION:</span><span class="card-value">Payment made for MTN 30GB</span></div>
-                        <div class="card-row"><span class="card-label">AMOUNT:</span><span class="card-value">GHC 100.00</span></div>
-                        <div class="card-row"><span class="card-label">DATE:</span><span class="card-value">2025-02-12 09:15</span></div>
-                        <div class="card-row"><span class="card-label">STATUS:</span><span class="card-value"><span class="status-badge status-pending">Pending</span></span></div>
-                        <div class="card-row"><span class="card-label">ACTIONS:</span><span class="card-value"><a href="/re-verify-transaction/102" class="action-btn"><i class="fa-solid fa-rotate"></i> Refresh</a></span></div>
-                    </div>
-                    <div class="order-card">
-                        <div class="card-row"><span class="card-label">DESCRIPTION:</span><span class="card-value">Payment made for MTN 40GB</span></div>
-                        <div class="card-row"><span class="card-label">AMOUNT:</span><span class="card-value">GHC 150.00</span></div>
-                        <div class="card-row"><span class="card-label">DATE:</span><span class="card-value">2025-02-14 11:20</span></div>
-                        <div class="card-row"><span class="card-label">STATUS:</span><span class="card-value"><span class="status-badge status-failed">Failed</span></span></div>
-                        <div class="card-row"><span class="card-label">ACTIONS:</span><span class="card-value"><a href="/re-verify-transaction/103" class="action-btn"><i class="fa-solid fa-rotate"></i> Refresh</a></span></div>
-                    </div>
-                </div>
+                <!-- Mobile Cards — populated by transactions.js -->
+                <div class="mobile-cards"></div>
             </div>
         </div>
     </div>
