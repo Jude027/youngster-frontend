@@ -1,7 +1,9 @@
 // withdrawal page – real API calls
 const API_BASE = (() => {
     const h = window.location.hostname;
-    return (h === 'localhost' || h === '127.0.0.1') ? 'http://localhost:5000/api' : `http://${h}:5000/api`;
+    return (h === 'localhost' || h === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://youngster-backend-production.up.railway.app/api';
 })();
 
 function authHeaders() {
