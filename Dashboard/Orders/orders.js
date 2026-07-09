@@ -1,11 +1,11 @@
-// orders.js – All Orders page
+// orders.js – Guest storefront orders page
 const API_BASE = (() => {
     const h = window.location.hostname;
     return (h === 'localhost' || h === '127.0.0.1')
         ? 'http://localhost:5000/api'
         : 'https://youngster-backend-production.up.railway.app/api';
 })();
-let allOrders = []; // Global collection array holding all state elements
+let allOrders = [];
 
 function authHeaders() {
     const token = localStorage.getItem('token');
@@ -71,22 +71,33 @@ async function fetchOrders() {
     if (loadingOverlay) loadingOverlay.style.display = 'flex';
 
     try {
-        const res = await fetch(`${API_BASE}/orders`, { headers: authHeaders() });
-        if (!res.ok) throw new Error('Failed to capture orders from API data backend');
+        const guestSessionId = localStorage.getItem('guestSessionId');
+        const storeSlug      = localStorage.getItem('storeSlug');
+        const token          = localStorage.getItem('token');
+
+        let url, headers;
+
+        if (token) {
+            // Authenticated dealer viewing their own orders
+            url     = `${API_BASE}/user/orders`;
+            headers = authHeaders();
+        } else {
+            // Guest — fetch only their own orders by session ID
+            if (!guestSessionId || !storeSlug) {
+                renderOrders([]);
+                return;
+            }
+            url     = `${API_BASE}/guest/orders?guestSessionId=${encodeURIComponent(guestSessionId)}&store=${encodeURIComponent(storeSlug)}`;
+            headers = { 'Content-Type': 'application/json' };
+        }
+
+        const res = await fetch(url, { headers });
+        if (!res.ok) throw new Error('Failed to load orders');
         allOrders = await res.json();
         renderOrders(allOrders);
     } catch (err) {
-        console.error('API Error, falling back to embedded client data mockup records:', err);
-        // Fallback to static scripts template embed element if connection fails
-        const embeddedDataElement = document.getElementById('orders-data');
-        if (embeddedDataElement) {
-            try {
-                allOrders = JSON.parse(embeddedDataElement.textContent);
-                renderOrders(allOrders);
-            } catch (parseErr) {
-                console.error('Error parsing fallback local object maps:', parseErr);
-            }
-        }
+        console.error('Failed to load orders:', err);
+        renderOrders([]);
     } finally {
         if (loadingOverlay) loadingOverlay.style.display = 'none';
     }
@@ -300,33 +311,45 @@ function initializeRefreshButton() {
     }
 }
 
-// Load and apply the logged-in user's store branding to the sidebar
+// Apply store branding to the sidebar.
+// For authenticated dealers: fetches from /api/store-settings (uses token).
+// For guests: fetches from /api/storefront/:slug (public, uses storeSlug from localStorage).
 async function applyUserStoreBranding() {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const response = await fetch(`${API_BASE}/store-settings`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            cache: 'no-store'
-        });
-        if (!response.ok) return;
-        const store = await response.json();
+        const token     = localStorage.getItem('token');
+        const storeSlug = localStorage.getItem('storeSlug');
+        let store;
 
-        // Cache slug so dashboard link navigates back with ?store= param
-        if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        if (token) {
+            const res = await fetch(`${API_BASE}/store-settings`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                cache: 'no-store'
+            });
+            if (!res.ok) return;
+            store = await res.json();
+            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        } else if (storeSlug) {
+            const res = await fetch(`${API_BASE}/storefront/${encodeURIComponent(storeSlug)}`);
+            if (!res.ok) return;
+            store = await res.json();
+        } else {
+            return;
+        }
 
-        // Cache WhatsApp number so the report button uses the store's own number
         if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
 
         const sidebarTitle = document.getElementById('sidebarTitle');
-        if (sidebarTitle) sidebarTitle.textContent = store.storeName;
+        if (sidebarTitle && store.storeName) sidebarTitle.textContent = store.storeName;
 
         const sidebarLogo = document.getElementById('sidebarLogo');
         if (sidebarLogo) {
             if (store.storeLogo) {
-                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName || ''} Logo"
+                    style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
             } else if (store.storeName) {
-                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
+                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
+                    width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                    ${store.storeName.charAt(0).toUpperCase()}</span>`;
             }
         }
     } catch (err) {
