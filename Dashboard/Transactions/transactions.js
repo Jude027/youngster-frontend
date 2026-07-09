@@ -15,7 +15,25 @@ let allTransactions = [];
 
 async function fetchTransactions() {
     try {
-        const res = await fetch(`${API_BASE}/transactions`, { headers: authHeaders() });
+        const guestSessionId = localStorage.getItem('guestSessionId');
+        const storeSlug      = localStorage.getItem('storeSlug');
+        const token          = localStorage.getItem('token');
+
+        let url, headers;
+
+        if (token) {
+            url     = `${API_BASE}/transactions`;
+            headers = authHeaders();
+        } else {
+            if (!guestSessionId || !storeSlug) {
+                renderTransactions([]);
+                return;
+            }
+            url     = `${API_BASE}/guest/transactions?guestSessionId=${encodeURIComponent(guestSessionId)}&store=${encodeURIComponent(storeSlug)}`;
+            headers = { 'Content-Type': 'application/json' };
+        }
+
+        const res = await fetch(url, { headers });
         if (!res.ok) throw new Error();
         allTransactions = await res.json();
         renderTransactions(allTransactions);
@@ -171,30 +189,41 @@ function initializeLogout() {
     });
 }
 
-// Load and apply the logged-in user's store branding to the sidebar
+// Apply store branding — works for both guests (storeSlug) and dealers (token)
 async function applyUserStoreBranding() {
     try {
-        const token = localStorage.getItem('token');
-        if (!token) return;
-        const response = await fetch(`${API_BASE}/store-settings`, {
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-            cache: 'no-store'
-        });
-        if (!response.ok) return;
-        const store = await response.json();
+        const token     = localStorage.getItem('token');
+        const storeSlug = localStorage.getItem('storeSlug');
+        let store;
 
-        // Cache slug so dashboard link navigates back with ?store= param
-        if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        if (token) {
+            const res = await fetch(`${API_BASE}/store-settings`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                cache: 'no-store'
+            });
+            if (!res.ok) return;
+            store = await res.json();
+            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        } else if (storeSlug) {
+            const res = await fetch(`${API_BASE}/storefront/${encodeURIComponent(storeSlug)}`);
+            if (!res.ok) return;
+            store = await res.json();
+        } else {
+            return;
+        }
 
         const sidebarTitle = document.getElementById('sidebarTitle');
-        if (sidebarTitle) sidebarTitle.textContent = store.storeName;
+        if (sidebarTitle && store.storeName) sidebarTitle.textContent = store.storeName;
 
         const sidebarLogo = document.getElementById('sidebarLogo');
         if (sidebarLogo) {
             if (store.storeLogo) {
-                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName || ''} Logo"
+                    style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
             } else if (store.storeName) {
-                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
+                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
+                    width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                    ${store.storeName.charAt(0).toUpperCase()}</span>`;
             }
         }
     } catch (err) {
@@ -227,7 +256,6 @@ function initializeRefresh() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('token')) window.location.href = '../Registration%20form/login_and_signup.html';
     initializeTheme();
     initializeSidebar();
     initializeLogout();
