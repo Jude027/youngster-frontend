@@ -1286,6 +1286,8 @@ document.getElementById('providerSelect')?.addEventListener('change', async (e) 
     document.getElementById('dataField').value = 'data';
     document.getElementById('phoneFormat').value = 'international';
     document.getElementById('payloadMapping').value = '';
+    document.getElementById('networkKeyOverride').value = '';
+    document.getElementById('capacityAsString').checked = false;
     document.getElementById('orderHandler').value = 'auto';
     document.getElementById('whatsappMinGb').value = '';
     document.getElementById('whatsappMaxGb').value = '';
@@ -1323,6 +1325,9 @@ document.getElementById('providerSelect')?.addEventListener('change', async (e) 
                 ? JSON.stringify(config.requestPayloadMapping, null, 2)
                 : '';
 
+        document.getElementById('networkKeyOverride').value = config.networkKey || '';
+        document.getElementById('capacityAsString').checked = config.capacityAsString === true;
+
         document.getElementById('apiConfigForm').style.display = 'block';
         loadAPILogs(providerName);
     } catch (err) {
@@ -1357,7 +1362,9 @@ document.getElementById('saveApiConfig')?.addEventListener('click', async () => 
             successField: document.getElementById('successField').value,
             dataField: document.getElementById('dataField').value,
             phoneFormat: document.getElementById('phoneFormat').value,
-            requestPayloadMapping: payloadMapping
+            requestPayloadMapping: payloadMapping,
+            networkKey: document.getElementById('networkKeyOverride').value.trim() || undefined,
+            capacityAsString: document.getElementById('capacityAsString').checked || undefined,
         };
         const orderRouting = {
             handler: document.getElementById('orderHandler').value,
