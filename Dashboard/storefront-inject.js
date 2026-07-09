@@ -1,155 +1,177 @@
-// storefront-inject.js
-// Runs after dashboard.js on dashboard2.html.
-// When the page is visited via a referral link (/referral/<slug>),
-// fetches the dealer's StoreSettings from the public API and
-// injects their branding — store name, description, logo, WhatsApp links —
-// into the existing dashboard IDs.
-// When visited normally (no slug), does nothing — defaults remain.
+/**
+ * order-submit.js
+ * Shared payment + order submission utility used by all bundle pages.
+ *
+ * Flow:
+ *   1. POST /api/payment/initiate  — triggers Moolre USSD push to customer's phone
+ *   2. POST /api/orders            — records the order in DB
+ *   3. Returns { success, transactionId, message } to the bundle page
+ *
+ * The bundle page then polls GET /api/payment/status/:transactionId
+ * until status is "success" or "failed".
+ */
 
-const STOREFRONT_API = 'https://youngster-backend-production.up.railway.app/api';
-
-// ─── Detect slug ──────────────────────────────────────────────────────────────
-// Supports:
-//   /referral/kwame-data-hub          (Express serves dashboard2.html here)
-//   /dashboard2.html?store=kwame-data-hub  (fallback for static hosting)
-function detectStoreSlug() {
-    // 1. Query string: ?store=<slug> (works on all sub-pages)
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('store')) return params.get('store');
-    // 2. Path: /referral/<slug>
-    const parts = window.location.pathname.split('/').filter(Boolean);
-    if (parts[parts.length - 2] === 'referral') return parts[parts.length - 1];
-    if (parts[0] === 'referral' && parts.length >= 2) return parts[1];
-    return null;
-}
-
-// ─── Capture referral context ─────────────────────────────────────────────────
-// When a customer arrives via a referral link like:
-//   dashboard2.html?store=youngster-data-shop&client=Customers
-// we immediately persist both values to localStorage so every bundle page
-// (mtn.html, telecel.html, etc.) can read clientType without it ever
-// appearing in their URLs.
-(function captureReferralContext() {
-    const params     = new URLSearchParams(window.location.search);
-    const store      = params.get('store') || detectStoreSlug();
-    const clientType = params.get('client');
-    if (store)      localStorage.setItem('storeSlug',  store);
-    if (clientType) localStorage.setItem('clientType', clientType);
+const ORDER_API = (() => {
+    const h = window.location.hostname;
+    return (h === 'localhost' || h === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://youngster-backend-production.up.railway.app/api';
 })();
 
-// ─── Apply branding ───────────────────────────────────────────────────────────
-function applyStoreBranding(store) {
-    const {
-        storeName         = '',
-        storeDescription  = '',
-        storeLogo         = '',
-        whatsappGroupLink = '',
-        whatsappNumber    = ''
-    } = store;
-
-    if (storeName) {
-        document.title = storeName;
-        const el = document.getElementById('headerStoreName');
-        if (el) el.textContent = storeName;
-        const sb = document.getElementById('sidebarTitle');
-        if (sb) sb.textContent = storeName;
-        const ft = document.getElementById('footerStoreName');
-        if (ft) ft.textContent = storeName;
-    }
-
-    if (storeDescription) {
-        const el = document.getElementById('headerStoreDesc');
-        if (el) el.textContent = storeDescription;
-    }
-
-    // Sidebar logo — image if available, else coloured initial
-    const logoEl = document.getElementById('sidebarLogo');
-    if (logoEl) {
-        if (storeLogo) {
-            logoEl.innerHTML = `<img src="${storeLogo}" alt="${storeName} Logo"
-                style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-        } else if (storeName) {
-            logoEl.innerHTML = `<span style="
-                font-size:18px;font-weight:700;color:#6a11cb;
-                width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-                ${storeName.charAt(0).toUpperCase()}
-            </span>`;
-        }
-    }
-
-    // WhatsApp group link
-    const waGroup = document.getElementById('waGroupLink');
-    if (waGroup) {
-        if (whatsappGroupLink) {
-            waGroup.href = whatsappGroupLink;
-        } else {
-            waGroup.style.display = 'none';
-        }
-    }
-
-    // WhatsApp admin / reseller number
-    const waNumber = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}` : null;
-    const waAdmin = document.getElementById('waAdminLink');
-    if (waAdmin) {
-        if (waNumber) waAdmin.href = waNumber;
-        else waAdmin.style.display = 'none';
-    }
-    const resellerLink = document.getElementById('resellerLink');
-    if (resellerLink && waNumber) resellerLink.href = waNumber;
-
-    // Update dashboard menu link to preserve store slug across sub-pages
-    const dashboardLink = document.getElementById('dashboardMenuLink');
-    if (dashboardLink) {
-        const slugToUse = store.storeSlug || '';
-        if (slugToUse) dashboardLink.href = `/Dashboard/dashboard2?store=${encodeURIComponent(slugToUse)}`;
-    }
+function orderAuthHeaders() {
+    const token = localStorage.getItem('token');
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-    const slug = detectStoreSlug();
-    if (!slug) return; 
+function getOrderContext() {
+    const p = new URLSearchParams(window.location.search);
+    return {
+        storeSlug:  p.get('store')    || localStorage.getItem('storeSlug')  || '',
+        clientType: p.get('client')   || localStorage.getItem('clientType') || 'Customers',
+        provider:   p.get('provider') || '',
+    };
+}
 
+/**
+ * Submit an order — initiates Moolre payment and records the order.
+ *
+ * @param {object} orderData
+ *   - beneficiary  {string}  phone receiving the data bundle
+ *   - paymentPhone {string}  phone to charge (may differ from beneficiary)
+ *   - network      {string}  customer's network: "MTN", "Telecel", "AirtelTigo"
+ *   - package      {string}  provider name e.g. "MTN", "MTN EXPRESS"
+ *   - bundle_size  {string}  e.g. "1 GB", "2 GB"
+ *   - amount       {number}  price to charge
+ *   - isPorted     {boolean} whether the number is ported
+ *
+ * @returns {Promise<{success, transactionId, message}>}
+ */
+async function submitOrder(orderData) {
+    const { storeSlug, clientType } = getOrderContext();
+
+    // ── Step 1: Initiate Moolre payment ──────────────────────────────────────
+    // This triggers a USSD push to the customer's phone asking them to
+    // enter their MoMo PIN to approve the payment.
+    let transactionId = null;
     try {
-        // Added ?t= timestamp to destroy any browser memory/cache of the old details
-        const res = await fetch(`${STOREFRONT_API}/storefront/${encodeURIComponent(slug)}?t=${Date.now()}`, {
-            headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-            }
+        const payRes = await fetch(`${ORDER_API}/payment/initiate`, {
+            method:  'POST',
+            headers: orderAuthHeaders(),
+            body:    JSON.stringify({
+                gatewayName: 'Moolre',
+                phoneNumber: orderData.paymentPhone || orderData.beneficiary,
+                beneficiary: orderData.beneficiary,
+                amount:      orderData.amount,
+                // provider = MoMo network used for payment (MTN/Telecel/AT)
+                // This is used by Moolre for channel mapping (13/6/7)
+                // The actual data package provider is stored in packageProvider
+                provider:        orderData.network || orderData.package,
+                packageProvider: orderData.package,   // e.g. "AT Ishare", "Telecel", "MTN EXPRESS"
+                description: `${orderData.package} ${orderData.bundle_size} bundle`,
+                packageName: orderData.package,
+                bundle_size: orderData.bundle_size,
+                storeSlug:       storeSlug  || null,
+                clientType:      clientType || 'Customers',
+                guestSessionId:  localStorage.getItem('guestSessionId') || null,
+            }),
         });
-        
-        if (!res.ok) {
-            console.warn(`Storefront: no store found for slug "${slug}"`);
-            return;
-        }
-        const store = await res.json();
-        
-        // If the dealer modified the store name, redirect automatically to the new URL path
-        if (store.storeSlug && store.storeSlug !== slug) {
-            if (window.location.pathname.includes('/referral/')) {
-                window.location.replace(`/referral/${store.storeSlug}${window.location.search}`);
-                return;
-            }
-        }
-        
-        applyStoreBranding(store);
 
-        // ── Patch all bundle-page links on the dashboard to carry ?store= ──
-        // This ensures mtn.html, telecel.html etc. know which dealer's prices
-        // to load. clientType flows via localStorage (set above), so it never
-        // appears in these sub-page URLs.
-        const resolvedSlug = store.storeSlug || slug;
-        document.querySelectorAll('a[href]').forEach(a => {
-            const href = a.getAttribute('href');
-            // Target relative links to bundle pages (contain .html, not external)
-            if (href && href.includes('.html') && !href.startsWith('http') && !href.includes('?store=')) {
-                const sep = href.includes('?') ? '&' : '?';
-                a.setAttribute('href', href + sep + 'store=' + encodeURIComponent(resolvedSlug));
-            }
-        });
+        const payData = await payRes.json();
+        console.log('[order-submit] payment/initiate response:', payData);
+
+        if (!payRes.ok || !payData.success) {
+            return {
+                success: false,
+                message: payData.message || 'Could not initiate payment. Please try again.'
+            };
+        }
+
+        transactionId = payData.transactionId;
 
     } catch (err) {
-        console.error('Storefront inject error:', err);
+        console.error('[order-submit] payment initiation error:', err);
+        return { success: false, message: 'Network error initiating payment. Please check your connection.' };
     }
-});
+
+    // ── Step 2: Record the order in DB ────────────────────────────────────────
+    try {
+        const orderRes = await fetch(`${ORDER_API}/orders`, {
+            method:  'POST',
+            headers: orderAuthHeaders(),
+            body:    JSON.stringify({
+                beneficiary:     orderData.beneficiary,
+                package:         orderData.package,
+                bundle_size:     orderData.bundle_size,
+                amount:          orderData.amount,
+                isPorted:        orderData.isPorted || false,
+                status:          'pending',
+                transactionId:   transactionId,
+                storeSlug:       storeSlug  || null,
+                clientType:      clientType || 'Customers',
+                guestSessionId:  localStorage.getItem('guestSessionId') || null,
+                created:         new Date().toISOString(),
+            }),
+        });
+
+        if (!orderRes.ok) {
+            console.warn('[order-submit] order record failed — payment still initiated');
+        }
+    } catch (err) {
+        console.warn('[order-submit] order record error (non-fatal):', err);
+    }
+
+    // Return the transactionId so the page can poll for payment confirmation
+    return {
+        success:       true,
+        transactionId: transactionId,
+        message:       'Payment prompt sent! Please check your phone and enter your MoMo PIN to confirm.'
+    };
+}
+
+/**
+ * Poll payment status until success, failure, or timeout.
+ *
+ * @param {string}   transactionId
+ * @param {Function} onUpdate      called with current status on each poll
+ * @param {number}   timeoutMs     how long to poll before giving up (default 3 min)
+ * @returns {Promise<{status: 'success'|'failed'|'timeout'}>}
+ */
+async function pollPaymentStatus(transactionId, onUpdate, timeoutMs = 180000) {
+    const INTERVAL  = 5000; // poll every 5 seconds
+    const deadline  = Date.now() + timeoutMs;
+
+    return new Promise((resolve) => {
+        const timer = setInterval(async () => {
+            try {
+                const res  = await fetch(
+                    `${ORDER_API}/payment/status/${transactionId}`,
+                    { headers: orderAuthHeaders() }
+                );
+                const data = await res.json();
+                const status = data.status || data.transaction?.status || 'pending';
+
+                console.log('[order-submit] poll status:', status);
+                if (onUpdate) onUpdate(status);
+
+                if (status === 'success') {
+                    clearInterval(timer);
+                    resolve({ status: 'success' });
+                } else if (status === 'failed' || status === 'cancelled') {
+                    clearInterval(timer);
+                    resolve({ status: 'failed' });
+                } else if (Date.now() >= deadline) {
+                    clearInterval(timer);
+                    resolve({ status: 'timeout' });
+                }
+            } catch (err) {
+                console.warn('[order-submit] poll error:', err);
+                if (Date.now() >= deadline) {
+                    clearInterval(timer);
+                    resolve({ status: 'timeout' });
+                }
+            }
+        }, INTERVAL);
+    });
+}
