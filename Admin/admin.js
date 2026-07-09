@@ -1288,6 +1288,7 @@ document.getElementById('providerSelect')?.addEventListener('change', async (e) 
     document.getElementById('payloadMapping').value = '';
     document.getElementById('networkKeyOverride').value = '';
     document.getElementById('capacityAsString').checked = false;
+    document.getElementById('forUnverifiedNumbers').checked = false;
     document.getElementById('orderHandler').value = 'auto';
     document.getElementById('whatsappMinGb').value = '';
     document.getElementById('whatsappMaxGb').value = '';
@@ -1327,6 +1328,7 @@ document.getElementById('providerSelect')?.addEventListener('change', async (e) 
 
         document.getElementById('networkKeyOverride').value = config.networkKey || '';
         document.getElementById('capacityAsString').checked = config.capacityAsString === true;
+        document.getElementById('forUnverifiedNumbers').checked = config.forUnverifiedNumbers === true;
 
         document.getElementById('apiConfigForm').style.display = 'block';
         loadAPILogs(providerName);
@@ -1365,6 +1367,7 @@ document.getElementById('saveApiConfig')?.addEventListener('click', async () => 
             requestPayloadMapping: payloadMapping,
             networkKey: document.getElementById('networkKeyOverride').value.trim() || undefined,
             capacityAsString: document.getElementById('capacityAsString').checked || undefined,
+            forUnverifiedNumbers: document.getElementById('forUnverifiedNumbers').checked || undefined,
         };
         const orderRouting = {
             handler: document.getElementById('orderHandler').value,
