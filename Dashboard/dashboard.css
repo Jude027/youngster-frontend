@@ -117,30 +117,17 @@ body {
 }
 
 /* SIDEBAR STYLES */
-.sidebar {
-    position: fixed;
-    top: 0;
-    left: -280px;
-    width: 280px;
-    height: 100%;
-    background: var(--sidebar-bg);
-    color: white;
-    transition: left 0.3s ease;
-    z-index: 2000;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
-    overflow-y: auto;
-}
-
 .sidebar.open {
     left: 0;
 }
 
 .sidebar-header {
-    padding: 20px;
+    padding: 25px 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative;
 }
 
 .sidebar-title {
