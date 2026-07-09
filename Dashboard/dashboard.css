@@ -78,7 +78,7 @@ body {
     justify-content: space-between;
     gap: 15px;
     position: relative;
-    min-height: 150px;
+    min-height: 120px;
 }
 
 .header-left {
@@ -97,10 +97,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 1rem;
     transition: all 0.3s ease;
     width: 44px;
-    height: 44px;
+    height: 444px;
 }
 
 .menu-btn:hover {
@@ -114,6 +114,23 @@ body {
 
 .menu-btn i {
     font-size: 16px;
+}
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.overlay.open {
+    opacity: 1;
+    visibility: visible;
 }
 
 /* SIDEBAR STYLES */
@@ -248,7 +265,7 @@ body {
 
 .header-title h1 {
     color: white;
-    font-size: 2.5rem;
+    font-size: 3.5rem;
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
@@ -259,7 +276,7 @@ body {
 
 .header-title .subtitle {
     color: rgba(255, 255, 255, 0.9);
-    font-size: 1.2rem;
+    font-size: 1.8rem;
     font-weight: 400;
 }
 
@@ -279,10 +296,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 1rem;
     transition: all 0.3s ease;
-    width: 44px;
-    height: 44px;
+    width: 54px;
+    height: 54px;
     -webkit-tap-highlight-color: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
