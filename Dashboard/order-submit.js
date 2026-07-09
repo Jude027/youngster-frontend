@@ -11,7 +11,12 @@
  * until status is "success" or "failed".
  */
 
-const ORDER_API = 'https://youngster-backend-production.up.railway.app/api';
+const ORDER_API = (() => {
+    const h = window.location.hostname;
+    return (h === 'localhost' || h === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://youngster-backend-production.up.railway.app/api';
+})();
 
 function orderAuthHeaders() {
     const token = localStorage.getItem('token');
@@ -67,8 +72,9 @@ async function submitOrder(orderData) {
                 description: `${orderData.package} ${orderData.bundle_size} bundle`,
                 packageName: orderData.package,
                 bundle_size: orderData.bundle_size,
-                storeSlug:   storeSlug  || null,
-                clientType:  clientType || 'Customers',
+                storeSlug:       storeSlug  || null,
+                clientType:      clientType || 'Customers',
+                guestSessionId:  localStorage.getItem('guestSessionId') || null,
             }),
         });
 
@@ -95,16 +101,17 @@ async function submitOrder(orderData) {
             method:  'POST',
             headers: orderAuthHeaders(),
             body:    JSON.stringify({
-                beneficiary:   orderData.beneficiary,
-                package:       orderData.package,
-                bundle_size:   orderData.bundle_size,
-                amount:        orderData.amount,
-                isPorted:      orderData.isPorted || false,
-                status:        'pending',
-                transactionId: transactionId,
-                storeSlug:     storeSlug  || null,
-                clientType:    clientType || 'Customers',
-                created:       new Date().toISOString(),
+                beneficiary:     orderData.beneficiary,
+                package:         orderData.package,
+                bundle_size:     orderData.bundle_size,
+                amount:          orderData.amount,
+                isPorted:        orderData.isPorted || false,
+                status:          'pending',
+                transactionId:   transactionId,
+                storeSlug:       storeSlug  || null,
+                clientType:      clientType || 'Customers',
+                guestSessionId:  localStorage.getItem('guestSessionId') || null,
+                created:         new Date().toISOString(),
             }),
         });
 
@@ -168,4 +175,3 @@ async function pollPaymentStatus(transactionId, onUpdate, timeoutMs = 180000) {
         }, INTERVAL);
     });
 }
-
