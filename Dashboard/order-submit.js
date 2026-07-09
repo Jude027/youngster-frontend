@@ -57,8 +57,13 @@ async function submitOrder(orderData) {
             body:    JSON.stringify({
                 gatewayName: 'Moolre',
                 phoneNumber: orderData.paymentPhone || orderData.beneficiary,
+                beneficiary: orderData.beneficiary,
                 amount:      orderData.amount,
-                provider:    orderData.network || orderData.package,
+                // provider = MoMo network used for payment (MTN/Telecel/AT)
+                // This is used by Moolre for channel mapping (13/6/7)
+                // The actual data package provider is stored in packageProvider
+                provider:        orderData.network || orderData.package,
+                packageProvider: orderData.package,   // e.g. "AT Ishare", "Telecel", "MTN EXPRESS"
                 description: `${orderData.package} ${orderData.bundle_size} bundle`,
                 packageName: orderData.package,
                 bundle_size: orderData.bundle_size,
@@ -163,3 +168,4 @@ async function pollPaymentStatus(transactionId, onUpdate, timeoutMs = 180000) {
         }, INTERVAL);
     });
 }
+
