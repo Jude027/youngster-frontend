@@ -3,7 +3,6 @@
 // Supports both logged-in users and public referral visits
 
 const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
-
 /**
  * Detect if this is a referral/storefront visit
  * Returns the store slug if visiting via referral, null otherwise
@@ -27,10 +26,19 @@ async function loadPricesForProvider(provider, clientType = null) {
     
     try {
         if (storeSlug) {
-            // Public referral visit — fetch dealer's prices for Customers
+            // Public referral visit — fetch dealer's prices for this customer's client type.
+            // Read ?client= from the URL (set by the referral link) so sub-agents,
+            // agents etc. see only the prices the dealer set for their specific type.
+            // Fall back to 'Customers' only when no client param is present.
+            const params = new URLSearchParams(window.location.search);
+            const resolvedClientType = params.get('client')
+                || localStorage.getItem('clientType')
+                || clientType
+                || 'Customers';
+
             const url = new URL(`${API_BASE}/storefront-prices`, window.location.origin);
             url.searchParams.set('store', storeSlug);
-            url.searchParams.set('clientType', 'Customers');
+            url.searchParams.set('clientType', resolvedClientType);
             
             const res = await fetch(url.toString());
             if (!res.ok) {
@@ -40,8 +48,21 @@ async function loadPricesForProvider(provider, clientType = null) {
             
             const allPrices = await res.json();
             // Filter by provider (case-insensitive match)
-            return allPrices.filter(p => p.provider && p.provider.toLowerCase() === provider.toLowerCase());
-        } else {
+            return allPrices.filter(p => {
+                const dbProvider = (p.provider || '').toLowerCase();
+
+                if (provider.toLowerCase() === 'at ishare') {
+                    return [
+                        'at',
+                        'at ishare',
+                        'airteltigo',
+                        'airtel tigo'
+                    ].includes(dbProvider);
+                }
+
+                return dbProvider === provider.toLowerCase();
+            });     
+       } else {
             // Logged-in user — fetch their own referral prices
             const token = localStorage.getItem('token');
             if (!token) {
