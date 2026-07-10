@@ -316,8 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeTheme();
     initializeSidebar();
     initializeLogout();
-    // 2. Fetch branding + data in parallel in the background
-    applyStoreBranding();
     initializeSearch();
     initializeRefresh();
     fetchTransactions();
