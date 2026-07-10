@@ -65,8 +65,30 @@ function initializeLogout() {
     });
 }
 
+// ── Skeleton loader ────────────────────────────────────────────────────────────
+const SKELETON_ROW = `
+    <tr class="skeleton-row">
+        <td><span class="skeleton-cell"></span></td>
+        <td><span class="skeleton-cell"></span></td>
+        <td><span class="skeleton-cell" style="width:60px;"></span></td>
+        <td><span class="skeleton-cell" style="width:50px;"></span></td>
+        <td><span class="skeleton-cell" style="width:110px;"></span></td>
+        <td><span class="skeleton-cell" style="width:110px;"></span></td>
+        <td><span class="skeleton-cell" style="width:80px;border-radius:20px;"></span></td>
+        <td><span class="skeleton-cell" style="width:70px;border-radius:6px;"></span></td>
+    </tr>`;
+
+function showSkeletonRows(count = 6) {
+    const tbody = document.getElementById('ordersTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = Array(count).fill(SKELETON_ROW).join('');
+}
+
 // Async API pull for orders data records
 async function fetchOrders() {
+    // Show skeleton rows immediately — table is never blank while waiting
+    showSkeletonRows();
+
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) loadingOverlay.style.display = 'flex';
 
