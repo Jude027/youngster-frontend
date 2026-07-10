@@ -117,6 +117,19 @@ function applyStoreBranding(store) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
     const slug = detectStoreSlug();
+
+    // Apply cached branding immediately — before the network fetch — so the
+    // dashboard never shows "J.D Youngster Enterprise" while waiting for the API.
+    // storeBrandName / storeBrandLogo are written below after every successful fetch.
+    const cachedName = localStorage.getItem('storeBrandName');
+    const cachedLogo = localStorage.getItem('storeBrandLogo');
+    if (cachedName || cachedLogo) {
+        applyStoreBranding({
+            storeName: cachedName || '',
+            storeLogo: cachedLogo || '',
+        });
+    }
+
     if (!slug) return; 
 
     try {
@@ -134,6 +147,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         const store = await res.json();
         
+        // Cache branding so orders/transactions pages render instantly on next visit.
+        // storeBrandLogo is cleared if the store no longer has a logo.
+        if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
+        if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
+        else                  localStorage.removeItem('storeBrandLogo');
+        if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
+
         // If the dealer modified the store name, redirect automatically to the new URL path
         if (store.storeSlug && store.storeSlug !== slug) {
             if (window.location.pathname.includes('/referral/')) {
