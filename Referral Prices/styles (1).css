@@ -721,7 +721,12 @@ textarea {
     font-family: inherit;
 }
 
-/* Dashboard‑style live preview – exactly like the screenshot */
+/* Mobile-only preview elements — hidden on desktop */
+.preview-mobile-menu-btn,
+.preview-mobile-sidebar,
+.preview-mobile-overlay {
+    display: none;
+}
 .dashboard-preview {
     background: var(--card-bg);
     border-radius: 20px;
@@ -1149,48 +1154,140 @@ textarea {
 
 @media (max-width: 700px) {
     .customer-preview-wrapper {
-        flex-direction: row;
-        align-items: stretch;
-    }
-    .preview-sidebar {
-        width: 180px;
-        min-width: 180px;
-        display: flex;
         flex-direction: column;
-        justify-content: flex-start;
         align-items: stretch;
-        padding: 15px 10px;
     }
-    .preview-sidebar-header {
-        flex-direction: row;
+
+    /* Hide sidebar entirely on mobile — menu button replaces it */
+    .preview-sidebar {
+        display: none;
+    }
+
+    /* Floating menu button top-left inside the preview */
+    .preview-mobile-menu-btn {
+        display: flex;
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 38px;
+        height: 38px;
+        background: rgba(255,255,255,0.25);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-size: 1.1rem;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 20;
+    }
+
+    /* Slide-in mobile sidebar overlay inside the preview */
+    .preview-mobile-sidebar {
+        display: flex;
+        position: absolute;
+        top: 0;
+        left: -220px;
+        width: 220px;
+        height: 100%;
+        background: var(--sidebar-bg);
+        color: white;
+        flex-direction: column;
+        z-index: 30;
+        transition: left 0.3s ease;
+        padding: 16px 0;
+    }
+    .preview-mobile-sidebar.open {
+        left: 0;
+    }
+    .preview-mobile-sidebar-header {
+        display: flex;
         align-items: center;
         justify-content: space-between;
-        gap: 8px;
-        padding: 0 0 15px;
-        margin: 0 0 15px;
-        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding: 0 14px 14px;
+        border-bottom: 1px solid rgba(255,255,255,0.12);
+        margin-bottom: 12px;
     }
-    .preview-sidebar-title {
-        font-size: 0.88rem;
-        min-width: 0;
+    .preview-mobile-sidebar-logo {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: white;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+    .preview-mobile-sidebar-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .preview-mobile-sidebar-title {
+        flex: 1;
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 0 8px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .preview-sidebar-menu {
+    .preview-mobile-close {
+        background: rgba(255,255,255,0.1);
+        border: none;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        cursor: pointer;
+    }
+    .preview-mobile-overlay {
+        display: none;
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 25;
+    }
+    .preview-mobile-overlay.open {
         display: block;
     }
-    .preview-sidebar-item {
-        padding: 10px 12px;
+    .preview-mobile-menu-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        font-size: 0.88rem;
+        border-left: 3px solid transparent;
+        cursor: default;
     }
-    .preview-store-name {
-        font-size: 1.2rem;
+    .preview-mobile-menu-item.active {
+        background: rgba(255,255,255,0.15);
+        border-left-color: #e74c3c;
     }
-    .preview-network-cards {
-        grid-template-columns: 1fr;
+    .preview-mobile-menu-item:hover {
+        background: rgba(255,255,255,0.1);
+        border-left-color: #3498db;
     }
+
+    /* Make preview-header relative so absolute children work */
+    .preview-header {
+        position: relative;
+    }
+
     .customer-preview-container {
         min-width: 0;
+        position: relative;
+    }
+
+    .preview-store-name {
+        font-size: 1.1rem;
+        padding-left: 44px; /* make room for menu button */
+    }
+
+    .preview-network-cards {
+        grid-template-columns: 1fr;
     }
 }
 
