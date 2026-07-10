@@ -177,6 +177,46 @@ async function loadReferralPrices() {
     } catch (err) { console.error(err); }
 }
 
+// ========== Price table caching ==========
+// Builds a simple hash string from the data arrays to detect changes.
+// If nothing changed since last visit, the cached DOM is shown immediately
+// and no rebuild happens. Only rebuilds when data actually differs.
+const PRICE_CACHE_KEY = 'referralPriceTablesCache';
+const PRICE_HASH_KEY  = 'referralPriceTablesHash';
+
+function hashData(providers, clientTypes, originalPrices, referralPrices) {
+    // Lightweight deterministic string — not crypto, just change detection
+    return JSON.stringify({ providers, clientTypes, originalPrices, referralPrices });
+}
+
+function renderFromCache() {
+    const container = document.getElementById('dynamicTablesContainer');
+    if (!container) return false;
+    const cached = localStorage.getItem(PRICE_CACHE_KEY);
+    if (!cached) return false;
+    container.innerHTML = cached;
+
+    // Re-attach click handlers for collapsible headers
+    container.querySelectorAll('[data-collapsible]').forEach(headerDiv => {
+        const tableDiv = headerDiv.nextElementSibling;
+        if (!tableDiv) return;
+        headerDiv.addEventListener('click', () => {
+            const isVisible = tableDiv.style.display !== 'none';
+            tableDiv.style.display = isVisible ? 'none' : 'block';
+            const icon = headerDiv.querySelector('.fa-chevron-down');
+            if (icon) icon.style.transform = isVisible ? 'rotate(0deg)' : 'rotate(180deg)';
+        });
+    });
+    return true;
+}
+
+function saveToCache(hash) {
+    const container = document.getElementById('dynamicTablesContainer');
+    if (!container) return;
+    localStorage.setItem(PRICE_CACHE_KEY, container.innerHTML);
+    localStorage.setItem(PRICE_HASH_KEY, hash);
+}
+
 // ========== Build Tables ==========
 function buildTables() {
     const container = document.getElementById('dynamicTablesContainer');
@@ -207,6 +247,7 @@ function buildTables() {
 
         const headerDiv = document.createElement('div');
         headerDiv.className = headerClass;
+        headerDiv.setAttribute('data-collapsible', 'true');
         headerDiv.style.cssText = 'display:flex; align-items:center; justify-content:space-between; cursor:pointer; padding:12px 20px;';
         const logoUrl = prov.logoUrl || '';
         headerDiv.innerHTML = `
@@ -259,6 +300,7 @@ function buildTables() {
             });
         });
     }
+    // Cache is saved by refreshAll() after hash comparison — not here directly
 }
 
 // ========== Column Visibility ==========
@@ -287,17 +329,32 @@ function applyColumnVisibility() {
 }
 
 async function refreshAll() {
-    // Show skeleton placeholders immediately so the page isn't blank while loading
     const container = document.getElementById('dynamicTablesContainer');
-    if (container) showTableSkeleton(container, 5, 5);
 
+    // ── Step 1: render from cache instantly if available ────────────────────
+    // This makes the page feel static — tables appear before any network call.
+    const hadCache = renderFromCache();
+    if (!hadCache && container) showTableSkeleton(container, 5, 5);
+
+    // ── Step 2: fetch all data in the background ─────────────────────────────
     await loadUserData();
     await loadClientTypes();
-    await loadOriginalPrices();   // role-specific — replaces loadMasterPrices()
+    await loadOriginalPrices();
     await loadReferralPrices();
     await loadProviders();
-    buildTables();
-    applyColumnVisibility();
+
+    // ── Step 3: only rebuild DOM if data actually changed ───────────────────
+    const newHash = hashData(allProviders, allClientTypes, originalPrices, referralPrices);
+    const oldHash = localStorage.getItem(PRICE_HASH_KEY);
+
+    if (newHash !== oldHash) {
+        buildTables();
+        applyColumnVisibility();
+        saveToCache(newHash);
+    } else {
+        // Data unchanged — re-apply column visibility on the cached DOM only
+        applyColumnVisibility();
+    }
 }
 
 // ========== Saving Referral Prices ==========
@@ -340,6 +397,9 @@ async function saveAllPrices() {
         });
         if (res.ok) {
             showNotification('Prices saved successfully!', 'success');
+            // Invalidate cache so next page load reflects the new prices
+            localStorage.removeItem(PRICE_CACHE_KEY);
+            localStorage.removeItem(PRICE_HASH_KEY);
             return true;
         } else {
             showNotification('Failed to save', 'error');
@@ -430,7 +490,6 @@ async function saveSellerData() {
     return false;
 }
 
-// ========== LIVE PREVIEW (keep your existing functions) ==========
 function createPreviewSection() {
     const formBody = document.querySelector('.form-body');
     if (!formBody) return;
@@ -441,21 +500,48 @@ function createPreviewSection() {
     previewSection.innerHTML = `
         <h4><i class="fas fa-eye"></i> Live Preview – Your Store (Customer View)</h4>
         <div class="customer-preview-wrapper">
+            <!-- Desktop sidebar (hidden on mobile via CSS) -->
             <div class="preview-sidebar">
                 <div class="preview-sidebar-header">
                     <div class="preview-sidebar-logo"><img src="default-logo.png" alt="Logo" id="preview-sidebar-logo"></div>
                     <div class="preview-sidebar-title" id="preview-sidebar-name">Youngster Data Shop</div>
                 </div>
-                <div class="preview-sidebar-menu"><div class="preview-sidebar-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</div></div>
+                <ul class="preview-sidebar-menu">
+                    <div class="preview-sidebar-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</div>
+                    <div class="preview-sidebar-item"><i class="fas fa-shopping-cart"></i> Orders</div>
+                    <div class="preview-sidebar-item"><i class="fas fa-exchange-alt"></i> Transactions</div>
+                </ul>
             </div>
+
             <div class="customer-preview-container">
-                <div class="preview-header"><div class="preview-header-title"><h1 class="preview-store-name" id="preview-business-name">Youngster Data Shop</h1><p class="preview-store-desc" id="preview-store-desc">Your trusted partner for data services</p></div></div>
+                <!-- Mobile-only: floating overlay sidebar + button -->
+                <button class="preview-mobile-menu-btn" id="previewMobileMenuBtn" aria-label="Open menu">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="preview-mobile-overlay" id="previewMobileOverlay"></div>
+                <div class="preview-mobile-sidebar" id="previewMobileSidebar">
+                    <div class="preview-mobile-sidebar-header">
+                        <div class="preview-mobile-sidebar-logo"><img src="default-logo.png" alt="Logo" id="preview-mobile-logo"></div>
+                        <span class="preview-mobile-sidebar-title" id="preview-mobile-name">Youngster Data Shop</span>
+                        <button class="preview-mobile-close" id="previewMobileClose"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div class="preview-mobile-menu-item active"><i class="fas fa-tachometer-alt"></i> Dashboard</div>
+                    <div class="preview-mobile-menu-item"><i class="fas fa-shopping-cart"></i> Orders</div>
+                    <div class="preview-mobile-menu-item"><i class="fas fa-exchange-alt"></i> Transactions</div>
+                </div>
+
+                <div class="preview-header">
+                    <h1 class="preview-store-name" id="preview-business-name">Youngster Data Shop</h1>
+                    <p class="preview-store-desc" id="preview-store-desc">Your trusted partner for data services</p>
+                </div>
                 <div class="preview-content">
                     <h2 class="preview-section-title"><i class="fas fa-wifi"></i> Buy Data Bundles</h2>
-                    <div class="preview-network-cards"><div class="preview-network-card"><div class="preview-network-logo"><img src="mtn-logo (1).png"></div><div class="preview-network-info"><div class="preview-network-name">MTNUP2U</div><div class="preview-network-tagline">Normal Delivery</div></div><i class="fas fa-chevron-right"></i></div>
-                    <div class="preview-network-card"><div class="preview-network-logo"><img src="telecel.jpg"></div><div class="preview-network-info"><div class="preview-network-name">Telecel Data</div><div class="preview-network-tagline">Swift Delivery</div></div><i class="fas fa-chevron-right"></i></div>
-                    <div class="preview-network-card"><div class="preview-network-logo"><img src="at.webp"></div><div class="preview-network-info"><div class="preview-network-name">AT Ishare</div><div class="preview-network-tagline">Instant Delivery</div></div><i class="fas fa-chevron-right"></i></div>
-                    <div class="preview-network-card"><div class="preview-network-logo"><img src="at.webp"></div><div class="preview-network-info"><div class="preview-network-name">AT Bigtime</div><div class="preview-network-tagline">Normal Delivery</div></div><i class="fas fa-chevron-right"></i></div></div>
+                    <div class="preview-network-cards">
+                        <div class="preview-network-card"><div class="preview-network-logo"><img src="mtn-logo (1).png"></div><div class="preview-network-info"><div class="preview-network-name">MTNUP2U</div><div class="preview-network-tagline">Normal Delivery</div></div><i class="fas fa-chevron-right"></i></div>
+                        <div class="preview-network-card"><div class="preview-network-logo"><img src="telecel.jpg"></div><div class="preview-network-info"><div class="preview-network-name">Telecel Data</div><div class="preview-network-tagline">Swift Delivery</div></div><i class="fas fa-chevron-right"></i></div>
+                        <div class="preview-network-card"><div class="preview-network-logo"><img src="at.webp"></div><div class="preview-network-info"><div class="preview-network-name">AT Ishare</div><div class="preview-network-tagline">Instant Delivery</div></div><i class="fas fa-chevron-right"></i></div>
+                        <div class="preview-network-card"><div class="preview-network-logo"><img src="at.webp"></div><div class="preview-network-info"><div class="preview-network-name">AT Bigtime</div><div class="preview-network-tagline">Normal Delivery</div></div><i class="fas fa-chevron-right"></i></div>
+                    </div>
                     <h2 class="preview-section-title"><i class="fas fa-gift"></i> Special Offers</h2>
                     <div class="preview-special-offers">
                         <div class="preview-network-card"><div class="preview-network-logo"><img src="MTN-PR-15 (1).png"></div><div class="preview-network-info"><div class="preview-network-name">MTN AFA</div><div class="preview-network-tagline">Registration within 24 hours</div></div><i class="fas fa-chevron-right"></i></div>
@@ -475,6 +561,17 @@ function createPreviewSection() {
         </div>
     `;
     formBody.appendChild(previewSection);
+
+    // Wire up mobile sidebar toggle inside the preview
+    const mobileMenuBtn  = document.getElementById('previewMobileMenuBtn');
+    const mobileOverlay  = document.getElementById('previewMobileOverlay');
+    const mobileSidebar  = document.getElementById('previewMobileSidebar');
+    const mobileClose    = document.getElementById('previewMobileClose');
+    const openMobile  = () => { mobileSidebar?.classList.add('open');  mobileOverlay?.classList.add('open'); };
+    const closeMobile = () => { mobileSidebar?.classList.remove('open'); mobileOverlay?.classList.remove('open'); };
+    mobileMenuBtn?.addEventListener('click', openMobile);
+    mobileClose?.addEventListener('click', closeMobile);
+    mobileOverlay?.addEventListener('click', closeMobile);
 }
 
 function updatePreviewBadge() {
@@ -490,12 +587,20 @@ function updatePreviewBadge() {
     if (previewDesc && description) previewDesc.textContent = description.value.trim() || 'Your trusted partner for data services';
     const previewSidebarName = document.getElementById('preview-sidebar-name');
     if (previewSidebarName && businessName) previewSidebarName.textContent = businessName.value.trim() || 'Youngster Data Shop';
+    // Keep mobile sidebar name in sync too
+    const mobilePreviewName = document.getElementById('preview-mobile-name');
+    if (mobilePreviewName && businessName) mobilePreviewName.textContent = businessName.value.trim() || 'Youngster Data Shop';
     const previewSidebarLogo = document.getElementById('preview-sidebar-logo');
     if (previewSidebarLogo && logoPreview && logoPreview.src && !logoPreview.src.includes('default-logo.png')) {
         previewSidebarLogo.src = logoPreview.src;
     } else if (previewSidebarLogo) {
         const sidebarLogo = document.querySelector('.brand-logo img')?.src;
         previewSidebarLogo.src = sidebarLogo || 'default-logo.png';
+    }
+    // Keep mobile logo in sync too
+    const mobilePreviewLogo = document.getElementById('preview-mobile-logo');
+    if (mobilePreviewLogo) {
+        mobilePreviewLogo.src = previewSidebarLogo?.src || 'default-logo.png';
     }
     const previewGroupBtn = document.getElementById('preview-group-btn');
     if (previewGroupBtn && groupLink) {
