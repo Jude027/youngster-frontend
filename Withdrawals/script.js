@@ -77,13 +77,42 @@ function hideNotification() {
 }
 window.hideNotification = hideNotification;
 
+// Inject skeleton CSS once
+(function injectSkeletonCSS() {
+    if (document.getElementById('skeleton-style')) return;
+    const s = document.createElement('style');
+    s.id = 'skeleton-style';
+    s.textContent = `
+        @keyframes skeleton-shimmer {
+            0%   { background-position: -400px 0; }
+            100% { background-position:  400px 0; }
+        }
+        .skeleton-cell {
+            display: inline-block;
+            width: 100%;
+            height: 14px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
+            background-size: 400px 100%;
+            animation: skeleton-shimmer 1.4s ease infinite;
+        }
+    `;
+    document.head.appendChild(s);
+})();
+
 // Fetch balance and pending withdrawals
 async function loadBalanceAndInfo() {
+    const balanceElement = document.querySelector('.balance-amount');
+
+    // Show shimmer immediately — before any network call
+    if (balanceElement) {
+        balanceElement.innerHTML = '<span class="skeleton-cell" style="width:140px;height:22px;display:inline-block;vertical-align:middle;"></span>';
+    }
+
     try {
         const res = await fetch(`${API_BASE}/balance`, { headers: authHeaders() });
         if (!res.ok) throw new Error();
         const data = await res.json();
-        const balanceElement = document.querySelector('.balance-amount');
         if (balanceElement) {
             let pendingText = data.pendingWithdrawals > 0 ? `<span class="balance-change">(GHS ${data.pendingWithdrawals.toFixed(2)} pending)</span>` : '';
             balanceElement.innerHTML = `GHS ${data.availableBalance.toFixed(2)} ${pendingText}`;
