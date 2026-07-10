@@ -1,4 +1,5 @@
-// transactions.js – Wallet Top-Up orders
+// transactions.js – Dealer platform (My Store)
+// Sidebar branding is hardcoded in the HTML — no dynamic overrides here.
 const API_BASE = (() => {
     const h = window.location.hostname;
     return (h === 'localhost' || h === '127.0.0.1')
@@ -9,10 +10,6 @@ const API_BASE = (() => {
 function authHeaders() {
     const token = localStorage.getItem('token');
     return { 'Authorization': `Bearer ${token}` };
-}
-
-function isGuestVisitor() {
-    return !localStorage.getItem('token') && !!localStorage.getItem('guestSessionId');
 }
 
 let allTransactions = [];
@@ -36,8 +33,6 @@ function isOrderTransaction(txn) {
 }
 
 // ── Skeleton loader ────────────────────────────────────────────────────────────
-// Shows animated placeholder rows immediately so the table is never blank
-// while waiting for the API response.
 const TXN_SKELETON_ROW = `
     <tr class="skeleton-row">
         <td><span class="skeleton-cell"></span></td>
@@ -56,55 +51,19 @@ function showSkeletonRows() {
     if (mobile) mobile.innerHTML = '';
 }
 
-// ── Branding cache ─────────────────────────────────────────────────────────────
-// Reads storeBrandName / storeBrandLogo from localStorage and applies them
-// synchronously — zero network delay, eliminates the default-name flash.
-// Keys are written by applyStoreBranding() after every successful API fetch.
-function applyBrandingFromCache() {
-    const name = localStorage.getItem('storeBrandName');
-    const logo = localStorage.getItem('storeBrandLogo');
-    if (!name && !logo) return;
-    if (name) {
-        document.title = name + ' — Transactions';
-        const t = document.getElementById('sidebarTitle');
-        if (t) t.textContent = name;
-    }
-    const l = document.getElementById('sidebarLogo');
-    if (l) {
-        if (logo) {
-            l.innerHTML = `<img src="${logo}" alt="${name || ''} Logo"
-                style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-        } else if (name) {
-            l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
-                width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-                ${name.charAt(0).toUpperCase()}</span>`;
-        }
-    }
-}
-
 // ── Data fetch ─────────────────────────────────────────────────────────────────
 async function fetchTransactions() {
-    showSkeletonRows(); // instant feedback before network call
+    showSkeletonRows();
     try {
-        let transactions;
-
-        if (isGuestVisitor()) {
-            const guestSessionId = localStorage.getItem('guestSessionId');
-            const storeSlug      = localStorage.getItem('storeSlug');
-            if (!guestSessionId || !storeSlug) { renderTransactions([]); return; }
-            const res = await fetch(
-                `${API_BASE}/guest/transactions?guestSessionId=${encodeURIComponent(guestSessionId)}&store=${encodeURIComponent(storeSlug)}`,
-                { headers: { 'Content-Type': 'application/json' } }
-            );
-            if (!res.ok) throw new Error('Failed to load transactions');
-            transactions = await res.json();
-        } else {
-            const res = await fetch(`${API_BASE}/transactions`, { headers: authHeaders() });
-            if (!res.ok) throw new Error();
-            transactions = await res.json();
+        const res = await fetch(`${API_BASE}/transactions`, { headers: authHeaders() });
+        if (res.status === 401 || res.status === 403) {
+            localStorage.clear();
+            window.location.href = '../Registration form/login_and_signup.html';
+            return;
         }
-
-        allTransactions = transactions.filter(isOrderTransaction);
+        if (!res.ok) throw new Error();
+        const all = await res.json();
+        allTransactions = all.filter(isOrderTransaction);
         renderTransactions(allTransactions);
     } catch (err) {
         console.error(err);
@@ -208,20 +167,9 @@ function initializeSidebar() {
 
     closeBtn?.addEventListener('click', closeSidebar);
     overlay?.addEventListener('click', closeSidebar);
-    document.querySelectorAll('.menu-item:not(#dashboardMenuLink)').forEach(item =>
+    document.querySelectorAll('.menu-item').forEach(item =>
         item.addEventListener('click', closeSidebar)
     );
-
-    const dashboardLink = document.getElementById('dashboardMenuLink');
-    if (dashboardLink) {
-        dashboardLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeSidebar();
-            const slug = localStorage.getItem('storeSlug');
-            const base = '../Dashboard/dashboard2.html';
-            window.location.href = slug ? `${base}?store=${encodeURIComponent(slug)}` : base;
-        });
-    }
 }
 
 function initializeLogout() {
@@ -255,64 +203,12 @@ function initializeRefresh() {
     if (refreshBtn) refreshBtn.addEventListener('click', () => fetchTransactions());
 }
 
-// ── Branding fetch (runs in background, writes cache for next visit) ───────────
-async function applyStoreBranding() {
-    try {
-        const token     = localStorage.getItem('token');
-        const storeSlug = localStorage.getItem('storeSlug');
-        let store;
-
-        if (token) {
-            const res = await fetch(`${API_BASE}/store-settings`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                cache: 'no-store'
-            });
-            if (!res.ok) return;
-            store = await res.json();
-            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
-        } else if (storeSlug) {
-            const res = await fetch(`${API_BASE}/storefront/${encodeURIComponent(storeSlug)}`);
-            if (!res.ok) return;
-            store = await res.json();
-        } else {
-            return;
-        }
-
-        // Persist for instant display on next page load
-        if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
-        if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
-        else                  localStorage.removeItem('storeBrandLogo');
-        if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
-
-        if (store.storeName) {
-            document.title = store.storeName + ' — Transactions';
-            const t = document.getElementById('sidebarTitle');
-            if (t) t.textContent = store.storeName;
-        }
-        const l = document.getElementById('sidebarLogo');
-        if (l) {
-            if (store.storeLogo) {
-                l.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName || ''} Logo"
-                    style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-            } else if (store.storeName) {
-                l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
-                    width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-                    ${store.storeName.charAt(0).toUpperCase()}</span>`;
-            }
-        }
-    } catch (err) {
-        console.warn('Could not load store branding:', err);
-    }
-}
-
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('token') && !localStorage.getItem('guestSessionId')) {
+    if (!localStorage.getItem('token')) {
         window.location.href = '../Registration form/login_and_signup.html';
         return;
     }
-    // 1. Apply cached branding instantly — no network needed, no flash
-    applyBrandingFromCache();
     initializeTheme();
     initializeSidebar();
     initializeLogout();
