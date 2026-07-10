@@ -1105,7 +1105,9 @@ async function loadConfiguredProviders() {
                     headers: authHeaders()
                 });
                 const data = await configRes.json();
-                // Mark as configured if any apiConfig fields are set (not just when enabled)
+                // Mark as configured if any meaningful apiConfig fields are set,
+                // not just when enabled:true — a provider with saved-but-disabled
+                // config should still appear as configured in the UI.
                 const cfg = data.apiConfig || {};
                 if (cfg.baseUrl || cfg.orderEndpoint || cfg.authHeaderValue) {
                     configuredProviders[provider.name] = true;
