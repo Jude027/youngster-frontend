@@ -11,11 +11,6 @@ function authHeaders() {
     return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
-// Returns true if the visitor is a guest (came via a referral link, no login)
-function isGuestVisitor() {
-    return !localStorage.getItem('token') && !!localStorage.getItem('guestSessionId');
-}
-
 // Theme initialization helper
 function initializeTheme() {
     const savedTheme = localStorage.getItem('theme');
@@ -23,8 +18,6 @@ function initializeTheme() {
 }
 
 // ── Skeleton loader ────────────────────────────────────────────────────────────
-// Shows placeholder rows immediately so the table never appears blank while
-// waiting for the API response.
 const SKELETON_ROW = `
     <tr class="skeleton-row">
         <td><span class="skeleton-cell"></span></td>
@@ -43,31 +36,6 @@ function showSkeletonRows(count = 6) {
     tbody.innerHTML = Array(count).fill(SKELETON_ROW).join('');
 }
 
-// ── Branding cache ─────────────────────────────────────────────────────────────
-// Apply cached branding from localStorage immediately — zero network delay.
-// Keys are written by applyUserStoreBranding() after every successful API fetch.
-function applyBrandingFromCache() {
-    const name = localStorage.getItem('storeBrandName');
-    const logo = localStorage.getItem('storeBrandLogo');
-    if (!name && !logo) return;
-    if (name) {
-        document.title = name + ' — Orders';
-        const t = document.getElementById('sidebarTitle');
-        if (t) t.textContent = name;
-    }
-    const l = document.getElementById('sidebarLogo');
-    if (l) {
-        if (logo) {
-            l.innerHTML = `<img src="${logo}" alt="${name || ''} Logo"
-                style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-        } else if (name) {
-            l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
-                width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-                ${name.charAt(0).toUpperCase()}</span>`;
-        }
-    }
-}
-
 // Sidebar Navigation controller
 function initializeSidebar() {
     const menuBtn = document.getElementById('menuBtn');
@@ -78,27 +46,25 @@ function initializeSidebar() {
     menuBtn.addEventListener('click', () => {
         sidebar.classList.add('open');
         overlay?.classList.add('open');
+        document.body.classList.add('sidebar-open');
     });
     const closeSidebar = () => {
         sidebar.classList.remove('open');
         overlay?.classList.remove('open');
+        document.body.classList.remove('sidebar-open');
     };
     closeBtn?.addEventListener('click', closeSidebar);
     overlay?.addEventListener('click', closeSidebar);
-    // Exclude dashboardMenuLink — it handles its own navigation
     document.querySelectorAll('.menu-item:not(#dashboardMenuLink)').forEach(item =>
         item.addEventListener('click', closeSidebar)
     );
 
-    // Dashboard link — navigate back to the store dashboard, preserving slug for guests
     const dashboardLink = document.getElementById('dashboardMenuLink');
     if (dashboardLink) {
         dashboardLink.addEventListener('click', (e) => {
             e.preventDefault();
             closeSidebar();
-            const slug = localStorage.getItem('storeSlug');
-            const base = '../Dashboard/dashboard2.html';
-            window.location.href = slug ? `${base}?store=${encodeURIComponent(slug)}` : base;
+            window.location.href = '../dashboard2.html';
         });
     }
 }
@@ -117,37 +83,21 @@ function initializeLogout() {
 
 // Async API pull for orders data records
 async function fetchOrders() {
-    // Show skeleton rows immediately — table is never blank while waiting
     showSkeletonRows();
 
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) loadingOverlay.style.display = 'flex';
 
     try {
-        let orders;
-
-        if (isGuestVisitor()) {
-            const guestSessionId = localStorage.getItem('guestSessionId');
-            const storeSlug      = localStorage.getItem('storeSlug');
-            const res = await fetch(
-                `${API_BASE}/guest/orders?guestSessionId=${encodeURIComponent(guestSessionId)}&store=${encodeURIComponent(storeSlug || '')}`,
-                { headers: { 'Content-Type': 'application/json' } }
-            );
-            if (!res.ok) throw new Error('Failed to load your orders');
-            orders = await res.json();
-        } else {
-            const res = await fetch(`${API_BASE}/user/orders`, { headers: authHeaders() });
-            if (res.status === 401 || res.status === 403) {
-                localStorage.clear();
-                alert('Session expired. Please log in again.');
-                window.location.href = '../Registration%20form/login_and_signup.html';
-                return;
-            }
-            if (!res.ok) throw new Error('Failed to load orders');
-            orders = await res.json();
+        const res = await fetch(`${API_BASE}/user/orders`, { headers: authHeaders() });
+        if (res.status === 401 || res.status === 403) {
+            localStorage.clear();
+            alert('Session expired. Please log in again.');
+            window.location.href = '../Registration%20form/login_and_signup.html';
+            return;
         }
-
-        allOrders = orders;
+        if (!res.ok) throw new Error('Failed to load orders');
+        allOrders = await res.json();
         renderOrders(allOrders);
     } catch (err) {
         console.error('Failed to load orders:', err);
@@ -189,33 +139,28 @@ function renderOrders(ordersList) {
         const createdDate   = formatDateTime(order.created);
         const completedDate = formatDateTime(order.completed);
 
-        // packageName comes from referral prices (e.g. "1GB", "2GB")
-        // Only accept values that look like a data size — reject description strings
         const _pkg = order.packageName || order.bundle_size || order.bundleSize || '';
         const bundleSize = /\d/.test(_pkg) && !/payment|purchase|bundle|for\s/i.test(_pkg) ? _pkg : '-';
-        
+
         const statusDisplay = normalizeStatusDisplay(order.status);
         const statusKey = statusDisplay;
-        const statusRaw = statusDisplay.toLowerCase();
 
-        // Status badge colour
         const statusStyle = {
-            'Completed':  'background:#dcfce7;color:#16a34a;',
-            'Complete':   'background:#dcfce7;color:#16a34a;',
-            'Processing': 'background:#dbeafe;color:#1d4ed8;',
-            'Pending':    'background:#fef9c3;color:#854d0e;',
-            'Failed':     'background:#fee2e2;color:#dc2626;',
+            'Completed':           'background:#dcfce7;color:#16a34a;',
+            'Complete':            'background:#dcfce7;color:#16a34a;',
+            'Processing':          'background:#dbeafe;color:#1d4ed8;',
+            'Pending':             'background:#fef9c3;color:#854d0e;',
+            'Failed':              'background:#fee2e2;color:#dc2626;',
             'Cancelled/refunded':  'background:#f3f4f6;color:#6b7280;',
-            'Resolved':   'background:#ede9fe;color:#7c3aed;',
+            'Resolved':            'background:#ede9fe;color:#7c3aed;',
         }[statusKey] || 'background:#f3f4f6;color:#374151;';
 
-        // WhatsApp report button — only active when order is completed
         const isCompleted = statusKey === 'Completed' || statusKey === 'Complete';
         const waMsg = encodeURIComponent(
             `Hello, I'd like a report for my order:\nBeneficiary: ${order.beneficiary || '-'}\nPackage: ${order.package || '-'} ${bundleSize}\nAmount: GHS ${parseFloat(order.amount || 0).toFixed(2)}\nDate: ${createdDate}\nStatus: ${statusDisplay}`
         );
-        const waHref  = `https://wa.me/233${WA_NUMBER.replace(/^0/, '')}?text=${waMsg}`;
-        const waBtn   = isCompleted
+        const waHref = `https://wa.me/233${WA_NUMBER.replace(/^0/, '')}?text=${waMsg}`;
+        const waBtn  = isCompleted
             ? `<a href="${waHref}" target="_blank" class="action-btn" style="display:inline-flex;align-items:center;gap:6px;text-decoration:none;background:#25d366;color:#fff;padding:6px 12px;border-radius:6px;font-size:0.8rem;font-weight:600;">
                    <i class="fab fa-whatsapp"></i> Report
                </a>`
@@ -238,199 +183,93 @@ function renderOrders(ordersList) {
     }).join('');
 }
 
-// Filters implementation core hook layout
+// Filters
 function initializeFilters() {
     const applyBtn = document.getElementById('applyFiltersBtn');
     const resetBtn = document.getElementById('resetFiltersBtn');
     const clearBtn = document.getElementById('clearFiltersBtn');
-    
     if (!applyBtn) return;
 
     applyBtn.addEventListener('click', () => {
-        const statusVal = document.getElementById('statusFilter')?.value || '';
-        const packageVal = document.getElementById('packageFilter')?.value || '';
-        const sortVal = document.getElementById('sortFilter')?.value || 'newest';
+        const statusVal   = document.getElementById('statusFilter')?.value || '';
+        const packageVal  = document.getElementById('packageFilter')?.value || '';
+        const sortVal     = document.getElementById('sortFilter')?.value || 'newest';
         const dateFromVal = document.getElementById('dateFrom')?.value || '';
-        const dateToVal = document.getElementById('dateTo')?.value || '';
+        const dateToVal   = document.getElementById('dateTo')?.value || '';
 
         let filtered = [...allOrders];
+        if (statusVal)   filtered = filtered.filter(o => (o.status || '').toLowerCase() === statusVal.toLowerCase());
+        if (packageVal)  filtered = filtered.filter(o => (o.package || '').toLowerCase().includes(packageVal.toLowerCase()));
+        if (dateFromVal) filtered = filtered.filter(o => o.created && new Date(o.created) >= new Date(dateFromVal));
+        if (dateToVal)   filtered = filtered.filter(o => o.created && new Date(o.created) <= new Date(dateToVal));
 
-        if (statusVal) {
-            filtered = filtered.filter(o => (o.status || '').toLowerCase() === statusVal.toLowerCase());
-        }
-        if (packageVal) {
-            filtered = filtered.filter(o => (o.package || '').toLowerCase().includes(packageVal.toLowerCase()));
-        }
-        if (dateFromVal) {
-            filtered = filtered.filter(o => o.created && new Date(o.created) >= new Date(dateFromVal));
-        }
-        if (dateToVal) {
-            filtered = filtered.filter(o => o.created && new Date(o.created) <= new Date(dateToVal));
-        }
-
-        // Sorting evaluation logic handlers
-        if (sortVal === 'newest') {
-            filtered.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
-        } else if (sortVal === 'oldest') {
-            filtered.sort((a, b) => new Date(a.created || 0) - new Date(b.created || 0));
-        } else if (sortVal === 'amount-high') {
-            filtered.sort((a, b) => parseFloat(b.amount || 0) - parseFloat(a.amount || 0));
-        } else if (sortVal === 'amount-low') {
-            filtered.sort((a, b) => parseFloat(a.amount || 0) - parseFloat(b.amount || 0));
-        }
+        if (sortVal === 'newest')      filtered.sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
+        else if (sortVal === 'oldest') filtered.sort((a, b) => new Date(a.created || 0) - new Date(b.created || 0));
+        else if (sortVal === 'amount-high') filtered.sort((a, b) => parseFloat(b.amount || 0) - parseFloat(a.amount || 0));
+        else if (sortVal === 'amount-low')  filtered.sort((a, b) => parseFloat(a.amount || 0) - parseFloat(b.amount || 0));
 
         renderOrders(filtered);
     });
-    
-    // Reset filters button
-    if (resetBtn) {
-        resetBtn.addEventListener('click', () => {
-            document.getElementById('statusFilter').value = '';
-            document.getElementById('packageFilter').value = '';
-            document.getElementById('sortFilter').value = 'newest';
-            document.getElementById('dateFrom').value = '';
-            document.getElementById('dateTo').value = '';
-            renderOrders(allOrders);
-        });
-    }
-    
-    // Clear filters button
-    if (clearBtn) {
-        clearBtn.addEventListener('click', () => {
-            document.getElementById('statusFilter').value = '';
-            document.getElementById('packageFilter').value = '';
-            document.getElementById('sortFilter').value = 'newest';
-            document.getElementById('dateFrom').value = '';
-            document.getElementById('dateTo').value = '';
-            renderOrders(allOrders);
-        });
-    }
+
+    const reset = () => {
+        document.getElementById('statusFilter').value  = '';
+        document.getElementById('packageFilter').value = '';
+        document.getElementById('sortFilter').value    = 'newest';
+        document.getElementById('dateFrom').value      = '';
+        document.getElementById('dateTo').value        = '';
+        renderOrders(allOrders);
+    };
+    resetBtn?.addEventListener('click', reset);
+    clearBtn?.addEventListener('click', reset);
 }
 
-// Search utility with toggle functionality
+// Search
 function initializeSearch() {
-    // Handle mobile search bar toggle
-    const searchBtn = document.getElementById('searchBtn');
-    const searchBar = document.getElementById('searchBar');
+    const searchBtn   = document.getElementById('searchBtn');
+    const searchBar   = document.getElementById('searchBar');
     const searchInput = document.querySelector('#searchBar .search-input');
-    
-    // Toggle search bar on mobile
     if (searchBtn && searchBar) {
         searchBtn.addEventListener('click', () => {
             searchBar.classList.toggle('open');
-            if (searchBar.classList.contains('open')) {
-                searchInput?.focus();
-            }
+            if (searchBar.classList.contains('open')) searchInput?.focus();
         });
     }
-    
-    // Handle desktop search
     const searchBtnDesktop = document.getElementById('searchBtnDesktop');
     const searchBarDesktop = document.getElementById('searchBarDesktop');
     const searchInputDesktop = document.querySelector('#searchBarDesktop .search-input');
-    
     if (searchBtnDesktop && searchBarDesktop) {
         searchBtnDesktop.addEventListener('click', () => {
             searchBarDesktop.classList.toggle('open');
-            if (searchBarDesktop.classList.contains('open')) {
-                searchInputDesktop?.focus();
-            }
+            if (searchBarDesktop.classList.contains('open')) searchInputDesktop?.focus();
         });
     }
-
-    // Search input listeners for both mobile and desktop
-    const allSearchInputs = document.querySelectorAll('.search-input');
-    allSearchInputs.forEach(input => {
+    document.querySelectorAll('.search-input').forEach(input => {
         input.addEventListener('input', (e) => {
             const term = e.target.value.toLowerCase().trim();
-            if (!term) {
-                renderOrders(allOrders);
-                return;
-            }
-
-            const filtered = allOrders.filter(o => 
-                (o.beneficiary || '').toLowerCase().includes(term) || 
+            if (!term) { renderOrders(allOrders); return; }
+            renderOrders(allOrders.filter(o =>
+                (o.beneficiary || '').toLowerCase().includes(term) ||
                 (o.package || '').toLowerCase().includes(term) ||
                 (o.status || '').toLowerCase().includes(term)
-            );
-            renderOrders(filtered);
+            ));
         });
     });
 }
 
 function initializeRefreshButton() {
     const refreshBtn = document.getElementById('refreshBtn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-            fetchOrders();
-        });
-    }
+    if (refreshBtn) refreshBtn.addEventListener('click', () => fetchOrders());
 }
 
-// Apply store branding — works for both guests (storeSlug) and dealers (token).
-// Saves to cache keys so the next page load is instant with no flash.
-async function applyUserStoreBranding() {
-    try {
-        const token     = localStorage.getItem('token');
-        const storeSlug = localStorage.getItem('storeSlug');
-        let store;
-
-        if (token) {
-            const res = await fetch(`${API_BASE}/store-settings`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                cache: 'no-store'
-            });
-            if (!res.ok) return;
-            store = await res.json();
-            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
-        } else if (storeSlug) {
-            const res = await fetch(`${API_BASE}/storefront/${encodeURIComponent(storeSlug)}`);
-            if (!res.ok) return;
-            store = await res.json();
-        } else {
-            return;
-        }
-
-        if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
-
-        // Persist for instant display on next page load
-        if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
-        if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
-        else                  localStorage.removeItem('storeBrandLogo');
-
-        if (store.storeName) {
-            document.title = store.storeName + ' — Orders';
-            const t = document.getElementById('sidebarTitle');
-            if (t) t.textContent = store.storeName;
-        }
-        const l = document.getElementById('sidebarLogo');
-        if (l) {
-            if (store.storeLogo) {
-                l.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName || ''} Logo"
-                    style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-            } else if (store.storeName) {
-                l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
-                    width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-                    ${store.storeName.charAt(0).toUpperCase()}</span>`;
-            }
-        }
-    } catch (err) {
-        console.warn('Could not load store branding:', err);
-    }
-}
-
-// Bootstrapper listener setup execution
+// Bootstrapper
 document.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('token') && !localStorage.getItem('guestSessionId')) {
+    if (!localStorage.getItem('token')) {
         window.location.href = '../Registration%20form/login_and_signup.html';
         return;
     }
-    // Apply cached branding instantly — eliminates the default name/logo flash
-    applyBrandingFromCache();
     initializeTheme();
     initializeSidebar();
     initializeLogout();
-    applyUserStoreBranding(); // refresh silently in background
     initializeSearch();
     initializeFilters();
     initializeRefreshButton();
