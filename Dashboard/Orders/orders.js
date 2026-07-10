@@ -311,9 +311,36 @@ function initializeRefreshButton() {
     }
 }
 
+// Apply branding immediately from localStorage cache — zero network delay, zero flash.
+// Keys are written by applyUserStoreBranding() after every successful API fetch.
+function applyBrandingFromCache() {
+    const name = localStorage.getItem('storeBrandName');
+    const logo = localStorage.getItem('storeBrandLogo');
+    if (!name && !logo) return;
+
+    if (name) {
+        document.title = name + ' — Orders';
+        const t = document.getElementById('sidebarTitle');
+        if (t) t.textContent = name;
+    }
+    const l = document.getElementById('sidebarLogo');
+    if (l) {
+        if (logo) {
+            l.innerHTML = `<img src="${logo}" alt="${name || ''} Logo"
+                style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+        } else if (name) {
+            l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
+                width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                ${name.charAt(0).toUpperCase()}</span>`;
+        }
+    }
+}
+
 // Apply store branding to the sidebar.
 // For authenticated dealers: fetches from /api/store-settings (uses token).
 // For guests: fetches from /api/storefront/:slug (public, uses storeSlug from localStorage).
+// After a successful fetch, caches storeBrandName + storeBrandLogo so the next
+// page load renders the correct branding before any network call happens.
 async function applyUserStoreBranding() {
     try {
         const token     = localStorage.getItem('token');
@@ -338,6 +365,11 @@ async function applyUserStoreBranding() {
 
         if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
 
+        // Cache branding for instant display on next page load (no flash)
+        if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
+        if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
+        else                  localStorage.removeItem('storeBrandLogo'); // logo removed — clear old cache
+
         const sidebarTitle = document.getElementById('sidebarTitle');
         if (sidebarTitle && store.storeName) sidebarTitle.textContent = store.storeName;
 
@@ -359,6 +391,10 @@ async function applyUserStoreBranding() {
 
 // Bootstrapper listener setup execution
 document.addEventListener('DOMContentLoaded', () => {
+    // Apply cached branding instantly — before any network call — to eliminate
+    // the flash of default "J.D Youngster Enterprise" text/logo.
+    applyBrandingFromCache();
+
     initializeTheme();
     initializeSidebar();
     initializeLogout();
