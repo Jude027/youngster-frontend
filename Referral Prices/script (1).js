@@ -70,6 +70,43 @@ function showNotification(message, type = 'success') {
     setTimeout(() => toast.remove(), 3000);
 }
 
+// ========== Skeleton loader ==========
+// Injected once so the tables show animated placeholders while data loads.
+(function injectSkeletonCSS() {
+    if (document.getElementById('skeleton-style')) return;
+    const s = document.createElement('style');
+    s.id = 'skeleton-style';
+    s.textContent = `
+        @keyframes skeleton-shimmer {
+            0%   { background-position: -400px 0; }
+            100% { background-position:  400px 0; }
+        }
+        .skeleton-row td { padding: 12px 8px; }
+        .skeleton-cell {
+            display: inline-block;
+            width: 100%;
+            height: 13px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #e8e8e8 25%, #f5f5f5 50%, #e8e8e8 75%);
+            background-size: 400px 100%;
+            animation: skeleton-shimmer 1.4s ease infinite;
+        }
+        [data-theme="dark"] .skeleton-cell {
+            background: linear-gradient(90deg, #2d3748 25%, #3a4a60 50%, #2d3748 75%);
+            background-size: 400px 100%;
+        }
+    `;
+    document.head.appendChild(s);
+})();
+
+function showTableSkeleton(container, cols = 5, rows = 4) {
+    const cell = () => `<td><span class="skeleton-cell"></span></td>`;
+    const row  = () => `<tr class="skeleton-row">${Array(cols).fill(cell()).join('')}</tr>`;
+    container.innerHTML = `<table class="pricing-table" style="width:100%;">
+        <tbody>${Array(rows).fill(row()).join('')}</tbody>
+    </table>`;
+}
+
 // ========== Data Models ==========
 let allProviders = [];
 let allClientTypes = [];
@@ -250,6 +287,10 @@ function applyColumnVisibility() {
 }
 
 async function refreshAll() {
+    // Show skeleton placeholders immediately so the page isn't blank while loading
+    const container = document.getElementById('dynamicTablesContainer');
+    if (container) showTableSkeleton(container, 5, 5);
+
     await loadUserData();
     await loadClientTypes();
     await loadOriginalPrices();   // role-specific — replaces loadMasterPrices()
