@@ -768,8 +768,8 @@ body {
     }
     
     .menu-btn, .theme-toggle {
-        width: 40px;
-        height: 45px;
+        width: 45px;
+        height: 43px;
     }
     
     .header-title h1 {
@@ -790,7 +790,7 @@ body {
     }
     
     .network-name {
-        font-size: 1.25rem;
+        font-size: 1rem;
     }
 }
 
