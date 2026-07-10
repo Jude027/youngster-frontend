@@ -329,6 +329,73 @@ function escapeHtml(str) {
 }
 
 // ─── Main init ────────────────────────────────────────────────────────────────
+async function loadReferralMetrics() {
+    // Set all stat values to a loading state immediately
+    const totalEl    = document.getElementById('totalReferralsValue');
+    const activeEl   = document.getElementById('activeReferralsValue');
+    const inactiveEl = document.getElementById('inactiveReferralsValue');
+    const activeList   = document.getElementById('activeReferralsList');
+    const inactiveList = document.getElementById('inactiveReferralsList');
+    const countEl      = document.getElementById('referredUsersCount');
+
+    if (totalEl)    totalEl.textContent    = '—';
+    if (activeEl)   activeEl.textContent   = '—';
+    if (inactiveEl) inactiveEl.textContent = '—';
+
+    try {
+        const res = await authFetch(`${API_BASE}/referral-metrics`, {
+            headers: authHeaders(),
+            cache: 'no-store'
+        });
+        if (!res || !res.ok) return;
+        const data = await res.json();
+
+        if (totalEl)    totalEl.textContent    = data.totalReferrals   ?? 0;
+        if (activeEl)   activeEl.textContent   = data.activeReferrals  ?? 0;
+        if (inactiveEl) inactiveEl.textContent = data.inactiveReferrals ?? 0;
+
+        const total = (data.activeReferrals ?? 0) + (data.inactiveReferrals ?? 0);
+        if (countEl) countEl.textContent = `(${total})`;
+
+        // Render active referrals list
+        if (activeList) {
+            const list = data.activeReferralsList || [];
+            if (list.length === 0) {
+                activeList.innerHTML = '<li style="color:#9ca3af;font-size:0.9rem;">No active referrals yet.</li>';
+            } else {
+                activeList.innerHTML = list.map(r => `
+                    <li style="padding:8px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:500;">${r.label}</span>
+                        <span style="background:#d1fae5;color:#065f46;border-radius:12px;padding:2px 10px;font-size:0.8rem;">
+                            ${r.orderCount} order${r.orderCount !== 1 ? 's' : ''}
+                        </span>
+                    </li>`).join('');
+            }
+        }
+
+        // Render inactive referrals list
+        if (inactiveList) {
+            const list = data.inactiveReferralsList || [];
+            if (list.length === 0) {
+                inactiveList.innerHTML = '<li style="color:#9ca3af;font-size:0.9rem;">No inactive referrals.</li>';
+            } else {
+                inactiveList.innerHTML = list.map(r => `
+                    <li style="padding:8px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:500;">${r.label}</span>
+                        <span style="background:#fee2e2;color:#991b1b;border-radius:12px;padding:2px 10px;font-size:0.8rem;">
+                            ${r.orderCount} order${r.orderCount !== 1 ? 's' : ''}
+                        </span>
+                    </li>`).join('');
+            }
+        }
+    } catch (err) {
+        console.error('Failed to load referral metrics:', err);
+        if (totalEl)    totalEl.textContent    = '0';
+        if (activeEl)   activeEl.textContent   = '0';
+        if (inactiveEl) inactiveEl.textContent = '0';
+    }
+}
+
 async function initializeAndLoadLinks() {
     const container = document.getElementById('referralLinksContainer');
     if (container) {
@@ -340,8 +407,11 @@ async function initializeAndLoadLinks() {
 
     const { permittedClientTypes, storeSlug } = await loadPermittedClientTypes();
 
-    // Load live balance data for the referral dashboard.
-    await loadReferralBalance();
+    // Load live balance data and referral metrics in parallel
+    await Promise.all([
+        loadReferralBalance(),
+        loadReferralMetrics(),
+    ]);
 
     // Render the correct link sections based on admin-configured permissions.
     renderReferralLinkSections(permittedClientTypes, storeSlug);
