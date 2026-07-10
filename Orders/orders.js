@@ -1,16 +1,71 @@
-// orders.js – All Orders page
-const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
-let allOrders = []; // Global collection array holding all state elements
+const API_BASE = (() => {
+    const h = window.location.hostname;
+    return (h === 'localhost' || h === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://youngster-backend-production.up.railway.app/api';
+})();
+let allOrders = [];
 
 function authHeaders() {
     const token = localStorage.getItem('token');
     return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 }
 
+// Returns true if the visitor is a guest (came via a referral link, no login)
+function isGuestVisitor() {
+    return !localStorage.getItem('token') && !!localStorage.getItem('guestSessionId');
+}
+
 // Theme initialization helper
 function initializeTheme() {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+}
+
+// ── Skeleton loader ────────────────────────────────────────────────────────────
+// Shows placeholder rows immediately so the table never appears blank while
+// waiting for the API response.
+const SKELETON_ROW = `
+    <tr class="skeleton-row">
+        <td><span class="skeleton-cell"></span></td>
+        <td><span class="skeleton-cell"></span></td>
+        <td><span class="skeleton-cell" style="width:60px;"></span></td>
+        <td><span class="skeleton-cell" style="width:50px;"></span></td>
+        <td><span class="skeleton-cell" style="width:110px;"></span></td>
+        <td><span class="skeleton-cell" style="width:110px;"></span></td>
+        <td><span class="skeleton-cell" style="width:80px;border-radius:20px;"></span></td>
+        <td><span class="skeleton-cell" style="width:70px;border-radius:6px;"></span></td>
+    </tr>`;
+
+function showSkeletonRows(count = 6) {
+    const tbody = document.getElementById('ordersTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = Array(count).fill(SKELETON_ROW).join('');
+}
+
+// ── Branding cache ─────────────────────────────────────────────────────────────
+// Apply cached branding from localStorage immediately — zero network delay.
+// Keys are written by applyUserStoreBranding() after every successful API fetch.
+function applyBrandingFromCache() {
+    const name = localStorage.getItem('storeBrandName');
+    const logo = localStorage.getItem('storeBrandLogo');
+    if (!name && !logo) return;
+    if (name) {
+        document.title = name + ' — Orders';
+        const t = document.getElementById('sidebarTitle');
+        if (t) t.textContent = name;
+    }
+    const l = document.getElementById('sidebarLogo');
+    if (l) {
+        if (logo) {
+            l.innerHTML = `<img src="${logo}" alt="${name || ''} Logo"
+                style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+        } else if (name) {
+            l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
+                width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                ${name.charAt(0).toUpperCase()}</span>`;
+        }
+    }
 }
 
 // Sidebar Navigation controller
@@ -35,13 +90,15 @@ function initializeSidebar() {
         item.addEventListener('click', closeSidebar)
     );
 
-    // Dashboard link — navigate to default dashboard
+    // Dashboard link — navigate back to the store dashboard, preserving slug for guests
     const dashboardLink = document.getElementById('dashboardMenuLink');
     if (dashboardLink) {
         dashboardLink.addEventListener('click', (e) => {
             e.preventDefault();
             closeSidebar();
-            window.location.href = '../Dashboard/dashboard2.html';
+            const slug = localStorage.getItem('storeSlug');
+            const base = '../Dashboard/dashboard2.html';
+            window.location.href = slug ? `${base}?store=${encodeURIComponent(slug)}` : base;
         });
     }
 }
@@ -60,24 +117,41 @@ function initializeLogout() {
 
 // Async API pull for orders data records
 async function fetchOrders() {
+    // Show skeleton rows immediately — table is never blank while waiting
+    showSkeletonRows();
+
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) loadingOverlay.style.display = 'flex';
 
     try {
-        // Fetch user's orders from the API
-        const res = await fetch(`${API_BASE}/user/orders`, { headers: authHeaders() });
-        if (res.status === 401 || res.status === 403) {
-            localStorage.clear();
-            alert('Session expired. Please log in again.');
-            window.location.href = '../Registration%20form/login_and_signup.html';
-            return;
+        let orders;
+
+        if (isGuestVisitor()) {
+            const guestSessionId = localStorage.getItem('guestSessionId');
+            const storeSlug      = localStorage.getItem('storeSlug');
+            const res = await fetch(
+                `${API_BASE}/guest/orders?guestSessionId=${encodeURIComponent(guestSessionId)}&store=${encodeURIComponent(storeSlug || '')}`,
+                { headers: { 'Content-Type': 'application/json' } }
+            );
+            if (!res.ok) throw new Error('Failed to load your orders');
+            orders = await res.json();
+        } else {
+            const res = await fetch(`${API_BASE}/user/orders`, { headers: authHeaders() });
+            if (res.status === 401 || res.status === 403) {
+                localStorage.clear();
+                alert('Session expired. Please log in again.');
+                window.location.href = '../Registration%20form/login_and_signup.html';
+                return;
+            }
+            if (!res.ok) throw new Error('Failed to load orders');
+            orders = await res.json();
         }
-        if (!res.ok) throw new Error('Failed to capture orders from API data backend');
-        allOrders = await res.json();
+
+        allOrders = orders;
         renderOrders(allOrders);
     } catch (err) {
         console.error('Failed to load orders:', err);
-        renderOrders([]); // Show empty state — no fake demo data
+        renderOrders([]);
     } finally {
         if (loadingOverlay) loadingOverlay.style.display = 'none';
     }
@@ -109,7 +183,7 @@ function renderOrders(ordersList) {
         return;
     }
 
-    const WA_NUMBER = '0501784283'; // Default report WhatsApp number
+    const WA_NUMBER = localStorage.getItem('storeWhatsapp') || '0501784283';
 
     tbody.innerHTML = ordersList.map(order => {
         const createdDate   = formatDateTime(order.created);
@@ -293,16 +367,70 @@ function initializeRefreshButton() {
     }
 }
 
+// Apply store branding — works for both guests (storeSlug) and dealers (token).
+// Saves to cache keys so the next page load is instant with no flash.
+async function applyUserStoreBranding() {
+    try {
+        const token     = localStorage.getItem('token');
+        const storeSlug = localStorage.getItem('storeSlug');
+        let store;
+
+        if (token) {
+            const res = await fetch(`${API_BASE}/store-settings`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                cache: 'no-store'
+            });
+            if (!res.ok) return;
+            store = await res.json();
+            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        } else if (storeSlug) {
+            const res = await fetch(`${API_BASE}/storefront/${encodeURIComponent(storeSlug)}`);
+            if (!res.ok) return;
+            store = await res.json();
+        } else {
+            return;
+        }
+
+        if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
+
+        // Persist for instant display on next page load
+        if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
+        if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
+        else                  localStorage.removeItem('storeBrandLogo');
+
+        if (store.storeName) {
+            document.title = store.storeName + ' — Orders';
+            const t = document.getElementById('sidebarTitle');
+            if (t) t.textContent = store.storeName;
+        }
+        const l = document.getElementById('sidebarLogo');
+        if (l) {
+            if (store.storeLogo) {
+                l.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName || ''} Logo"
+                    style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+            } else if (store.storeName) {
+                l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
+                    width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                    ${store.storeName.charAt(0).toUpperCase()}</span>`;
+            }
+        }
+    } catch (err) {
+        console.warn('Could not load store branding:', err);
+    }
+}
+
 // Bootstrapper listener setup execution
 document.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('token')) {
-        alert('Session expired. Please log in again.');
+    if (!localStorage.getItem('token') && !localStorage.getItem('guestSessionId')) {
         window.location.href = '../Registration%20form/login_and_signup.html';
         return;
     }
+    // Apply cached branding instantly — eliminates the default name/logo flash
+    applyBrandingFromCache();
     initializeTheme();
     initializeSidebar();
     initializeLogout();
+    applyUserStoreBranding(); // refresh silently in background
     initializeSearch();
     initializeFilters();
     initializeRefreshButton();
