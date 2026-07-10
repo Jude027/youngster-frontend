@@ -1105,7 +1105,9 @@ async function loadConfiguredProviders() {
                     headers: authHeaders()
                 });
                 const data = await configRes.json();
-                if (data.apiConfig?.enabled) {
+                // Mark as configured if any apiConfig fields are set (not just when enabled)
+                const cfg = data.apiConfig || {};
+                if (cfg.baseUrl || cfg.orderEndpoint || cfg.authHeaderValue) {
                     configuredProviders[provider.name] = true;
                 }
             } catch (err) {
@@ -1146,31 +1148,44 @@ window.selectProviderAPI = (providerName) => {
     document.getElementById('providerSelect').dispatchEvent(new Event('change'));
 };
 
-// Add New Configuration Button
+// Add New / Edit Configuration Button
+// Opens a provider picker for ANY provider — not just unconfigured ones.
+// This allows re-configuring existing providers and adding new ones.
 document.getElementById('addNewAPIConfigBtn')?.addEventListener('click', async () => {
     try {
         const res = await fetch(`${API_BASE}/providers`, { headers: authHeaders() });
         allProviders = await res.json();
 
-        // Get list of unconfigured providers
-        const unconfigured = allProviders.filter(p => !configuredProviders[p.name]);
-
-        if (unconfigured.length === 0) {
-            alert('All providers already have API configurations!');
+        if (allProviders.length === 0) {
+            alert('No providers found. Add providers first in the Base Prices tab.');
             return;
         }
 
-        // Show selection modal
-        const providerList = unconfigured.map(p => p.name).join('\n');
-        const selected = prompt(`Select a provider to configure:\n\n${providerList}`, unconfigured[0]?.name || '');
+        // Build a clear list showing which ones already have config
+        const providerLines = allProviders.map(p => {
+            const hasConfig = configuredProviders[p.name];
+            return `${p.name}${hasConfig ? ' (configured)' : ''}`;
+        }).join('\n');
 
-        if (selected) {
-            // Set provider dropdown and trigger change to load its config form
-            const select = document.getElementById('providerSelect');
-            if (select) {
-                select.value = selected;
-                select.dispatchEvent(new Event('change'));
-            }
+        const selected = prompt(
+            `Select a provider to configure:\n\n${providerLines}\n\nType the provider name exactly:`,
+            allProviders[0]?.name || ''
+        );
+
+        if (!selected) return;
+
+        // Validate the entered name matches a real provider
+        const match = allProviders.find(p => p.name.toLowerCase() === selected.trim().toLowerCase());
+        if (!match) {
+            alert(`"${selected}" is not a recognised provider. Please type the name exactly as shown.`);
+            return;
+        }
+
+        // Set provider dropdown and trigger change to load its config form
+        const select = document.getElementById('providerSelect');
+        if (select) {
+            select.value = match.name;
+            select.dispatchEvent(new Event('change'));
         }
     } catch (err) {
         console.error(err);
