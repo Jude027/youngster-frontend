@@ -777,7 +777,7 @@ body {
     }
     
     .header-title .subtitle {
-        font-size: 0.95rem;
+        font-size: 0.65rem;
     }
     
     .network-card {
@@ -790,7 +790,7 @@ body {
     }
     
     .network-name {
-        font-size: 1.25rem;
+        font-size: 0.55rem;
     }
 }
 
