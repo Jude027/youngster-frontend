@@ -1,25 +1,17 @@
-<!-- new_orders.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>All Orders - J.D. Youngster Enterprise</title>
-    <meta name="description" content="Login to your J.D. Youngster Enterprise account and enjoy affordable data offers with fast delivery!!!">
-    
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="form_style1.css" type="text/css">
-    <link rel="stylesheet" href="navigator1.css" type="text/css">
-    <link rel="stylesheet" href="login_page.css" type="text/css">
+    <title>My Orders</title>
+    <meta name="description" content="View your order history.">
+
     <link rel="stylesheet" href="orders.css" type="text/css">
-    
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Skeleton loading rows — shown immediately while order data fetches */
         @keyframes skeleton-shimmer {
             0%   { background-position: -400px 0; }
-            100% { background-position: 400px 0; }
+            100% { background-position:  400px 0; }
         }
         .skeleton-row td { padding: 14px 10px; }
         .skeleton-cell {
@@ -36,9 +28,10 @@
             background-size: 400px 100%;
         }
     </style>
-
 </head>
 <body>
+    <div class="overlay" id="overlay"></div>
+
     <!-- Sidebar Navigation -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -47,19 +40,18 @@
             </button>
             <div class="sidebar-title" id="sidebarTitle">J.D Youngster Enterprise</div>
             <div class="brand-logo" id="sidebarLogo">
-                <img src="WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="J.D You Logo">
+                <img src="WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="Store Logo">
             </div>
         </div>
-        <!-- Inline branding cache: runs synchronously so the correct name/logo
-             appears the instant the sidebar is painted — no flash of defaults. -->
+        <!-- Applies cached store branding instantly — no network delay, no flash of defaults -->
         <script>
-            (function() {
+            (function () {
                 var name = localStorage.getItem('storeBrandName');
                 var logo = localStorage.getItem('storeBrandLogo');
                 if (name) {
                     var t = document.getElementById('sidebarTitle');
                     if (t) t.textContent = name;
-                    document.title = name + ' — Orders';
+                    document.title = name + ' \u2014 Orders';
                 }
                 if (logo || name) {
                     var l = document.getElementById('sidebarLogo');
@@ -74,62 +66,44 @@
             })();
         </script>
         <ul class="menu">
-            <!-- Orders -->
-            <a href="../Orders/new_orders.html" class="menu-item active">
+            <!-- Dashboard — preserves ?store= so guests keep their store context -->
+            <a href="../dashboard2.html" class="menu-item" id="dashboardMenuLink">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+
+            <!-- Orders — active -->
+            <a href="#" class="menu-item active">
                 <i class="fas fa-shopping-cart"></i>
                 <span class="menu-text">Orders</span>
             </a>
-            
-            <!-- Transactions -->
-            <a href="../Transactions/transactions2.html" class="menu-item">
+
+            <!-- Transactions — same folder as this file -->
+            <a href="transactions2.html" class="menu-item">
                 <i class="fas fa-exchange-alt"></i>
                 <span class="menu-text">Transactions</span>
             </a>
-            
-            <!-- Referral Prices -->
-            <a href="../Referral%20Prices/dealers_referral_prices.html" class="menu-item">
-                <i class="fas fa-tags"></i>
-                <span class="menu-text">Referral Prices</span>
-            </a>
-            
-            <!-- Referral Prices -->
-            <a href="../Referral links/dealers_referral_program.html" class="menu-item">
-                <i class="fas fa-tags"></i>
-                <span class="menu-text">Referral Links</span>
-            </a>
-
-            <!-- Withdraw Earnings -->
-            <a href="../Withdrawals/withdrawal_page.html" class="menu-item">
-                <i class="fas fa-money-bill-wave"></i>
-                <span class="menu-text">Withdraw Earnings</span>
-            </a>
-            
-            <!-- Log Out -->
-            <li class="menu-item logout" id="logoutBtn">
-                <i class="fas fa-sign-out-alt"></i>
-                <span class="menu-text">Log Out</span>
-            </li>
         </ul>
     </div>
-    
+
     <!-- Main Content -->
     <div class="main-content">
         <div class="orders-container">
             <div class="orders-header">
                 <div class="header-left">
                     <div class="top-row">
-                        <button class="menu-btn" id="menuBtn">
+                        <button class="menu-btn" id="menuBtn" aria-label="Open menu">
                             <i class="fas fa-bars"></i>
                         </button>
                         <div class="header-title-section">
                             <div class="header-title-text">
-                                <h1 class="header-orders-title">All Orders</h1>
-                                <p class="header-orders-subtitle">Manage All your orders here</p>
+                                <h1 class="header-orders-title">My Orders</h1>
+                                <p class="header-orders-subtitle">View your order history</p>
                             </div>
                         </div>
                     </div>
                     <div class="bottom-row">
-                        <button class="search-btn" id="searchBtn">
+                        <button class="search-btn" id="searchBtn" aria-label="Search">
                             <i class="fas fa-search"></i>
                         </button>
                         <div class="search-bar" id="searchBar">
@@ -139,7 +113,7 @@
                 </div>
                 <div class="header-right">
                     <div class="search-container">
-                        <button class="search-btn" id="searchBtnDesktop">
+                        <button class="search-btn" id="searchBtnDesktop" aria-label="Search">
                             <i class="fas fa-search"></i>
                         </button>
                         <div class="search-bar" id="searchBarDesktop">
@@ -148,7 +122,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="orders-content">
                 <div class="table-header">
                     <div class="table-title-section">
@@ -160,11 +134,11 @@
                             <p class="orders-subtitle">Recent orders and their status</p>
                         </div>
                     </div>
-                    <button class="refresh-btn" id="refreshBtn">
+                    <button class="refresh-btn" id="refreshBtn" aria-label="Refresh">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
-                
+
                 <!-- Filters Section -->
                 <div class="filters-section">
                     <div class="filters-header">
@@ -172,30 +146,20 @@
                             <i class="fas fa-filter"></i>
                             Filter Orders
                         </h3>
-                        <button class="clear-filters-btn" id="clearFiltersBtn">
-                            Clear All Filters
-                        </button>
+                        <button class="clear-filters-btn" id="clearFiltersBtn">Clear All Filters</button>
                     </div>
-                    
+
                     <div class="filters-grid">
-                        <!-- Date Range Filter -->
                         <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-calendar"></i>
-                                Date Range
-                            </label>
+                            <label class="filter-label"><i class="fas fa-calendar"></i> Date Range</label>
                             <div class="date-range-container">
                                 <input type="date" class="filter-input" id="dateFrom">
                                 <span>to</span>
                                 <input type="date" class="filter-input" id="dateTo">
                             </div>
                         </div>
-                        
                         <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-tag"></i>
-                                Status
-                            </label>
+                            <label class="filter-label"><i class="fas fa-tag"></i> Status</label>
                             <select class="filter-select" id="statusFilter">
                                 <option value="">All Statuses</option>
                                 <option value="pending">Pending</option>
@@ -206,26 +170,18 @@
                                 <option value="resolved">Resolved</option>
                             </select>
                         </div>
-                        
                         <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-box"></i>
-                                Package Type
-                            </label>
+                            <label class="filter-label"><i class="fas fa-box"></i> Package Type</label>
                             <select class="filter-select" id="packageFilter">
                                 <option value="">All Packages</option>
-                                <option value="MTNUP2U">MTN</option>
+                                <option value="MTN">MTN</option>
                                 <option value="AT">AT</option>
                                 <option value="Telecel">Telecel</option>
                                 <option value="AFA">MTN AFA</option>
                             </select>
                         </div>
-                        
                         <div class="filter-group">
-                            <label class="filter-label">
-                                <i class="fas fa-sort-amount-down"></i>
-                                Sort By
-                            </label>
+                            <label class="filter-label"><i class="fas fa-sort-amount-down"></i> Sort By</label>
                             <select class="filter-select" id="sortFilter">
                                 <option value="newest">Newest First</option>
                                 <option value="oldest">Oldest First</option>
@@ -234,21 +190,19 @@
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="filter-actions">
                         <button class="filter-btn reset" id="resetFiltersBtn">
-                            <i class="fas fa-redo"></i>
-                            Reset
+                            <i class="fas fa-redo"></i> Reset
                         </button>
                         <button class="filter-btn apply" id="applyFiltersBtn">
-                            <i class="fas fa-check"></i>
-                            Apply Filters
+                            <i class="fas fa-check"></i> Apply Filters
                         </button>
                     </div>
                 </div>
-                
-                <!-- Table Container with loading state -->
-                <div style="position: relative;">
+
+                <!-- Desktop Table -->
+                <div style="position:relative;">
                     <table class="orders-table" id="ordersTable">
                         <thead>
                             <tr>
@@ -263,7 +217,7 @@
                             </tr>
                         </thead>
                         <tbody id="ordersTableBody">
-                            <!-- Skeleton rows shown while orders load -->
+                            <!-- Skeleton rows — visible instantly while real data loads -->
                             <tr class="skeleton-row"><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell" style="width:60px;"></span></td><td><span class="skeleton-cell" style="width:50px;"></span></td><td><span class="skeleton-cell" style="width:110px;"></span></td><td><span class="skeleton-cell" style="width:110px;"></span></td><td><span class="skeleton-cell" style="width:80px;border-radius:20px;"></span></td><td><span class="skeleton-cell" style="width:70px;border-radius:6px;"></span></td></tr>
                             <tr class="skeleton-row"><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell" style="width:60px;"></span></td><td><span class="skeleton-cell" style="width:50px;"></span></td><td><span class="skeleton-cell" style="width:110px;"></span></td><td><span class="skeleton-cell" style="width:110px;"></span></td><td><span class="skeleton-cell" style="width:80px;border-radius:20px;"></span></td><td><span class="skeleton-cell" style="width:70px;border-radius:6px;"></span></td></tr>
                             <tr class="skeleton-row"><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell" style="width:60px;"></span></td><td><span class="skeleton-cell" style="width:50px;"></span></td><td><span class="skeleton-cell" style="width:110px;"></span></td><td><span class="skeleton-cell" style="width:110px;"></span></td><td><span class="skeleton-cell" style="width:80px;border-radius:20px;"></span></td><td><span class="skeleton-cell" style="width:70px;border-radius:6px;"></span></td></tr>
@@ -272,16 +226,15 @@
                             <tr class="skeleton-row"><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell" style="width:60px;"></span></td><td><span class="skeleton-cell" style="width:50px;"></span></td><td><span class="skeleton-cell" style="width:110px;"></span></td><td><span class="skeleton-cell" style="width:110px;"></span></td><td><span class="skeleton-cell" style="width:80px;border-radius:20px;"></span></td><td><span class="skeleton-cell" style="width:70px;border-radius:6px;"></span></td></tr>
                         </tbody>
                     </table>
-                    
-                    <!-- Loading overlay -->
-                    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+
+                    <div class="loading-overlay" id="loadingOverlay" style="display:none;">
                         <div class="loading-spinner"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <script src="orders.js"></script>
 </body>
 </html>
