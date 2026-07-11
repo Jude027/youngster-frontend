@@ -1,4 +1,4 @@
-// Admin panel – full management (including Role Price Mapping)
+// Admin panel â€“ full management (including Role Price Mapping)
 const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 let token = localStorage.getItem('token');
 
@@ -120,7 +120,7 @@ function initializeTabSwitching() {
 // ========== DASHBOARD STATS ==========
 async function loadStats() {
     const grid = document.getElementById('statsGrid');
-    grid.innerHTML = '<p style="padding:20px;color:#aaa;">Loading…</p>';
+    grid.innerHTML = '<p style="padding:20px;color:#aaa;">Loadingâ€¦</p>';
     try {
         const res = await fetch(`${API_BASE}/admin/stats`, { headers: authHeaders() });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -203,7 +203,7 @@ window.editUser = async (id) => {
         </div>
         <div class="input-group"><label>Available Balance (GHS)</label><input type="number" id="balance" step="0.01" value="${user.availableBalance || 0}"></div>
         <div class="input-group"><label>Store Name</label><input type="text" id="storeName" value="${user.storeName || ''}"></div>
-        <div class="input-group"><label>Permitted Columns (price‑entry fields on Referral Prices page)</label><br><div id="permittedCheckboxes">${checkboxes}</div></div>
+        <div class="input-group"><label>Permitted Columns (priceâ€‘entry fields on Referral Prices page)</label><br><div id="permittedCheckboxes">${checkboxes}</div></div>
     `, async () => {
         const role = document.getElementById('role').value;
         const availableBalance = parseFloat(document.getElementById('balance').value);
@@ -431,7 +431,7 @@ document.getElementById('addMasterPriceBtn')?.addEventListener('click', () => {
 document.getElementById('refreshMasterPrices')?.addEventListener('click', loadMasterPrices);
 
 // ========== ROLE PRICE MAPPING (NEW) ==========
-// Shows a table: each row = one role → which BasePrice column maps to its "Original Price"
+// Shows a table: each row = one role â†’ which BasePrice column maps to its "Original Price"
 async function loadRoleMappings() {
     const tbody = document.querySelector('#roleMappingTable tbody');
     tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
@@ -472,7 +472,7 @@ async function loadRoleMappings() {
     }
 }
 
-// Open modal to add or edit a role → column mapping
+// Open modal to add or edit a role â†’ column mapping
 async function openRoleMappingModal(existingRole = '', existingColumn = '') {
     await loadClientTypes(); // ensure allClientTypes is fresh
     const roleOptions = allClientTypes
@@ -718,7 +718,7 @@ function renderBasePricesTable() {
     addCell.appendChild(addBtn);
 }
 
-// ── Display Config Modal (generic-package.html customization) ────────────────
+// â”€â”€ Display Config Modal (generic-package.html customization) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function openDisplayConfigModal(providerName) {
     // Find any existing displayConfig for this provider (from first matching row)
     const existing = allBasePrices.find(p => p.provider === providerName && p.displayConfig)?.displayConfig || {};
@@ -761,7 +761,7 @@ async function openDisplayConfigModal(providerName) {
                     <input type="text" id="dcValidPrefixes" value="${existing.validPrefixes || ''}" placeholder="024, 054, 055">
                 </div>
                 <div class="input-group">
-                    <label>Bundle Label (replaces "Bundle" — e.g. "Package", "Plan")</label>
+                    <label>Bundle Label (replaces "Bundle" â€” e.g. "Package", "Plan")</label>
                     <input type="text" id="dcBundleLabel" value="${existing.bundleLabel || 'Bundle'}" placeholder="Bundle">
                 </div>
                 <div class="input-group">
@@ -1106,7 +1106,7 @@ async function loadConfiguredProviders() {
                 });
                 const data = await configRes.json();
                 // Mark as configured if any meaningful apiConfig fields are set,
-                // not just when enabled:true — a provider with saved-but-disabled
+                // not just when enabled:true â€” a provider with saved-but-disabled
                 // config should still appear as configured in the UI.
                 const cfg = data.apiConfig || {};
                 if (cfg.baseUrl || cfg.orderEndpoint || cfg.authHeaderValue) {
@@ -1150,9 +1150,303 @@ window.selectProviderAPI = (providerName) => {
     document.getElementById('providerSelect').dispatchEvent(new Event('change'));
 };
 
-// Add New / Edit Configuration Button
-// Opens a provider picker for ANY provider — not just unconfigured ones.
-// This allows re-configuring existing providers and adding new ones.
+// ========== PROVIDER API CONFIGURATION â€” MULTI-CONFIG ==========
+// State for the currently selected provider and which config slot is active.
+// selectedConfigIndex === -1  â†’ editing the legacy single apiConfig slot
+// selectedConfigIndex >= 0    â†’ editing apiConfigs[selectedConfigIndex]
+let selectedConfigIndex = -1;       // which slot the form is showing
+let loadedApiConfigs    = [];        // full apiConfigs array from the last GET
+let loadedApiConfig     = {};        // legacy single apiConfig from the last GET
+
+// â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+function populateFormFromConfig(config, routing) {
+    const c = config || {};
+    const r = routing || {};
+    document.getElementById('apiEnabled').checked           = c.enabled        || false;
+    document.getElementById('apiConfigName').value          = c.name           || '';
+    document.getElementById('apiType').value                = c.type           || 'bearer-token';
+    document.getElementById('baseUrl').value                = c.baseUrl        || '';
+    document.getElementById('authHeaderName').value         = c.authHeaderName || 'Authorization';
+    document.getElementById('authHeaderValue').value        = c.authHeaderValue|| '';
+    document.getElementById('orderEndpoint').value          = c.orderEndpoint  || '';
+    document.getElementById('orderMethod').value            = c.orderMethod    || 'POST';
+    document.getElementById('statusEndpoint').value         = c.statusEndpoint || '';
+    document.getElementById('balanceEndpoint').value        = c.balanceEndpoint|| '';
+    document.getElementById('successField').value           = c.successField   || 'success';
+    document.getElementById('dataField').value              = c.dataField      || 'data';
+    document.getElementById('phoneFormat').value            = c.phoneFormat    || 'international';
+    document.getElementById('networkKeyOverride').value     = c.networkKey     || '';
+    document.getElementById('capacityAsString').checked     = c.capacityAsString    === true;
+    document.getElementById('forUnverifiedNumbers').checked = c.forUnverifiedNumbers === true;
+    document.getElementById('payloadMapping').value         =
+        c.requestPayloadMapping && Object.keys(c.requestPayloadMapping).length > 0
+            ? JSON.stringify(c.requestPayloadMapping, null, 2) : '';
+    document.getElementById('orderHandler').value   = r.handler       || '';
+    document.getElementById('whatsappMinGb').value  = r.whatsappMinGb ?? '';
+    document.getElementById('whatsappMaxGb').value  = r.whatsappMaxGb ?? '';
+    document.getElementById('apiMinGb').value       = r.apiMinGb      ?? '';
+    document.getElementById('apiMaxGb').value       = r.apiMaxGb      ?? '';
+}
+
+function clearFormFields() {
+    document.getElementById('apiEnabled').checked           = false;
+    document.getElementById('apiConfigName').value          = '';
+    document.getElementById('apiType').value                = 'bearer-token';
+    document.getElementById('baseUrl').value                = '';
+    document.getElementById('authHeaderName').value         = 'Authorization';
+    document.getElementById('authHeaderValue').value        = '';
+    document.getElementById('orderEndpoint').value          = '';
+    document.getElementById('orderMethod').value            = 'POST';
+    document.getElementById('statusEndpoint').value         = '';
+    document.getElementById('balanceEndpoint').value        = '';
+    document.getElementById('successField').value           = 'success';
+    document.getElementById('dataField').value              = 'data';
+    document.getElementById('phoneFormat').value            = 'international';
+    document.getElementById('payloadMapping').value         = '';
+    document.getElementById('networkKeyOverride').value     = '';
+    document.getElementById('capacityAsString').checked     = false;
+    document.getElementById('forUnverifiedNumbers').checked = false;
+    document.getElementById('orderHandler').value           = 'auto';
+    document.getElementById('whatsappMinGb').value          = '';
+    document.getElementById('whatsappMaxGb').value          = '';
+    document.getElementById('apiMinGb').value               = '';
+    document.getElementById('apiMaxGb').value               = '';
+}
+
+// Rebuild the apiConfigSelect dropdown from the loaded configs
+function refreshConfigSelect(selectIndex) {
+    const sel = document.getElementById('apiConfigSelect');
+    if (!sel) return;
+    sel.innerHTML = '';
+
+    // Option 0 â€” legacy single apiConfig
+    const legacyOpt = document.createElement('option');
+    legacyOpt.value = '-1';
+    const legacyName = loadedApiConfig.name || 'Primary Config';
+    legacyOpt.textContent = `[Primary] ${legacyName}${loadedApiConfig.forUnverifiedNumbers ? ' âš  (unverified)' : ''}`;
+    sel.appendChild(legacyOpt);
+
+    // Options 1..N â€” apiConfigs array entries
+    loadedApiConfigs.forEach((cfg, i) => {
+        const opt = document.createElement('option');
+        opt.value = String(i);
+        opt.textContent = `[${i + 1}] ${cfg.name || 'Config ' + (i + 1)}${cfg.forUnverifiedNumbers ? ' âš  (unverified)' : ''}`;
+        sel.appendChild(opt);
+    });
+
+    // Add-new sentinel
+    const addOpt = document.createElement('option');
+    addOpt.value = 'new';
+    addOpt.textContent = '+ Add new configurationâ€¦';
+    sel.appendChild(addOpt);
+
+    sel.value = String(selectIndex);
+}
+
+// â”€â”€ Provider select change â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+document.getElementById('providerSelect')?.addEventListener('change', async (e) => {
+    const providerName = e.target.value;
+    if (!providerName) {
+        document.getElementById('apiConfigForm').style.display = 'none';
+        return;
+    }
+
+    clearFormFields();
+    selectedProviderForAPI = providerName;
+    selectedConfigIndex    = -1;
+
+    try {
+        const res  = await fetch(`${API_BASE}/admin/provider-api-config/${providerName}`, { headers: authHeaders() });
+        const data = await res.json();
+
+        loadedApiConfig  = data.apiConfig  || {};
+        loadedApiConfigs = data.apiConfigs || [];
+        const routing    = data.orderRouting || {};
+
+        // Build the config-selector dropdown
+        refreshConfigSelect(-1);
+
+        // Show the primary (legacy) config in the form by default
+        populateFormFromConfig(loadedApiConfig, routing);
+
+        document.getElementById('apiConfigForm').style.display = 'block';
+        loadAPILogs(providerName);
+    } catch (err) {
+        console.error(err);
+        alert('Could not load provider configuration');
+    }
+});
+
+// â”€â”€ Config selector switch â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+document.getElementById('apiConfigSelect')?.addEventListener('change', async (e) => {
+    const val = e.target.value;
+
+    if (val === 'new') {
+        // User picked "Add new configuration" â€” clear form, set index sentinel
+        clearFormFields();
+        selectedConfigIndex = 'new';
+        document.getElementById('apiConfigName').value = '';
+        document.getElementById('apiConfigName').focus();
+        return;
+    }
+
+    const idx = parseInt(val, 10);
+    selectedConfigIndex = idx;
+
+    if (idx === -1) {
+        // Primary / legacy config
+        const res  = await fetch(`${API_BASE}/admin/provider-api-config/${selectedProviderForAPI}`, { headers: authHeaders() });
+        const data = await res.json();
+        populateFormFromConfig(data.apiConfig || {}, data.orderRouting || {});
+    } else {
+        // Array entry â€” no routing stored at array level, only top-level routing matters
+        populateFormFromConfig(loadedApiConfigs[idx] || {}, {});
+    }
+});
+
+// â”€â”€ Save config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+document.getElementById('saveApiConfig')?.addEventListener('click', async () => {
+    if (!selectedProviderForAPI) { alert('Please select a provider'); return; }
+
+    try {
+        let payloadMapping = {};
+        const mappingText = document.getElementById('payloadMapping').value.trim();
+        if (mappingText) payloadMapping = JSON.parse(mappingText);
+
+        const apiConfig = {
+            name:                  document.getElementById('apiConfigName').value.trim() || 'Default',
+            enabled:               document.getElementById('apiEnabled').checked,
+            type:                  document.getElementById('apiType').value,
+            baseUrl:               document.getElementById('baseUrl').value,
+            authHeaderName:        document.getElementById('authHeaderName').value,
+            authHeaderValue:       document.getElementById('authHeaderValue').value,
+            orderEndpoint:         document.getElementById('orderEndpoint').value,
+            orderMethod:           document.getElementById('orderMethod').value,
+            statusEndpoint:        document.getElementById('statusEndpoint').value,
+            balanceEndpoint:       document.getElementById('balanceEndpoint').value,
+            successField:          document.getElementById('successField').value,
+            dataField:             document.getElementById('dataField').value,
+            phoneFormat:           document.getElementById('phoneFormat').value,
+            requestPayloadMapping: payloadMapping,
+            networkKey:            document.getElementById('networkKeyOverride').value.trim() || undefined,
+            capacityAsString:      document.getElementById('capacityAsString').checked     || undefined,
+            forUnverifiedNumbers:  document.getElementById('forUnverifiedNumbers').checked || undefined,
+        };
+
+        const orderRouting = {
+            handler:       document.getElementById('orderHandler').value,
+            whatsappMinGb: document.getElementById('whatsappMinGb').value,
+            whatsappMaxGb: document.getElementById('whatsappMaxGb').value,
+            apiMinGb:      document.getElementById('apiMinGb').value,
+            apiMaxGb:      document.getElementById('apiMaxGb').value,
+        };
+
+        let res, result;
+
+        if (selectedConfigIndex === 'new') {
+            // POST â€” create new entry in apiConfigs array
+            res = await fetch(`${API_BASE}/admin/provider-api-configs/${selectedProviderForAPI}`, {
+                method: 'POST',
+                headers: authHeaders(),
+                body: JSON.stringify({ apiConfig })
+            });
+            result = await res.json();
+            if (res.ok) {
+                loadedApiConfigs = result.apiConfigs;
+                selectedConfigIndex = result.index;
+                refreshConfigSelect(result.index);
+                alert(`Configuration "${apiConfig.name}" added successfully.`);
+            } else {
+                alert('Error: ' + result.message);
+            }
+
+        } else if (selectedConfigIndex >= 0) {
+            // PUT â€” update existing apiConfigs[index]
+            res = await fetch(`${API_BASE}/admin/provider-api-configs/${selectedProviderForAPI}/${selectedConfigIndex}`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ apiConfig })
+            });
+            result = await res.json();
+            if (res.ok) {
+                loadedApiConfigs = result.apiConfigs;
+                refreshConfigSelect(selectedConfigIndex);
+                alert(`Configuration "${apiConfig.name}" updated.`);
+            } else {
+                alert('Error: ' + result.message);
+            }
+
+        } else {
+            // PUT â€” update legacy single apiConfig (index === -1)
+            res = await fetch(`${API_BASE}/admin/provider-api-config/${selectedProviderForAPI}`, {
+                method: 'PUT',
+                headers: authHeaders(),
+                body: JSON.stringify({ apiConfig, orderRouting })
+            });
+            result = await res.json();
+            if (res.ok) {
+                loadedApiConfig = apiConfig;
+                refreshConfigSelect(-1);
+                alert(result.message || 'Configuration saved.');
+            } else {
+                alert('Error: ' + (result.message || 'Save failed'));
+            }
+        }
+
+        await loadConfiguredProviders();
+    } catch (err) {
+        console.error(err);
+        alert('Error saving configuration: ' + err.message);
+    }
+});
+
+// â”€â”€ Delete config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
+async function deleteSelectedConfig() {
+    if (!selectedProviderForAPI) return;
+
+    if (selectedConfigIndex === -1) {
+        alert('The primary configuration cannot be deleted. You can disable it by unchecking "Enable API Integration".');
+        return;
+    }
+    if (selectedConfigIndex === 'new') {
+        // Nothing was saved yet â€” just switch back to primary
+        document.getElementById('apiConfigSelect').value = '-1';
+        document.getElementById('apiConfigSelect').dispatchEvent(new Event('change'));
+        return;
+    }
+
+    const cfg = loadedApiConfigs[selectedConfigIndex];
+    if (!confirm(`Delete configuration "${cfg?.name || 'Config ' + (selectedConfigIndex + 1)}"? This cannot be undone.`)) return;
+
+    try {
+        const res = await fetch(
+            `${API_BASE}/admin/provider-api-configs/${selectedProviderForAPI}/${selectedConfigIndex}`,
+            { method: 'DELETE', headers: authHeaders() }
+        );
+        const result = await res.json();
+        if (!res.ok) { alert('Error: ' + result.message); return; }
+
+        loadedApiConfigs = result.apiConfigs;
+        selectedConfigIndex = -1;
+        refreshConfigSelect(-1);
+        // Show primary config
+        const data = await (await fetch(`${API_BASE}/admin/provider-api-config/${selectedProviderForAPI}`, { headers: authHeaders() })).json();
+        populateFormFromConfig(data.apiConfig || {}, data.orderRouting || {});
+        alert('Configuration deleted.');
+        await loadConfiguredProviders();
+    } catch (err) {
+        alert('Error deleting configuration: ' + err.message);
+    }
+}
+window.deleteSelectedConfig = deleteSelectedConfig;
+
+// â”€â”€ Add New Configuration Button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+
 document.getElementById('addNewAPIConfigBtn')?.addEventListener('click', async () => {
     try {
         const res = await fetch(`${API_BASE}/providers`, { headers: authHeaders() });
@@ -1163,251 +1457,45 @@ document.getElementById('addNewAPIConfigBtn')?.addEventListener('click', async (
             return;
         }
 
-        // Build a clear list showing which ones already have config
         const providerLines = allProviders.map(p => {
             const hasConfig = configuredProviders[p.name];
-            return `${p.name}${hasConfig ? ' (configured)' : ''}`;
+            return `${p.name}${hasConfig ? ' (has config)' : ' (new)'}`;
         }).join('\n');
 
         const selected = prompt(
-            `Select a provider to configure:\n\n${providerLines}\n\nType the provider name exactly:`,
-            allProviders[0]?.name || ''
+            `Type the exact provider name to configure:\n\n${providerLines}`,
+            ''
         );
-
         if (!selected) return;
 
-        // Validate the entered name matches a real provider
-        const match = allProviders.find(p => p.name.toLowerCase() === selected.trim().toLowerCase());
+        const match = allProviders.find(p => p.name === selected.trim())
+                   || allProviders.find(p => p.name.toLowerCase() === selected.trim().toLowerCase());
+
         if (!match) {
-            alert(`"${selected}" is not a recognised provider. Please type the name exactly as shown.`);
+            alert(`"${selected}" is not a recognised provider.\n\nAvailable:\n${allProviders.map(p => p.name).join('\n')}`);
             return;
         }
 
-        // Set provider dropdown and trigger change to load its config form
-        const select = document.getElementById('providerSelect');
-        if (select) {
-            select.value = match.name;
-            select.dispatchEvent(new Event('change'));
+        // Select the provider in the dropdown â€” this triggers the change handler
+        // which loads all existing configs and shows the form.
+        const provSelect = document.getElementById('providerSelect');
+        if (provSelect) {
+            provSelect.value = match.name;
+            provSelect.dispatchEvent(new Event('change'));
         }
+
+        // After a short delay (let the GET finish), switch apiConfigSelect to "new"
+        setTimeout(() => {
+            const cfgSel = document.getElementById('apiConfigSelect');
+            if (cfgSel) {
+                cfgSel.value = 'new';
+                cfgSel.dispatchEvent(new Event('change'));
+            }
+        }, 600);
+
     } catch (err) {
         console.error(err);
         alert('Could not load providers: ' + err.message);
-    }
-});
-
-// ========== WITHDRAWALS ==========
-async function loadWithdrawals() {
-    const tbody = document.querySelector('#withdrawalsTable tbody');
-    tbody.innerHTML = '<tr><td colspan="8">Loading...</td></tr>';
-    const res = await fetch(`${API_BASE}/admin/withdrawals`, { headers: authHeaders() });
-    const wds = await res.json();
-    tbody.innerHTML = '';
-    wds.forEach(wd => {
-        const row = tbody.insertRow();
-        row.insertCell(0).innerText = wd.userId?.username || '-';
-        row.insertCell(1).innerText = `GHS ${wd.amount}`;
-        row.insertCell(2).innerText = wd.provider;
-        row.insertCell(3).innerText = wd.phoneNumber;
-        row.insertCell(4).innerText = wd.accountName;
-        row.insertCell(5).innerHTML = `<span class="status-badge status-${wd.status}">${wd.status}</span>`;
-        row.insertCell(6).innerText = new Date(wd.createdAt).toLocaleDateString();
-        row.insertCell(7).innerHTML = wd.status === 'pending' ? `<button class="action-btn approve-btn" onclick="approveWithdrawal('${wd._id}')">Approve</button><button class="action-btn reject-btn" onclick="rejectWithdrawal('${wd._id}')">Reject</button>` : '-';
-    });
-}
-
-window.approveWithdrawal = async (id) => {
-    if (confirm('Approve this withdrawal?')) {
-        await fetch(`${API_BASE}/admin/withdrawals/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status: 'approved', adminNotes: 'Approved' }) });
-        loadWithdrawals();
-        loadStats();
-    }
-};
-window.rejectWithdrawal = async (id) => {
-    if (confirm('Reject this withdrawal?')) {
-        await fetch(`${API_BASE}/admin/withdrawals/${id}`, { method: 'PUT', headers: authHeaders(), body: JSON.stringify({ status: 'rejected', adminNotes: 'Rejected' }) });
-        loadWithdrawals();
-    }
-};
-
-// ========== STORE SETTINGS ==========
-async function loadStores() {
-    const tbody = document.querySelector('#storesTable tbody');
-    tbody.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
-    const res = await fetch(`${API_BASE}/admin/store-settings`, { headers: authHeaders() });
-    const stores = await res.json();
-    tbody.innerHTML = '';
-    stores.forEach(store => {
-        const row = tbody.insertRow();
-        row.insertCell(0).innerText = store.userId?.username || store.userId;
-        row.insertCell(1).innerText = store.storeName;
-        row.insertCell(2).innerText = store.storeDescription?.substring(0, 50) + '...';
-        row.insertCell(3).innerText = store.whatsappNumber;
-        row.insertCell(4).innerText = store.whatsappGroupLink?.substring(0, 30);
-        row.insertCell(5).innerHTML = `<button class="action-btn edit-btn" onclick="editStore('${store._id}')"><i class="fas fa-edit"></i></button>`;
-    });
-}
-
-window.editStore = async (id) => {
-    const res = await fetch(`${API_BASE}/admin/store-settings/${id}`, { headers: authHeaders() });
-    const store = await res.json();
-    showModal('Edit Store', `
-        <div class="input-group"><label>Store Name</label><input type="text" id="storeName" value="${store.storeName || ''}"></div>
-        <div class="input-group"><label>Description</label><textarea id="description" rows="3">${store.storeDescription || ''}</textarea></div>
-        <div class="input-group"><label>WhatsApp Number</label><input type="text" id="whatsappNumber" value="${store.whatsappNumber || ''}"></div>
-        <div class="input-group"><label>WhatsApp Group Link</label><input type="text" id="groupLink" value="${store.whatsappGroupLink || ''}"></div>
-    `, async () => {
-        await fetch(`${API_BASE}/admin/store-settings/${id}`, {
-            method: 'PUT', headers: authHeaders(),
-            body: JSON.stringify({
-                storeName: document.getElementById('storeName').value,
-                storeDescription: document.getElementById('description').value,
-                whatsappNumber: document.getElementById('whatsappNumber').value,
-                whatsappGroupLink: document.getElementById('groupLink').value
-            })
-        });
-        loadStores();
-    });
-};
-
-// WhatsApp Session Reset
-document.getElementById('resetWhatsAppSessionBtn')?.addEventListener('click', async () => {
-    if (!confirm('This will close the WhatsApp browser session and delete the saved login. You will need to scan a QR code on the next WhatsApp order. Continue?')) return;
-    try {
-        const res = await fetch(`${API_BASE}/admin/whatsapp/reset-session`, { method: 'POST', headers: authHeaders() });
-        const result = await res.json();
-        alert(result.message || 'WhatsApp session reset successfully.');
-    } catch (err) {
-        alert('Error resetting WhatsApp session: ' + err.message);
-    }
-});
-
-
-document.getElementById('providerSelect')?.addEventListener('change', async (e) => {
-    const providerName = e.target.value;
-    if (!providerName) {
-        document.getElementById('apiConfigForm').style.display = 'none';
-        return;
-    }
-
-    // Always reset all fields first so switching providers never shows stale data
-    document.getElementById('apiEnabled').checked = false;
-    document.getElementById('apiType').value = 'bearer-token';
-    document.getElementById('baseUrl').value = '';
-    document.getElementById('authHeaderName').value = 'Authorization';
-    document.getElementById('authHeaderValue').value = '';
-    document.getElementById('orderEndpoint').value = '';
-    document.getElementById('orderMethod').value = 'POST';
-    document.getElementById('statusEndpoint').value = '';
-    document.getElementById('balanceEndpoint').value = '';
-    document.getElementById('successField').value = 'success';
-    document.getElementById('dataField').value = 'data';
-    document.getElementById('phoneFormat').value = 'international';
-    document.getElementById('payloadMapping').value = '';
-    document.getElementById('networkKeyOverride').value = '';
-    document.getElementById('capacityAsString').checked = false;
-    document.getElementById('forUnverifiedNumbers').checked = false;
-    document.getElementById('orderHandler').value = 'auto';
-    document.getElementById('whatsappMinGb').value = '';
-    document.getElementById('whatsappMaxGb').value = '';
-    document.getElementById('apiMinGb').value = '';
-    document.getElementById('apiMaxGb').value = '';
-
-    selectedProviderForAPI = providerName;
-    try {
-        const res = await fetch(`${API_BASE}/admin/provider-api-config/${providerName}`, { headers: authHeaders() });
-        const data = await res.json();
-
-        // Populate form with existing config
-        const config = data.apiConfig || {};
-        const routing = data.orderRouting || {};
-        document.getElementById('apiEnabled').checked = config.enabled || false;
-        document.getElementById('apiType').value = config.type || 'bearer-token';
-        document.getElementById('baseUrl').value = config.baseUrl || '';
-        document.getElementById('authHeaderName').value = config.authHeaderName || 'Authorization';
-        document.getElementById('authHeaderValue').value = config.authHeaderValue || '';
-        document.getElementById('orderEndpoint').value = config.orderEndpoint || '';
-        document.getElementById('orderMethod').value = config.orderMethod || 'POST';
-        document.getElementById('statusEndpoint').value = config.statusEndpoint || '';
-        document.getElementById('balanceEndpoint').value = config.balanceEndpoint || '';
-        document.getElementById('successField').value = config.successField || 'success';
-        document.getElementById('dataField').value = config.dataField || 'data';
-        document.getElementById('phoneFormat').value = config.phoneFormat || 'international';
-        document.getElementById('orderHandler').value = routing.handler || '';
-        document.getElementById('whatsappMinGb').value = routing.whatsappMinGb ?? '';
-        document.getElementById('whatsappMaxGb').value = routing.whatsappMaxGb ?? '';
-        document.getElementById('apiMinGb').value = routing.apiMinGb ?? '';
-        document.getElementById('apiMaxGb').value = routing.apiMaxGb ?? '';
-
-        document.getElementById('payloadMapping').value =
-            config.requestPayloadMapping && Object.keys(config.requestPayloadMapping).length > 0
-                ? JSON.stringify(config.requestPayloadMapping, null, 2)
-                : '';
-
-        document.getElementById('networkKeyOverride').value = config.networkKey || '';
-        document.getElementById('capacityAsString').checked = config.capacityAsString === true;
-        document.getElementById('forUnverifiedNumbers').checked = config.forUnverifiedNumbers === true;
-
-        document.getElementById('apiConfigForm').style.display = 'block';
-        loadAPILogs(providerName);
-    } catch (err) {
-        console.error(err);
-        alert('Could not load provider configuration');
-    }
-});
-
-document.getElementById('saveApiConfig')?.addEventListener('click', async () => {
-    if (!selectedProviderForAPI) {
-        alert('Please select a provider');
-        return;
-    }
-
-    try {
-        const payloadMappingText = document.getElementById('payloadMapping').value;
-        let payloadMapping = {};
-        if (payloadMappingText.trim()) {
-            payloadMapping = JSON.parse(payloadMappingText);
-        }
-
-        const apiConfig = {
-            enabled: document.getElementById('apiEnabled').checked,
-            type: document.getElementById('apiType').value,
-            baseUrl: document.getElementById('baseUrl').value,
-            authHeaderName: document.getElementById('authHeaderName').value,
-            authHeaderValue: document.getElementById('authHeaderValue').value,
-            orderEndpoint: document.getElementById('orderEndpoint').value,
-            orderMethod: document.getElementById('orderMethod').value,
-            statusEndpoint: document.getElementById('statusEndpoint').value,
-            balanceEndpoint: document.getElementById('balanceEndpoint').value,
-            successField: document.getElementById('successField').value,
-            dataField: document.getElementById('dataField').value,
-            phoneFormat: document.getElementById('phoneFormat').value,
-            requestPayloadMapping: payloadMapping,
-            networkKey: document.getElementById('networkKeyOverride').value.trim() || undefined,
-            capacityAsString: document.getElementById('capacityAsString').checked || undefined,
-            forUnverifiedNumbers: document.getElementById('forUnverifiedNumbers').checked || undefined,
-        };
-        const orderRouting = {
-            handler: document.getElementById('orderHandler').value,
-            whatsappMinGb: document.getElementById('whatsappMinGb').value,
-            whatsappMaxGb: document.getElementById('whatsappMaxGb').value,
-            apiMinGb: document.getElementById('apiMinGb').value,
-            apiMaxGb: document.getElementById('apiMaxGb').value
-        };
-
-        const res = await fetch(`${API_BASE}/admin/provider-api-config/${selectedProviderForAPI}`, {
-            method: 'PUT',
-            headers: authHeaders(),
-            body: JSON.stringify({ apiConfig, orderRouting })
-        });
-
-        const result = await res.json();
-        alert(result.message);
-
-        // Reload configured providers list
-        await loadConfiguredProviders();
-    } catch (err) {
-        console.error(err);
-        alert('Error saving configuration: ' + err.message);
     }
 });
 
@@ -1549,10 +1637,10 @@ document.getElementById('testOrderBtn')?.addEventListener('click', () => {
             });
             const data = await res.json();
             if (res.ok) {
-                alert(`✅ Test order created!\nProvider: ${provider}\nBundle: ${bundle}\nPhone: ${phoneNumber}\nAmount: GHS ${amount}`);
+                alert(`âœ… Test order created!\nProvider: ${provider}\nBundle: ${bundle}\nPhone: ${phoneNumber}\nAmount: GHS ${amount}`);
                 loadOrders();
             } else {
-                alert('❌ Failed: ' + (data.message || 'Unknown error'));
+                alert('âŒ Failed: ' + (data.message || 'Unknown error'));
             }
         } catch (err) {
             alert('Error: ' + err.message);
@@ -1594,7 +1682,7 @@ async function loadPaymentGateways() {
                     </td>
                     <td>
                         <span class="status-badge" style="background: ${g.isTestMode ? '#fff3e0' : '#e8f5e9'}; color: ${g.isTestMode ? '#e65100' : '#1b5e20'};">
-                            ${g.isTestMode ? '🧪 Test Mode' : '⚡ Live Production'}
+                            ${g.isTestMode ? 'ðŸ§ª Test Mode' : 'âš¡ Live Production'}
                         </span>
                     </td>
                     <td>${g.minAmount} - ${g.maxAmount} GHS</td>
@@ -1668,36 +1756,36 @@ async function editGatewayConfig(gatewayName) {
             </div>
 
             <p style="font-weight:bold; color:#6a11cb; margin:16px 0 8px; border-bottom:1px solid #eee; padding-bottom:6px;">
-                🔐 Moolre API Credentials
+                ðŸ” Moolre API Credentials
             </p>
 
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px;">
-                    API User <small style="color:#666;">(X-API-USER — your Moolre username)</small>
+                    API User <small style="color:#666;">(X-API-USER â€” your Moolre username)</small>
                 </label>
                 <input type="text" id="edit_gateway_apiuser" class="form-control" value="${g.apiUser || ''}" placeholder="your_moolre_username" style="width:100%; padding:8px; border-radius:4px; border:2px solid #6a11cb;">
             </div>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px;">
-                    Account Number <small style="color:#666;">(Moolre Wallet ID — e.g. 420500413146)</small>
+                    Account Number <small style="color:#666;">(Moolre Wallet ID â€” e.g. 420500413146)</small>
                 </label>
-                <input type="text" id="edit_gateway_apikey" class="form-control" placeholder="${g.apiKey ? 'Already set — leave blank to keep' : 'Enter Moolre Wallet Account Number'}" style="width:100%; padding:8px; border-radius:4px; border:2px solid #e67e22;">
+                <input type="text" id="edit_gateway_apikey" class="form-control" placeholder="${g.apiKey ? 'Already set â€” leave blank to keep' : 'Enter Moolre Wallet Account Number'}" style="width:100%; padding:8px; border-radius:4px; border:2px solid #e67e22;">
             </div>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px;">
-                    Public Key <small style="color:#666;">(X-API-PUBKEY — for collections/payments)</small>
+                    Public Key <small style="color:#666;">(X-API-PUBKEY â€” for collections/payments)</small>
                 </label>
-                <input type="password" id="edit_gateway_pubkey" class="form-control" placeholder="${g.pubKey ? 'Already set — leave blank to keep' : 'Enter Public Key'}" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
+                <input type="password" id="edit_gateway_pubkey" class="form-control" placeholder="${g.pubKey ? 'Already set â€” leave blank to keep' : 'Enter Public Key'}" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
             </div>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px;">
-                    VAS Key <small style="color:#666;">(X-API-VASKEY — only needed for VAS/data bundle disbursements, not required for collections)</small>
+                    VAS Key <small style="color:#666;">(X-API-VASKEY â€” only needed for VAS/data bundle disbursements, not required for collections)</small>
                 </label>
-                <input type="password" id="edit_gateway_vaskey" class="form-control" placeholder="${g.vasKey ? 'Already set — leave blank to keep' : 'Enter VAS Key (optional)'}" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
+                <input type="password" id="edit_gateway_vaskey" class="form-control" placeholder="${g.vasKey ? 'Already set â€” leave blank to keep' : 'Enter VAS Key (optional)'}" style="width:100%; padding:8px; border-radius:4px; border:1px solid #ccc;">
             </div>
 
             <p style="font-weight:bold; color:#2980b9; margin:16px 0 8px; border-bottom:1px solid #eee; padding-bottom:6px;">
-                🌐 API Endpoints
+                ðŸŒ API Endpoints
             </p>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px;">
@@ -1713,18 +1801,18 @@ async function editGatewayConfig(gatewayName) {
             </div>
 
             <p style="font-weight:bold; color:#e74c3c; margin:16px 0 8px; border-bottom:1px solid #eee; padding-bottom:6px;">
-                🔗 Webhook & Limits
+                ðŸ”— Webhook & Limits
             </p>
 
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px; color:#e74c3c;">
-                    ⚠ Callback URL <small style="color:#666;">(paste your Cloudflare/public URL here)</small>
+                    âš  Callback URL <small style="color:#666;">(paste your Cloudflare/public URL here)</small>
                 </label>
                 <input type="text" id="edit_gateway_callback" class="form-control" value="${g.callbackUrl || ''}" placeholder="https://xxxx.trycloudflare.com/api/webhook/payment/Moolre" style="width:100%; padding:8px; border-radius:4px; border:2px solid #e74c3c;">
             </div>
             <div class="form-group" style="margin-bottom: 12px;">
                 <label style="display:block; font-weight:bold; margin-bottom:4px; color:#27ae60;">
-                    🔗 Moolre POS Payment Link <small style="color:#666;">(customers are redirected here to complete payment)</small>
+                    ðŸ”— Moolre POS Payment Link <small style="color:#666;">(customers are redirected here to complete payment)</small>
                 </label>
                 <input type="text" id="edit_gateway_poslink" class="form-control" value="${g.posLink || 'https://pos.moolre.com/OBsl0jRg95WiLfytc7Tu33434'}" placeholder="https://pos.moolre.com/xxxxx" style="width:100%; padding:8px; border-radius:4px; border:2px solid #27ae60;">
             </div>
@@ -1740,8 +1828,8 @@ async function editGatewayConfig(gatewayName) {
             </div>
 
             <p style="font-weight:bold; color:#333; margin:16px 0 8px; border-bottom:1px solid #eee; padding-bottom:6px;">
-                📡 Network Code Mapping
-                <small style="font-weight:normal; color:#666;"> — Moolre codes: MTN, VODAFONE, AIRTELTIGO</small>
+                ðŸ“¡ Network Code Mapping
+                <small style="font-weight:normal; color:#666;"> â€” Moolre codes: MTN, VODAFONE, AIRTELTIGO</small>
             </p>
             <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
                 <div>
@@ -1857,16 +1945,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadPaymentGatewayConfig(gatewayName) {
     const container = document.getElementById('paymentGatewayConfigContainer');
-    container.innerHTML = '<div style="text-align:center;padding:24px;color:#888;"><i class="fas fa-spinner fa-spin"></i> Loading…</div>';
+    container.innerHTML = '<div style="text-align:center;padding:24px;color:#888;"><i class="fas fa-spinner fa-spin"></i> Loadingâ€¦</div>';
     try {
         const res = await fetch(`${API_BASE}/admin/payment-gateway-config/${encodeURIComponent(gatewayName)}`, {
             headers: authHeaders()
         });
-        if (!res.ok) throw new Error(`HTTP ${res.status} — gateway not found or server error`);
+        if (!res.ok) throw new Error(`HTTP ${res.status} â€” gateway not found or server error`);
         const cfg = await res.json();
 
         container.innerHTML = `
-            <h3 style="margin-bottom:16px;">${gatewayName} — Configuration</h3>
+            <h3 style="margin-bottom:16px;">${gatewayName} â€” Configuration</h3>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
 
@@ -1888,7 +1976,7 @@ async function loadPaymentGatewayConfig(gatewayName) {
                 </div>
 
                 <div class="form-group" style="grid-column:1/-1;">
-                    <label><strong>Callback URL</strong> <small style="color:#e74c3c;">⚠ Required — set this on Korba dashboard too</small></label>
+                    <label><strong>Callback URL</strong> <small style="color:#e74c3c;">âš  Required â€” set this on Korba dashboard too</small></label>
                     <input type="text" id="pgCallbackUrl" value="${cfg.callbackUrl || ''}" placeholder="https://yoursite.com/api/webhook/payment/${gatewayName}" style="border-color:#e74c3c;">
                 </div>
 
@@ -1909,7 +1997,7 @@ async function loadPaymentGatewayConfig(gatewayName) {
 
                 <div class="form-group">
                     <label><strong>Secret Key</strong> <small style="color:#e74c3c;">(leave blank to keep existing)</small></label>
-                    <input type="password" id="pgSecretKey" placeholder="••••••••  (unchanged if blank)">
+                    <input type="password" id="pgSecretKey" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢  (unchanged if blank)">
                 </div>
 
                 <div class="form-group">
@@ -1919,7 +2007,7 @@ async function loadPaymentGatewayConfig(gatewayName) {
 
                 <div class="form-group">
                     <label><strong>Test Secret Key</strong> <small style="color:#e74c3c;">(leave blank to keep existing)</small></label>
-                    <input type="password" id="pgTestSecretKey" placeholder="••••••••  (unchanged if blank)">
+                    <input type="password" id="pgTestSecretKey" placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢  (unchanged if blank)">
                 </div>
 
                 <div class="form-group">
@@ -1948,7 +2036,7 @@ async function loadPaymentGatewayConfig(gatewayName) {
                 </div>
 
                 <div class="form-group" style="grid-column:1/3;">
-                    <label><strong>Network Mapping</strong> <small>(JSON — maps provider names to gateway network codes)</small></label>
+                    <label><strong>Network Mapping</strong> <small>(JSON â€” maps provider names to gateway network codes)</small></label>
                     <textarea id="pgNetworkMapping" rows="4" style="font-family:monospace;">${JSON.stringify(cfg.networkMapping || { MTN: 'MTN', Telecel: 'VOD', AirtelTigo: 'AIR', Vodafone: 'VOD' }, null, 2)}</textarea>
                 </div>
 
@@ -1986,7 +2074,7 @@ async function loadPaymentGatewayConfig(gatewayName) {
 
             <hr style="margin:24px 0;">
             <h4><i class="fas fa-list"></i> Payment Logs (last 20)</h4>
-            <div id="pgLogsContainer"><em style="color:#aaa;">Loading logs…</em></div>
+            <div id="pgLogsContainer"><em style="color:#aaa;">Loading logsâ€¦</em></div>
         `;
 
         document.getElementById('pgSaveBtn').addEventListener('click', () => savePaymentGatewayConfig(gatewayName));
@@ -2006,7 +2094,7 @@ async function loadPaymentGatewayConfig(gatewayName) {
 
 async function savePaymentGatewayConfig(gatewayName) {
     const statusEl = document.getElementById('pgSaveStatus');
-    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+    statusEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Savingâ€¦';
     try {
         const networkMappingRaw = document.getElementById('pgNetworkMapping').value.trim();
         let networkMapping = {};
