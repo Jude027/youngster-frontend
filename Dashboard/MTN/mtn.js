@@ -78,7 +78,7 @@ function initializeSidebar() {
         });
     });
 
-    // Dashboard link — navigate back to branded store dashboard with slug
+    // Dashboard link â€” navigate back to branded store dashboard with slug
     const dashboardLink = document.getElementById('dashboardMenuLink');
     if (dashboardLink) {
         dashboardLink.addEventListener('click', (e) => {
@@ -289,7 +289,7 @@ async function applyUserStoreBranding() {
 }
 
 
-// ── Moolre Payment Modal ──────────────────────────────────────────────────────
+// â”€â”€ Moolre Payment Modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Shows a modal asking for the customer's MoMo number, initiates the
 // Moolre USSD push via the backend, then polls for confirmation.
 
@@ -414,7 +414,7 @@ function showPaymentModal(orderDetails) {
     const momoPhone = document.getElementById('momoPhone');
     const momoNetwork = document.getElementById('momoNetwork');
 
-    // Leave blank — the paying customer types their own MoMo number here.
+    // Leave blank â€” the paying customer types their own MoMo number here.
     // (orderDetails.beneficiary is the recipient of the data bundle, not the payer.)
     momoPhone.value = '';
 
@@ -479,12 +479,12 @@ function showPaymentModal(orderDetails) {
 
             transactionId = data.transactionId;
 
-            // ── TP14: OTP required — redirect to OTP page ─────────────────────
+            // â”€â”€ TP14: OTP required â€” redirect to OTP page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
             if (data.requiresOtp) {
                 // Store context so OTP page can read it
                 localStorage.setItem('otpTransactionId', transactionId);
                 localStorage.setItem('otpPhoneNumber', phone);
-                // Build return URL — after OTP verified, go to a processing/status page
+                // Build return URL â€” after OTP verified, go to a processing/status page
                 const returnUrl = window.location.pathname + '?store=' +
                     encodeURIComponent(new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '');
                 localStorage.setItem('otpReturnUrl', returnUrl);
@@ -514,16 +514,16 @@ function showPaymentModal(orderDetails) {
 
                         document.getElementById('payModalMsg').textContent =
                             status === 'pending'    ? 'A USSD prompt has been sent. Enter your MoMo PIN to approve.' :
-                            status === 'processing' ? 'Processing your payment…' : 'Checking payment…';
+                            status === 'processing' ? 'Processing your paymentâ€¦' : 'Checking paymentâ€¦';
 
                         if (status === 'success') {
-                            showResult(true, '✅', 'Payment Successful!',
+                            showResult(true, 'âœ…', 'Payment Successful!',
                                 `Your ${orderDetails.bundle_size} bundle for ${orderDetails.beneficiary} is being processed.`);
                         } else if (status === 'failed' || status === 'cancelled') {
-                            showResult(false, '❌', 'Payment Failed',
+                            showResult(false, 'âŒ', 'Payment Failed',
                                 'The payment was not completed. Please try again.');
                         } else if (Date.now() >= deadline) {
-                            showResult(false, '⏱️', 'Payment Timed Out',
+                            showResult(false, 'â±ï¸', 'Payment Timed Out',
                                 'No response received. If you approved the payment, please contact support.');
                         } else {
                             scheduleNextPoll();
@@ -719,12 +719,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const verifyResult = await verifyRes.json();
 
                 if (!verifyRes.ok || !verifyResult.success) {
-                    // Verification failed — ask the customer if they want to proceed anyway.
+                    // Verification failed â€” ask the customer if they want to proceed anyway.
                     // If they do, the order is flagged isUnverified=true so the backend
                     // routes it through the secondary API config (if configured).
                     const proceed = confirm(
-                        (verifyResult.message || 'This number could not be verified.') +
-                        '\n\nWould you like to proceed anyway? The order will be handled through an alternative route.'
+                        (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
+                        '\n\nThis phone number is not verified on our new portal at the moment. Would you like to proceed anyway? This order will take 2-3 days to be delivered if you can’t wait don’t proceed. Thank you ' +
+                        '\n\nNOTE: THESE ORDERS CAN’T BE CANCELLED OR REFUNDED! '
                     );
                     if (!proceed) {
                         orderBtn.disabled = false;
@@ -738,7 +739,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (err) {
                 console.error('Beneficiary verification failed:', err);
-                // Network error during verification — ask if they want to continue unverified
+                // Network error during verification â€” ask if they want to continue unverified
                 const proceed = confirm(
                     'Could not verify this number right now (network error).\n\nWould you like to proceed anyway?'
                 );
@@ -753,7 +754,7 @@ document.addEventListener('DOMContentLoaded', function() {
             orderBtn.disabled = false;
             orderBtn.innerHTML = originalBtnHTML;
 
-            // Open Moolre payment modal — customer enters their MoMo number
+            // Open Moolre payment modal â€” customer enters their MoMo number
             // and gets a USSD push prompt to approve the payment
             showPaymentModal({
                 beneficiary:  phoneNumber,
