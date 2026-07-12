@@ -1,4 +1,4 @@
-// transactions.js – Wallet Top‑Up orders
+// transactions.js – Guest platform (My Store)
 const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
 function authHeaders() {
@@ -37,7 +37,25 @@ function isOrderTransaction(txn) {
 
 async function fetchTransactions() {
     try {
-        const res = await fetch(`${API_BASE}/transactions`, { headers: authHeaders() });
+        const token = localStorage.getItem('token');
+        const guestSessionId = localStorage.getItem('guestSessionId');
+        const storeSlug = localStorage.getItem('storeSlug') ||
+            new URLSearchParams(window.location.search).get('store') || '';
+
+        let url;
+        if (token && token !== 'null') {
+            // Logged-in dealer — use auth endpoint
+            url = `${API_BASE}/transactions`;
+        } else if (guestSessionId && storeSlug) {
+            // Guest — use public guest endpoint
+            url = `${API_BASE}/guest/transactions?guestSessionId=${encodeURIComponent(guestSessionId)}&store=${encodeURIComponent(storeSlug)}`;
+        } else {
+            renderTransactions([]);
+            return;
+        }
+
+        const headers = (token && token !== 'null') ? authHeaders() : {};
+        const res = await fetch(url, { headers });
         if (!res.ok) throw new Error();
         allTransactions = (await res.json()).filter(isOrderTransaction);
         renderTransactions(allTransactions);
@@ -177,7 +195,8 @@ function initializeRefresh() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    if (!localStorage.getItem('token')) window.location.href = '../Registration%20form/login_and_signup.html';
+    // Guest platform — no login required for viewing transactions
+    // Guests identify via guestSessionId stored in localStorage
     initializeTheme();
     initializeSidebar();
     initializeLogout();
