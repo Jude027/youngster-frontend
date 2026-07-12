@@ -228,9 +228,13 @@
     }, 1000);
 
     // ── Submit OTP ────────────────────────────────────────────────────────────
+    let _otpSubmitting = false;   // guard against double-tap / duplicate calls
+
     async function submitOtp() {
         const otp = getOtpValue();
         if (otp.length < 6) return;
+        if (_otpSubmitting) return;   // already in flight — ignore
+        _otpSubmitting = true;
 
         submitBtn.disabled = true;
         showStatus('loading', '<span class="spinner"></span> Verifying OTP…');
@@ -418,10 +422,12 @@
                 inputs[0].focus();
                 checkReady();
                 submitBtn.disabled = false;
+                _otpSubmitting = false;
             }
         } catch (err) {
             showStatus('error', 'Network error. Please try again.');
             submitBtn.disabled = false;
+            _otpSubmitting = false;
         }
     }
     document.addEventListener('keydown', e => {
