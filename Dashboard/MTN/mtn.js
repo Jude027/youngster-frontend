@@ -725,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const proceed = confirm(
                         (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
                         '\n\nThis phone number is not verified on our new portal at the moment. Would you like to proceed anyway? This order will take 2-3 days to be delivered if you can’t wait don’t proceed. Thank you ' +
-                        '\n\nNOTE: THESE ORDERS CAN’T BE CANCELLED OR REFUNDED! '
+                        '\n\nNOTE: THIS ORDER CAN’T BE CANCELLED OR REFUNDED! '
                     );
                     if (!proceed) {
                         orderBtn.disabled = false;
