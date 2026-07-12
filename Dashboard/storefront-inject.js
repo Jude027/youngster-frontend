@@ -91,6 +91,7 @@ function applyStoreBranding(store) {
     if (waGroup) {
         if (whatsappGroupLink) {
             waGroup.href = whatsappGroupLink;
+            waGroup.style.display = '';   // ensure visible
         } else {
             waGroup.style.display = 'none';
         }
@@ -100,8 +101,12 @@ function applyStoreBranding(store) {
     const waNumber = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}` : null;
     const waAdmin = document.getElementById('waAdminLink');
     if (waAdmin) {
-        if (waNumber) waAdmin.href = waNumber;
-        else waAdmin.style.display = 'none';
+        if (waNumber) {
+            waAdmin.href = waNumber;
+            waAdmin.style.display = '';   // ensure visible
+        } else {
+            waAdmin.style.display = 'none';
+        }
     }
     const resellerLink = document.getElementById('resellerLink');
     if (resellerLink && waNumber) resellerLink.href = waNumber;
@@ -121,12 +126,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Apply cached branding immediately — before the network fetch — so the
     // dashboard never shows "J.D Youngster Enterprise" while waiting for the API.
     // storeBrandName / storeBrandLogo are written below after every successful fetch.
+    // Note: we only apply name/logo from cache — WhatsApp links need live data.
     const cachedName = localStorage.getItem('storeBrandName');
     const cachedLogo = localStorage.getItem('storeBrandLogo');
     if (cachedName || cachedLogo) {
         applyStoreBranding({
             storeName: cachedName || '',
             storeLogo: cachedLogo || '',
+            // Pass cached WhatsApp values so the buttons aren't hidden during load
+            whatsappGroupLink: localStorage.getItem('storeWhatsappGroup') || '',
+            whatsappNumber:    localStorage.getItem('storeWhatsapp') || '',
         });
     }
 
@@ -152,7 +161,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
         if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
         else                  localStorage.removeItem('storeBrandLogo');
-        if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
+        if (store.whatsappNumber)    localStorage.setItem('storeWhatsapp', store.whatsappNumber);
+        if (store.whatsappGroupLink) localStorage.setItem('storeWhatsappGroup', store.whatsappGroupLink);
+        else                         localStorage.removeItem('storeWhatsappGroup');
 
         // If the dealer modified the store name, redirect automatically to the new URL path
         if (store.storeSlug && store.storeSlug !== slug) {
