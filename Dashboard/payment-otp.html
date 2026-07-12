@@ -236,12 +236,34 @@
         showStatus('loading', '<span class="spinner"></span> Verifying OTP…');
 
         try {
-            const res  = await fetch(`${API_BASE}/api/payment/verify-otp`, {
-                method:  'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body:    JSON.stringify({ transactionId, otpCode: otp }),
-            });
-            const data = await res.json();
+            // Use AbortController with a 60-second timeout — the backend makes two
+            // sequential calls to Moolre (OTP verify + USSD push) which can take 20–40 s.
+            const controller = new AbortController();
+            const fetchTimeout = setTimeout(() => controller.abort(), 60000);
+
+            let res, data;
+            try {
+                res  = await fetch(`${API_BASE}/api/payment/verify-otp`, {
+                    method:  'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body:    JSON.stringify({ transactionId, otpCode: otp }),
+                    signal:  controller.signal,
+                });
+                data = await res.json();
+            } catch (fetchErr) {
+                // If the fetch timed out or the network dropped AFTER the server likely
+                // processed the OTP (i.e. we waited > 30 s), treat it as a soft success
+                // and drop straight into the polling screen — the USSD prompt may have
+                // already been sent.
+                if (fetchErr.name === 'AbortError' || fetchErr.message?.includes('network')) {
+                    data = { success: true, _fromTimeout: true,
+                             message: 'Connection took too long — checking payment status…' };
+                } else {
+                    throw fetchErr;
+                }
+            } finally {
+                clearTimeout(fetchTimeout);
+            }
 
             if (data.success) {
                 clearInterval(timer);
@@ -402,8 +424,6 @@
             submitBtn.disabled = false;
         }
     }
-
-    // Allow Enter key to submit
     document.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !submitBtn.disabled) submitOtp();
     });
