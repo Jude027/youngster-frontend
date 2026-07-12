@@ -152,21 +152,18 @@
         phoneNumber ? phoneNumber.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : 'your phone';
 
     // ── On load: check if this transaction already passed OTP — jump to polling ──
-    // This handles the case where the user navigated back to the bundle page and
-    // re-submitted, firing a second /api/payment/initiate. The second initiation
-    // returns requiresOtp=true with the SAME transactionId (via TP13 dedup), so
-    // the OTP page loads again. We immediately check status and skip the OTP form
-    // if the payment is already in progress or complete.
+    // Only skip OTP if the transaction is genuinely past the OTP stage.
+    // 'processing' just means payment was initiated — OTP still needed.
     (async function checkOnLoad() {
         if (!transactionId) return;
         try {
             const r = await fetch(`${API_BASE}/api/payment/status/${transactionId}`);
             const d = await r.json();
             const st = (d.status || d.transaction?.status || '').toLowerCase();
-            if (st === 'otp_verified' || st === 'success' || st === 'processing') {
-                // Skip OTP entry — go straight to waiting/polling screen
+            if (st === 'otp_verified' || st === 'success') {
                 skipToPolling();
             }
+            // 'processing' and 'pending' = OTP still required — show the form normally
         } catch { /* network error on load — show OTP form as normal */ }
     })();
 
