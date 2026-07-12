@@ -151,6 +151,31 @@
     document.getElementById('phoneDisplay').textContent =
         phoneNumber ? phoneNumber.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2') : 'your phone';
 
+    // ── On load: check if this transaction already passed OTP — jump to polling ──
+    // This handles the case where the user navigated back to the bundle page and
+    // re-submitted, firing a second /api/payment/initiate. The second initiation
+    // returns requiresOtp=true with the SAME transactionId (via TP13 dedup), so
+    // the OTP page loads again. We immediately check status and skip the OTP form
+    // if the payment is already in progress or complete.
+    (async function checkOnLoad() {
+        if (!transactionId) return;
+        try {
+            const r = await fetch(`${API_BASE}/api/payment/status/${transactionId}`);
+            const d = await r.json();
+            const st = (d.status || d.transaction?.status || '').toLowerCase();
+            if (st === 'otp_verified' || st === 'success' || st === 'processing') {
+                // Skip OTP entry — go straight to waiting/polling screen
+                skipToPolling();
+            }
+        } catch { /* network error on load — show OTP form as normal */ }
+    })();
+
+    function skipToPolling() {
+        clearInterval(timer);
+        document.querySelector('.card').innerHTML = buildPollingScreen();
+        startPolling();
+    }
+
     // ── OTP inputs: auto-advance and auto-submit ──────────────────────────────
     const inputs   = Array.from(document.querySelectorAll('.otp-inputs input'));
     const submitBtn = document.getElementById('submitBtn');
@@ -227,21 +252,138 @@
         }
     }, 1000);
 
+    // ── Polling screen HTML builder ───────────────────────────────────────────
+    function buildPollingScreen() {
+        return `
+            <div style="text-align:center;padding:10px 0;">
+                <div style="width:70px;height:70px;
+                    background:linear-gradient(135deg,#6a11cb,#2575fc);
+                    border-radius:50%;display:flex;align-items:center;
+                    justify-content:center;margin:0 auto 20px;">
+                    <i class="fas fa-mobile-alt" style="color:#fff;font-size:28px;"></i>
+                </div>
+                <h1 style="font-size:20px;color:#1a1a2e;margin-bottom:8px;">
+                    Check Your Phone
+                </h1>
+                <p style="color:#666;font-size:14px;line-height:1.6;margin-bottom:28px;">
+                    A payment prompt has been sent to your phone.<br>
+                    Enter your <strong>MoMo PIN</strong> to approve the payment.
+                </p>
+                <div id="waitSpinner" style="margin-bottom:12px;">
+                    <i class="fas fa-spinner fa-spin"
+                        style="font-size:36px;color:#6a11cb;"></i>
+                </div>
+                <p id="waitMsg" style="color:#999;font-size:13px;margin-bottom:24px;">
+                    Waiting for your approval…
+                </p>
+                <div id="waitResult" style="display:none;"></div>
+                <button onclick="window.location.href='${returnUrl}'"
+                    style="margin-top:8px;padding:10px 24px;background:transparent;
+                    color:#e74c3c;border:1px solid #e74c3c;border-radius:8px;
+                    font-size:13px;cursor:pointer;">
+                    Cancel
+                </button>
+            </div>`;
+    }
+
+    // ── Polling logic ─────────────────────────────────────────────────────────
+    function startPolling() {
+        let elapsedSecs = 0;
+        const DEADLINE_SECS = 240;
+
+        const updateWaitMsg = (secs) => {
+            const el = document.getElementById('waitMsg');
+            if (!el) return;
+            if (secs < 15) {
+                el.textContent = 'Sending payment prompt to your phone…';
+            } else if (secs < 60) {
+                el.textContent = 'A USSD prompt has been sent. Dial the PIN on your phone to approve.';
+            } else {
+                el.textContent = `Still waiting for your approval… (${secs}s)`;
+            }
+        };
+
+        const tickTimer = setInterval(() => {
+            elapsedSecs++;
+            updateWaitMsg(elapsedSecs);
+        }, 1000);
+
+        const doPoll = async () => {
+            try {
+                const r      = await fetch(`${API_BASE}/api/payment/status/${transactionId}`);
+                const d      = await r.json();
+                const status = (d.status || d.transaction?.status || 'pending').toLowerCase();
+
+                if (status === 'success' || status === 'completed') {
+                    clearInterval(tickTimer);
+                    document.getElementById('waitSpinner').style.display = 'none';
+                    document.getElementById('waitMsg').style.display     = 'none';
+                    document.getElementById('waitResult').style.display  = 'block';
+                    document.getElementById('waitResult').innerHTML = `
+                        <div style="background:#e8f5e9;border-radius:12px;padding:20px;margin-bottom:16px;">
+                            <div style="font-size:48px;margin-bottom:8px;">✅</div>
+                            <h2 style="color:#2e7d32;margin:0 0 8px;font-size:18px;">Payment Successful!</h2>
+                            <p style="color:#555;font-size:13px;margin:0;">Your bundle order has been placed.</p>
+                        </div>
+                        <button onclick="window.location.href='${returnUrl}'"
+                            style="width:100%;padding:14px;background:linear-gradient(135deg,#6a11cb,#2575fc);
+                            color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">
+                            Done
+                        </button>`;
+                    return;
+
+                } else if (status === 'failed' || status === 'cancelled') {
+                    clearInterval(tickTimer);
+                    document.getElementById('waitSpinner').style.display = 'none';
+                    document.getElementById('waitMsg').style.display     = 'none';
+                    document.getElementById('waitResult').style.display  = 'block';
+                    document.getElementById('waitResult').innerHTML = `
+                        <div style="background:#fdecea;border-radius:12px;padding:20px;margin-bottom:16px;">
+                            <div style="font-size:48px;margin-bottom:8px;">❌</div>
+                            <h2 style="color:#c62828;margin:0 0 8px;font-size:18px;">Payment Failed</h2>
+                            <p style="color:#555;font-size:13px;margin:0;">The payment was not completed. Please try again.</p>
+                        </div>
+                        <button onclick="window.location.href='${returnUrl}'"
+                            style="width:100%;padding:14px;background:#c62828;
+                            color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">
+                            Try Again
+                        </button>`;
+                    return;
+                }
+
+                if (elapsedSecs >= DEADLINE_SECS) {
+                    clearInterval(tickTimer);
+                    const msgEl = document.getElementById('waitMsg');
+                    if (msgEl) msgEl.textContent = 'Timed out. If you approved the payment, please contact support.';
+                    return;
+                }
+
+                const nextInterval = elapsedSecs < 120 ? 10000 : 15000;
+                setTimeout(doPoll, nextInterval);
+
+            } catch (e) {
+                console.warn('Poll error:', e);
+                if (elapsedSecs < DEADLINE_SECS) setTimeout(doPoll, 10000);
+            }
+        };
+
+        // First poll after 15 s — gives Moolre time to register the transaction
+        setTimeout(doPoll, 15000);
+    }
+
     // ── Submit OTP ────────────────────────────────────────────────────────────
-    let _otpSubmitting = false;   // guard against double-tap / duplicate calls
+    let _otpSubmitting = false;
 
     async function submitOtp() {
         const otp = getOtpValue();
         if (otp.length < 6) return;
-        if (_otpSubmitting) return;   // already in flight — ignore
+        if (_otpSubmitting) return;
         _otpSubmitting = true;
 
         submitBtn.disabled = true;
         showStatus('loading', '<span class="spinner"></span> Verifying OTP…');
 
         try {
-            // Use AbortController with a 60-second timeout — the backend makes two
-            // sequential calls to Moolre (OTP verify + USSD push) which can take 20–40 s.
             const controller = new AbortController();
             const fetchTimeout = setTimeout(() => controller.abort(), 60000);
 
@@ -255,10 +397,6 @@
                 });
                 data = await res.json();
             } catch (fetchErr) {
-                // If the fetch timed out or the network dropped AFTER the server likely
-                // processed the OTP (i.e. we waited > 30 s), treat it as a soft success
-                // and drop straight into the polling screen — the USSD prompt may have
-                // already been sent.
                 if (fetchErr.name === 'AbortError' || fetchErr.message?.includes('network')) {
                     data = { success: true, _fromTimeout: true,
                              message: 'Connection took too long — checking payment status…' };
@@ -271,151 +409,8 @@
 
             if (data.success) {
                 clearInterval(timer);
-
-                // Replace card with waiting screen — no redirect needed
-                document.querySelector('.card').innerHTML = `
-                    <div style="text-align:center;padding:10px 0;">
-                        <div style="width:70px;height:70px;
-                            background:linear-gradient(135deg,#6a11cb,#2575fc);
-                            border-radius:50%;display:flex;align-items:center;
-                            justify-content:center;margin:0 auto 20px;">
-                            <i class="fas fa-mobile-alt" style="color:#fff;font-size:28px;"></i>
-                        </div>
-                        <h1 style="font-size:20px;color:#1a1a2e;margin-bottom:8px;">
-                            Check Your Phone
-                        </h1>
-                        <p style="color:#666;font-size:14px;line-height:1.6;margin-bottom:28px;">
-                            A payment prompt has been sent to your phone.<br>
-                            Enter your <strong>MoMo PIN</strong> to approve the payment.
-                        </p>
-                        <div id="waitSpinner" style="margin-bottom:12px;">
-                            <i class="fas fa-spinner fa-spin"
-                                style="font-size:36px;color:#6a11cb;"></i>
-                        </div>
-                        <p id="waitMsg" style="color:#999;font-size:13px;margin-bottom:24px;">
-                            Waiting for your approval…
-                        </p>
-                        <div id="waitResult" style="display:none;"></div>
-                        <button onclick="window.location.href='${returnUrl}'"
-                            style="margin-top:8px;padding:10px 24px;background:transparent;
-                            color:#e74c3c;border:1px solid #e74c3c;border-radius:8px;
-                            font-size:13px;cursor:pointer;">
-                            Cancel
-                        </button>
-                    </div>`;
-
-                // Poll for payment status after OTP verification.
-                //
-                // Moolre won't register the transaction in its status system until
-                // the customer responds to the USSD PIN prompt — which typically
-                // takes 15–120 seconds.  Polling too early just produces a flood of
-                // SS07 "Transaction not found" responses.
-                //
-                // Strategy:
-                //   • Wait 15 s before the very first check (skip guaranteed-SS07 calls)
-                //   • Poll every 10 s for the first 2 minutes
-                //   • Poll every 15 s thereafter (customer is slow / distracted)
-                //   • Give up after 4 minutes total
-                const API_BACKEND = API_BASE;
-                let pollCount   = 0;
-                let elapsedSecs = 0;
-                const DEADLINE_SECS = 240; // 4 minutes total
-
-                const updateWaitMsg = (secs) => {
-                    const el = document.getElementById('waitMsg');
-                    if (!el) return;
-                    if (secs < 15) {
-                        el.textContent = 'Sending payment prompt to your phone…';
-                    } else if (secs < 60) {
-                        el.textContent = 'A USSD prompt has been sent. Dial the PIN on your phone to approve.';
-                    } else {
-                        el.textContent = `Still waiting for your approval… (${secs}s)`;
-                    }
-                };
-
-                // Tick the elapsed-seconds counter every second for the status message
-                const tickTimer = setInterval(() => {
-                    elapsedSecs++;
-                    updateWaitMsg(elapsedSecs);
-                }, 1000);
-
-                const doPoll = async () => {
-                    pollCount++;
-                    try {
-                        const r      = await fetch(`${API_BACKEND}/api/payment/status/${transactionId}`);
-                        const d      = await r.json();
-                        const status = (d.status || d.transaction?.status || 'pending').toLowerCase();
-
-                        if (status === 'success' || status === 'completed') {
-                            clearInterval(tickTimer);
-                            document.getElementById('waitSpinner').style.display = 'none';
-                            document.getElementById('waitMsg').style.display     = 'none';
-                            document.getElementById('waitResult').style.display  = 'block';
-                            document.getElementById('waitResult').innerHTML = `
-                                <div style="background:#e8f5e9;border-radius:12px;padding:20px;margin-bottom:16px;">
-                                    <div style="font-size:48px;margin-bottom:8px;">✅</div>
-                                    <h2 style="color:#2e7d32;margin:0 0 8px;font-size:18px;">
-                                        Payment Successful!
-                                    </h2>
-                                    <p style="color:#555;font-size:13px;margin:0;">
-                                        Your bundle order has been placed.
-                                    </p>
-                                </div>
-                                <button onclick="window.location.href='${returnUrl}'"
-                                    style="width:100%;padding:14px;background:linear-gradient(135deg,#6a11cb,#2575fc);
-                                    color:#fff;border:none;border-radius:10px;font-size:15px;
-                                    font-weight:600;cursor:pointer;">
-                                    Done
-                                </button>`;
-                            return; // stop scheduling further polls
-
-                        } else if (status === 'failed' || status === 'cancelled') {
-                            clearInterval(tickTimer);
-                            document.getElementById('waitSpinner').style.display = 'none';
-                            document.getElementById('waitMsg').style.display     = 'none';
-                            document.getElementById('waitResult').style.display  = 'block';
-                            document.getElementById('waitResult').innerHTML = `
-                                <div style="background:#fdecea;border-radius:12px;padding:20px;margin-bottom:16px;">
-                                    <div style="font-size:48px;margin-bottom:8px;">❌</div>
-                                    <h2 style="color:#c62828;margin:0 0 8px;font-size:18px;">
-                                        Payment Failed
-                                    </h2>
-                                    <p style="color:#555;font-size:13px;margin:0;">
-                                        The payment was not completed. Please try again.
-                                    </p>
-                                </div>
-                                <button onclick="window.location.href='${returnUrl}'"
-                                    style="width:100%;padding:14px;background:#c62828;
-                                    color:#fff;border:none;border-radius:10px;font-size:15px;
-                                    font-weight:600;cursor:pointer;">
-                                    Try Again
-                                </button>`;
-                            return; // stop scheduling further polls
-                        }
-
-                        // Still pending — schedule next poll if within deadline
-                        if (elapsedSecs >= DEADLINE_SECS) {
-                            clearInterval(tickTimer);
-                            const msgEl = document.getElementById('waitMsg');
-                            if (msgEl) msgEl.textContent =
-                                'Timed out. If you approved the payment, please contact support.';
-                            return;
-                        }
-
-                        // Adaptive interval: 10 s for first 2 min, then 15 s
-                        const nextInterval = elapsedSecs < 120 ? 10000 : 15000;
-                        setTimeout(doPoll, nextInterval);
-
-                    } catch (e) {
-                        console.warn('Poll error:', e);
-                        // Network hiccup — retry after 10 s
-                        if (elapsedSecs < DEADLINE_SECS) setTimeout(doPoll, 10000);
-                    }
-                };
-
-                // First poll after 15 s — gives Moolre time to register the transaction
-                setTimeout(doPoll, 15000);
-
+                document.querySelector('.card').innerHTML = buildPollingScreen();
+                startPolling();
             } else {
                 showStatus('error', data.message || 'OTP verification failed. Please try again.');
                 inputs.forEach(i => { i.value = ''; i.classList.remove('filled'); });
