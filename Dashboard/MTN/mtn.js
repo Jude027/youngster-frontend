@@ -457,17 +457,21 @@ function showPaymentModal(orderDetails) {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    gatewayName:  'Moolre',
-                    phoneNumber:  phone,
-                    beneficiary:  orderDetails.beneficiary,
-                    amount:       orderDetails.amount,
-                    provider:     network,
-                    description:  `${orderDetails.package} ${orderDetails.bundle_size}`,
-                    packageName:  orderDetails.package,
-                    bundle_size:  orderDetails.bundle_size,
-                    storeSlug:    new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                    clientType:   localStorage.getItem('clientType') || 'Customers',
-                    isUnverified: orderDetails.isUnverified === true,
+                    gatewayName:     'Moolre',
+                    phoneNumber:     phone,
+                    beneficiary:     orderDetails.beneficiary,
+                    amount:          orderDetails.amount,
+                    provider:        network,              // MoMo payment network
+                    paymentNetwork:  network,
+                    orderProvider:   orderDetails.package, // actual data bundle provider
+                    packageProvider: orderDetails.package,
+                    description:     `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    packageName:     orderDetails.bundle_size,
+                    bundle_size:     orderDetails.bundle_size,
+                    storeSlug:       new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                    clientType:      localStorage.getItem('clientType') || 'Customers',
+                    guestSessionId:  localStorage.getItem('guestSessionId') || null,
+                    isUnverified:    orderDetails.isUnverified === true,
                 }),
             });
 
@@ -725,7 +729,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const proceed = confirm(
                         (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
                         '\n\nThis phone number is not verified on our new portal at the moment. Would you like to proceed anyway? This order will take 2-3 days to be delivered if you can’t wait don’t proceed. Thank you ' +
-                        '\n\nNOTE: THIS ORDER CAN’T BE CANCELLED OR REFUNDED! '
+                        '\n\nNOTE: THESE ORDERS CAN’T BE CANCELLED OR REFUNDED! '
                     );
                     if (!proceed) {
                         orderBtn.disabled = false;
