@@ -92,6 +92,9 @@ function applyStoreBranding(store) {
         if (whatsappGroupLink) {
             waGroup.href = whatsappGroupLink;
             waGroup.style.display = '';   // ensure visible
+        } else if (waGroup.href && waGroup.href !== window.location.href) {
+            // Keep the hardcoded href from the HTML — just make sure it's visible
+            waGroup.style.display = '';
         } else {
             waGroup.style.display = 'none';
         }
