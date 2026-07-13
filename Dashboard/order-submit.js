@@ -69,8 +69,9 @@ async function submitOrder(orderData) {
                 // The actual data package provider is stored in packageProvider
                 provider:        orderData.network || orderData.package,
                 packageProvider: orderData.package,   // e.g. "AT Ishare", "Telecel", "MTN EXPRESS"
+                orderProvider:   orderData.package,
                 description: `${orderData.package} ${orderData.bundle_size} bundle`,
-                packageName: orderData.package,
+                packageName: orderData.bundle_size,
                 bundle_size: orderData.bundle_size,
                 storeSlug:       storeSlug  || null,
                 clientType:      clientType || 'Customers',
