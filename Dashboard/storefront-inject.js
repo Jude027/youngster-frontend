@@ -157,12 +157,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const apiUrl = `${STOREFRONT_API}/storefront/${encodeURIComponent(slug)}?t=${Date.now()}`;
         console.log('[StorefrontInject] Fetching:', apiUrl);
 
-        const res = await fetch(apiUrl, {
-            headers: {
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
-            }
-        });
+        const res = await fetch(apiUrl);
 
         console.log('[StorefrontInject] API response status:', res.status);
         
@@ -184,8 +179,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             hasWhatsapp: !!store.whatsappNumber
         });
         
-        // Cache branding so orders/transactions pages render instantly on next visit.
-        // storeBrandLogo is cleared if the store no longer has a logo.
         const resolvedSlug = store.storeSlug || slug;
         if (resolvedSlug) localStorage.setItem('storeBrandSlug', resolvedSlug);
         if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
@@ -195,7 +188,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (store.whatsappGroupLink) localStorage.setItem('storeWhatsappGroup', store.whatsappGroupLink);
         else                         localStorage.removeItem('storeWhatsappGroup');
 
-        // If the dealer modified the store name, redirect automatically to the new URL path
         if (store.storeSlug && store.storeSlug !== slug) {
             if (window.location.pathname.includes('/referral/')) {
                 window.location.replace(`/referral/${store.storeSlug}${window.location.search}`);
@@ -205,14 +197,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         applyStoreBranding(store);
 
-        // ── Patch all bundle-page links on the dashboard to carry ?store= ──
-        // This ensures mtn.html, telecel.html etc. know which dealer's prices
-        // to load. clientType flows via localStorage (set above), so it never
-        // appears in these sub-page URLs.
-        const resolvedSlug = store.storeSlug || slug;
         document.querySelectorAll('a[href]').forEach(a => {
             const href = a.getAttribute('href');
-            // Target relative links to bundle pages (contain .html, not external)
             if (href && href.includes('.html') && !href.startsWith('http') && !href.includes('?store=')) {
                 const sep = href.includes('?') ? '&' : '?';
                 a.setAttribute('href', href + sep + 'store=' + encodeURIComponent(resolvedSlug));
