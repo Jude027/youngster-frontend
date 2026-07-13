@@ -1,10 +1,5 @@
 // transactions.js – Guest platform (My Store)
-const API_BASE = (() => {
-    const h = window.location.hostname;
-    return (h === 'localhost' || h === '127.0.0.1')
-        ? 'http://localhost:5000/api'
-        : 'https://youngster-backend-production.up.railway.app/api';
-})();
+const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
 function authHeaders() {
     const token = localStorage.getItem('token');
@@ -158,17 +153,7 @@ function initializeSidebar() {
     // Exclude dashboardMenuLink — it handles its own navigation + close
     document.querySelectorAll('.menu-item:not(#dashboardMenuLink)').forEach(item => item.addEventListener('click', closeSidebar));
 
-    // Dashboard link — navigate back to branded store dashboard with slug
-    const dashboardLink = document.getElementById('dashboardMenuLink');
-    if (dashboardLink) {
-        dashboardLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            closeSidebar();
-            const slug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
-            const base = '../dashboard2.html';
-            window.location.href = slug ? `${base}?store=${encodeURIComponent(slug)}` : base;
-        });
-    }
+
 }
 
 // Initialize logout
@@ -209,96 +194,56 @@ function initializeRefresh() {
     if (refreshBtn) refreshBtn.addEventListener('click', () => fetchTransactions());
 }
 
-// ─── Store Branding ───────────────────────────────────────────────────────────
-// Apply cached branding instantly — only if the slug matches, so we never
-// show a different dealer's name/logo on this page.
-function applyBrandingFromCache() {
-    const storeSlug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
-    const cachedSlug = localStorage.getItem('storeBrandSlug');
-    if (!storeSlug || !cachedSlug || storeSlug.toLowerCase() !== cachedSlug.toLowerCase()) return;
-
-    const name = localStorage.getItem('storeBrandName');
-    const logo = localStorage.getItem('storeBrandLogo');
-    if (!name && !logo) return;
-
-    if (name) {
-        document.title = name + ' — Transactions';
-        const t = document.getElementById('sidebarTitle');
-        if (t) t.textContent = name;
-    }
-    const l = document.getElementById('sidebarLogo');
-    if (l) {
-        if (logo) {
-            l.innerHTML = `<img src="${logo}" alt="${name || ''} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-        } else if (name) {
-            l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${name.charAt(0).toUpperCase()}</span>`;
-        }
-    }
-}
-
-// Fetch and apply full store branding from the API (supports both dealer token and guest slug).
-async function applyUserStoreBranding() {
-    try {
-        const token     = localStorage.getItem('token');
-        const storeSlug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
-        let store;
-
-        if (token && token !== 'null') {
-            const res = await fetch(`${API_BASE}/store-settings`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                cache: 'no-store'
-            });
-            if (!res.ok) return;
-            store = await res.json();
-            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
-        } else if (storeSlug) {
-            const res = await fetch(`${API_BASE}/storefront/${encodeURIComponent(storeSlug)}`);
-            if (!res.ok) {
-                localStorage.removeItem('storeBrandName');
-                localStorage.removeItem('storeBrandLogo');
-                localStorage.removeItem('storeWhatsapp');
-                localStorage.removeItem('storeBrandSlug');
-                return;
-            }
-            store = await res.json();
-        } else {
-            return;
-        }
-
-        // Persist branding into localStorage cache (keyed to this slug)
-        const resolvedSlug = store.storeSlug || storeSlug;
-        if (resolvedSlug) localStorage.setItem('storeBrandSlug', resolvedSlug);
-        if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
-        if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
-        else                  localStorage.removeItem('storeBrandLogo');
-        if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
-
-        const sidebarTitle = document.getElementById('sidebarTitle');
-        if (sidebarTitle && store.storeName) sidebarTitle.textContent = store.storeName;
-
-        const sidebarLogo = document.getElementById('sidebarLogo');
-        if (sidebarLogo) {
-            if (store.storeLogo) {
-                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName || ''} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-            } else if (store.storeName) {
-                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
-            }
-        }
-    } catch (err) {
-        console.warn('Could not load store branding:', err);
-    }
-}
-
 document.addEventListener('DOMContentLoaded', () => {
     // Guest platform — no login required for viewing transactions
     // Guests identify via guestSessionId stored in localStorage
-    applyBrandingFromCache(); // instant — no network flash
     initializeTheme();
     initializeSidebar();
     initializeLogout();
     initializeSearch();
     initializeRefresh();
+    applyBrandingFromCache();
     fetchTransactions();
-    applyUserStoreBranding(); // update from API in background
 });
+
+// Apply store branding from localStorage cache (set by storefront-inject.js on dashboard)
+function applyBrandingFromCache() {
+    const name = localStorage.getItem('storeBrandName');
+    const logo = localStorage.getItem('storeBrandLogo');
+    const slug = localStorage.getItem('storeSlug') ||
+        new URLSearchParams(window.location.search).get('store') || '';
+
+    if (name) {
+        document.title = name + ' — Transactions';
+        const h = document.getElementById('headerStoreName');
+        if (h) h.textContent = name;
+        const sb = document.getElementById('sidebarTitle');
+        if (sb) sb.textContent = name;
+        const ft = document.getElementById('footerStoreName');
+        if (ft) ft.textContent = name;
+    }
+    if (logo) {
+        const logoEl = document.getElementById('sidebarLogo');
+        if (logoEl) logoEl.innerHTML = `<img src="${logo}" alt="${name || 'Store'} Logo"
+            style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+    }
+    // Patch dashboard link to carry store slug back
+    if (slug) {
+        const dashLink = document.getElementById('dashboardMenuLink');
+        if (dashLink) dashLink.href = `../Dashboard/dashboard2.html?store=${encodeURIComponent(slug)}`;
+    }
+    // WhatsApp links
+    const waNumber = localStorage.getItem('storeWhatsapp');
+    const waGroup  = localStorage.getItem('storeWhatsappGroup');
+    const waAdmin  = document.getElementById('waAdminLink');
+    const waGroupEl = document.getElementById('waGroupLink');
+    if (waAdmin && waNumber) {
+        waAdmin.href = `https://wa.me/${waNumber.replace(/\D/g, '')}`;
+        waAdmin.style.display = '';
+    }
+    if (waGroupEl && waGroup) {
+        waGroupEl.href = waGroup;
+        waGroupEl.style.display = '';
+    }
+}
 
