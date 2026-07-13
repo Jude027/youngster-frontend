@@ -6,7 +6,9 @@
 // into the existing dashboard IDs.
 // When visited normally (no slug), does nothing — defaults remain.
 
-const STOREFRONT_API = 'https://youngster-backend-production.up.railway.app/api';
+const STOREFRONT_API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000/api'
+    : 'https://youngster-backend-production.up.railway.app/api';
 
 // ─── Detect slug ──────────────────────────────────────────────────────────────
 // Supports:
@@ -130,15 +132,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Apply cached branding immediately — before the network fetch — so the
     // dashboard never shows default content while waiting for the API.
-    const cachedName = localStorage.getItem('storeBrandName');
-    const cachedLogo = localStorage.getItem('storeBrandLogo');
-    if (cachedName || cachedLogo) {
-        applyStoreBranding({
-            storeName:        cachedName || '',
-            storeLogo:        cachedLogo || '',
-            whatsappGroupLink: localStorage.getItem('storeWhatsappGroup') || '',
-            whatsappNumber:   localStorage.getItem('storeWhatsapp') || '',
-        });
+    // Apply cached branding immediately ONLY if it belongs to the current store slug.
+    // This prevents showing a previously visited dealer's branding.
+    const cachedSlug = localStorage.getItem('storeBrandSlug');
+    if (slug && cachedSlug && cachedSlug.toLowerCase() === slug.toLowerCase()) {
+        const cachedName = localStorage.getItem('storeBrandName');
+        const cachedLogo = localStorage.getItem('storeBrandLogo');
+        if (cachedName || cachedLogo) {
+            applyStoreBranding({
+                storeName:        cachedName || '',
+                storeLogo:        cachedLogo || '',
+                whatsappGroupLink: localStorage.getItem('storeWhatsappGroup') || '',
+                whatsappNumber:   localStorage.getItem('storeWhatsapp') || '',
+            });
+        }
     }
 
     if (!slug) {
@@ -161,6 +168,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         if (!res.ok) {
             console.warn(`[StorefrontInject] Store not found for slug "${slug}" (status ${res.status})`);
+            // Clear branding cache if store settings don't exist
+            localStorage.removeItem('storeBrandName');
+            localStorage.removeItem('storeBrandLogo');
+            localStorage.removeItem('storeWhatsappGroup');
+            localStorage.removeItem('storeWhatsapp');
+            localStorage.removeItem('storeBrandSlug');
             return;
         }
         const store = await res.json();
@@ -173,6 +186,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Cache branding so orders/transactions pages render instantly on next visit.
         // storeBrandLogo is cleared if the store no longer has a logo.
+        const resolvedSlug = store.storeSlug || slug;
+        if (resolvedSlug) localStorage.setItem('storeBrandSlug', resolvedSlug);
         if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
         if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
         else                  localStorage.removeItem('storeBrandLogo');
