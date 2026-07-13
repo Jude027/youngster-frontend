@@ -120,7 +120,7 @@ function applyStoreBranding(store) {
     const dashboardLink = document.getElementById('dashboardMenuLink');
     if (dashboardLink) {
         const slugToUse = store.storeSlug || '';
-        if (slugToUse) dashboardLink.href = `/Dashboard/dashboard2?store=${encodeURIComponent(slugToUse)}`;
+        if (slugToUse) dashboardLink.href = `/Dashboard/dashboard2?.htmlstore=${encodeURIComponent(slugToUse)}`;
     }
 }
 
