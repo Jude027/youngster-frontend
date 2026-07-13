@@ -126,38 +126,50 @@ function applyStoreBranding(store) {
 document.addEventListener('DOMContentLoaded', async () => {
     const slug = detectStoreSlug();
 
+    console.log('[StorefrontInject] slug detected:', slug, '| URL:', window.location.href);
+
     // Apply cached branding immediately — before the network fetch — so the
-    // dashboard never shows "J.D Youngster Enterprise" while waiting for the API.
-    // storeBrandName / storeBrandLogo are written below after every successful fetch.
-    // Note: we only apply name/logo from cache — WhatsApp links need live data.
+    // dashboard never shows default content while waiting for the API.
     const cachedName = localStorage.getItem('storeBrandName');
     const cachedLogo = localStorage.getItem('storeBrandLogo');
     if (cachedName || cachedLogo) {
         applyStoreBranding({
-            storeName: cachedName || '',
-            storeLogo: cachedLogo || '',
-            // Pass cached WhatsApp values so the buttons aren't hidden during load
+            storeName:        cachedName || '',
+            storeLogo:        cachedLogo || '',
             whatsappGroupLink: localStorage.getItem('storeWhatsappGroup') || '',
-            whatsappNumber:    localStorage.getItem('storeWhatsapp') || '',
+            whatsappNumber:   localStorage.getItem('storeWhatsapp') || '',
         });
     }
 
-    if (!slug) return; 
+    if (!slug) {
+        console.log('[StorefrontInject] No slug found — skipping API fetch');
+        return;
+    }
 
     try {
-        // Added ?t= timestamp to destroy any browser memory/cache of the old details
-        const res = await fetch(`${STOREFRONT_API}/storefront/${encodeURIComponent(slug)}?t=${Date.now()}`, {
+        const apiUrl = `${STOREFRONT_API}/storefront/${encodeURIComponent(slug)}?t=${Date.now()}`;
+        console.log('[StorefrontInject] Fetching:', apiUrl);
+
+        const res = await fetch(apiUrl, {
             headers: {
                 'Cache-Control': 'no-cache',
                 'Pragma': 'no-cache'
             }
         });
+
+        console.log('[StorefrontInject] API response status:', res.status);
         
         if (!res.ok) {
-            console.warn(`Storefront: no store found for slug "${slug}"`);
+            console.warn(`[StorefrontInject] Store not found for slug "${slug}" (status ${res.status})`);
             return;
         }
         const store = await res.json();
+        console.log('[StorefrontInject] Store data received:', {
+            storeName: store.storeName,
+            storeSlug: store.storeSlug,
+            hasLogo: !!store.storeLogo,
+            hasWhatsapp: !!store.whatsappNumber
+        });
         
         // Cache branding so orders/transactions pages render instantly on next visit.
         // storeBrandLogo is cleared if the store no longer has a logo.
@@ -193,6 +205,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
     } catch (err) {
-        console.error('Storefront inject error:', err);
+        console.error('[StorefrontInject] Error fetching store branding:', err);
     }
 });
