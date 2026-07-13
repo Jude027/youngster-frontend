@@ -182,13 +182,13 @@ function applyMetricsToDOM(data) {
 let currentUser = null;
 
 // ─── IMPORTANT: set this to your actual production domain ─────────────────────
-// This is the base URL used to build referral links.
-// Referral links open dashboard2.html with a ?store= query param.
-// storefront-inject.js reads the slug from the query string and injects the dealer's branding.
-// e.g. 'https://youngster-frontend-production.up.railway.app/Dashboard/dashboard2?store=kwame-data-hub'
-const referralBaseUrl = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? window.location.origin + '/Dashboard/dashboard2?store='   // local dev
-    : 'https://youngster-frontend-production.up.railway.app/Dashboard/dashboard2.html?store=';     // ← replace with your real domain
+// Referral links use the /referral/<slug> route on the backend which redirects
+// guests to the correct frontend storefront page with branding applied.
+const BACKEND_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+    ? 'http://localhost:5000'
+    : 'https://youngster-backend-production.up.railway.app';
+
+const referralBaseUrl = BACKEND_BASE + '/referral/';
 
 async function loadCurrentUser() {
     try {
@@ -232,8 +232,9 @@ async function loadReferralBalance() {
  * falling back to the raw user ID only if no slug could be derived.
  */
 function buildReferralLink(storeSlugOrId, clientType) {
-    const base = referralBaseUrl + (storeSlugOrId || 'unknown');
-    return clientType ? base + '&client=' + encodeURIComponent(clientType) : base;
+    // e.g. https://youngster-backend-production.up.railway.app/referral/youngster-data-shop?client=Customers
+    const base = referralBaseUrl + encodeURIComponent(storeSlugOrId || 'unknown');
+    return clientType ? base + '?client=' + encodeURIComponent(clientType) : base;
 }
 
 // ─── Clipboard ────────────────────────────────────────────────────────────────
