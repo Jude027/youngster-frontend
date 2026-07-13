@@ -43,23 +43,27 @@
                 <img src="WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="Store Logo">
             </div>
         </div>
-        <!-- Applies cached store branding instantly — no network delay, no flash of defaults -->
         <script>
             (function () {
-                var name = localStorage.getItem('storeBrandName');
-                var logo = localStorage.getItem('storeBrandLogo');
-                if (name) {
-                    var t = document.getElementById('sidebarTitle');
-                    if (t) t.textContent = name;
-                    document.title = name + ' \u2014 Orders';
-                }
-                if (logo || name) {
-                    var l = document.getElementById('sidebarLogo');
-                    if (l) {
-                        if (logo) {
-                            l.innerHTML = '<img src="' + logo + '" alt="' + (name || '') + ' Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">';
-                        } else {
-                            l.innerHTML = '<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">' + name.charAt(0).toUpperCase() + '</span>';
+                var params = new URLSearchParams(window.location.search);
+                var currentSlug = params.get('store') || localStorage.getItem('storeSlug');
+                var cachedSlug = localStorage.getItem('storeBrandSlug');
+                if (currentSlug && cachedSlug && currentSlug.toLowerCase() === cachedSlug.toLowerCase()) {
+                    var name = localStorage.getItem('storeBrandName');
+                    var logo = localStorage.getItem('storeBrandLogo');
+                    if (name) {
+                        var t = document.getElementById('sidebarTitle');
+                        if (t) t.textContent = name;
+                        document.title = name + ' \u2014 Orders';
+                    }
+                    if (logo || name) {
+                        var l = document.getElementById('sidebarLogo');
+                        if (l) {
+                            if (logo) {
+                                l.innerHTML = '<img src="' + logo + '" alt="' + (name || '') + ' Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">';
+                            } else {
+                                l.innerHTML = '<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">' + name.charAt(0).toUpperCase() + '</span>';
+                            }
                         }
                     }
                 }
