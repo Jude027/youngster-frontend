@@ -336,25 +336,36 @@ function initializeRefreshButton() {
 // Apply branding immediately from localStorage cache — zero network delay, zero flash.
 // Keys are written by applyUserStoreBranding() after every successful API fetch.
 function applyBrandingFromCache() {
-    const name = localStorage.getItem('storeBrandName');
-    const logo = localStorage.getItem('storeBrandLogo');
-    if (!name && !logo) return;
+    const storeSlug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
+    const cachedSlug = localStorage.getItem('storeBrandSlug');
+    
+    if (storeSlug && cachedSlug && cachedSlug.toLowerCase() === storeSlug.toLowerCase()) {
+        const name = localStorage.getItem('storeBrandName');
+        const logo = localStorage.getItem('storeBrandLogo');
+        if (!name && !logo) return;
 
-    if (name) {
-        document.title = name + ' — Orders';
-        const t = document.getElementById('sidebarTitle');
-        if (t) t.textContent = name;
-    }
-    const l = document.getElementById('sidebarLogo');
-    if (l) {
-        if (logo) {
-            l.innerHTML = `<img src="${logo}" alt="${name || ''} Logo"
-                style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-        } else if (name) {
-            l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
-                width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-                ${name.charAt(0).toUpperCase()}</span>`;
+        if (name) {
+            document.title = name + ' — Orders';
+            const t = document.getElementById('sidebarTitle');
+            if (t) t.textContent = name;
         }
+        const l = document.getElementById('sidebarLogo');
+        if (l) {
+            if (logo) {
+                l.innerHTML = `<img src="${logo}" alt="${name || ''} Logo"
+                    style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+            } else if (name) {
+                l.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;
+                    width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                    ${name.charAt(0).toUpperCase()}</span>`;
+            }
+        }
+    } else {
+        // Clear branding cache if it doesn't match the current storeSlug
+        localStorage.removeItem('storeBrandName');
+        localStorage.removeItem('storeBrandLogo');
+        localStorage.removeItem('storeWhatsapp');
+        localStorage.removeItem('storeBrandSlug');
     }
 }
 
@@ -366,7 +377,7 @@ function applyBrandingFromCache() {
 async function applyUserStoreBranding() {
     try {
         const token     = localStorage.getItem('token');
-        const storeSlug = localStorage.getItem('storeSlug');
+        const storeSlug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
         let store;
 
         if (token) {
@@ -379,7 +390,14 @@ async function applyUserStoreBranding() {
             if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
         } else if (storeSlug) {
             const res = await fetch(`${API_BASE}/storefront/${encodeURIComponent(storeSlug)}`);
-            if (!res.ok) return;
+            if (!res.ok) {
+                // Clear branding cache if store settings don't exist
+                localStorage.removeItem('storeBrandName');
+                localStorage.removeItem('storeBrandLogo');
+                localStorage.removeItem('storeWhatsapp');
+                localStorage.removeItem('storeBrandSlug');
+                return;
+            }
             store = await res.json();
         } else {
             return;
@@ -388,6 +406,8 @@ async function applyUserStoreBranding() {
         if (store.whatsappNumber) localStorage.setItem('storeWhatsapp', store.whatsappNumber);
 
         // Cache branding for instant display on next page load (no flash)
+        const resolvedSlug = store.storeSlug || storeSlug;
+        if (resolvedSlug) localStorage.setItem('storeBrandSlug', resolvedSlug);
         if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
         if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
         else                  localStorage.removeItem('storeBrandLogo'); // logo removed — clear old cache
