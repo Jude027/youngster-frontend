@@ -360,6 +360,11 @@ function applyBrandingFromCache() {
                     ${name.charAt(0).toUpperCase()}</span>`;
             }
         }
+        // Patch dashboard link to carry store slug back
+        if (storeSlug) {
+            const dashLink = document.getElementById('dashboardMenuLink');
+            if (dashLink) dashLink.href = `../dashboard2.html?store=${encodeURIComponent(storeSlug)}`;
+        }
     } else {
         // Clear branding cache if it doesn't match the current storeSlug
         localStorage.removeItem('storeBrandName');
