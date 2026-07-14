@@ -78,7 +78,7 @@ body {
     justify-content: space-between;
     gap: 15px;
     position: relative;
-    min-height: 120px;
+    min-height: 150px;
 }
 
 .header-left {
@@ -91,15 +91,16 @@ body {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    padding: 8px;
+    padding: 12px;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 16px;
     transition: all 0.3s ease;
-    width: 54px;
-    height: 54px;
+    width: 44px;
+    height: 44px;
 }
 
 .menu-btn:hover {
@@ -114,39 +115,20 @@ body {
 .menu-btn i {
     font-size: 16px;
 }
-.overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease;
-}
-
-.overlay.open {
-    opacity: 1;
-    visibility: visible;
-}
 
 /* SIDEBAR STYLES */
 .sidebar {
     position: fixed;
     top: 0;
-    left: -320px;
-    width: 320px;
+    left: -280px;
+    width: 280px;
     height: 100%;
     background: var(--sidebar-bg);
     color: white;
     transition: left 0.3s ease;
     z-index: 2000;
-    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
     overflow-y: auto;
-    padding-top: var(--safe-top);
-    -webkit-overflow-scrolling: touch;
 }
 
 .sidebar.open {
@@ -264,7 +246,7 @@ body {
 
 .header-title h1 {
     color: white;
-    font-size: 1.4rem;
+    font-size: 2.5rem;
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
@@ -275,7 +257,7 @@ body {
 
 .header-title .subtitle {
     color: rgba(255, 255, 255, 0.9);
-    font-size: 0.85rem;
+    font-size: 1.2rem;
     font-weight: 400;
 }
 
@@ -295,10 +277,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 16px;
     transition: all 0.3s ease;
-    width: 54px;
-    height: 54px;
+    width: 44px;
+    height: 44px;
     -webkit-tap-highlight-color: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -355,11 +337,11 @@ body {
     font-size: 1.2rem;
 }
 
-/* Network Cards - Grid Layout */
+/* Network Cards - Grid Layout - Reduced size */
 .network-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 18px;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 15px;
     margin-bottom: 30px;
 }
 
@@ -377,11 +359,11 @@ body {
 
 .network-card {
     background: var(--card-bg);
-    border-radius: 14px;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 15px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
     box-shadow: var(--card-shadow);
     transition: all 0.3s ease;
     cursor: pointer;
@@ -389,7 +371,7 @@ body {
     text-decoration: none;
     color: inherit;
     -webkit-tap-highlight-color: transparent;
-    min-height: 100px;
+    min-height: 90px;
 }
 
 .network-card:hover {
@@ -403,9 +385,9 @@ body {
 }
 
 .network-logo {
-    width: 62px;
-    height: 62px;
-    border-radius: 12px;
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -421,7 +403,7 @@ body {
 }
 
 .network-logo i {
-    font-size: 34px;
+    font-size: 28px;
     color: var(--accent-color);
 }
 
@@ -437,15 +419,15 @@ body {
 
 .network-name {
     font-weight: 700;
-    font-size: 1.2rem;
-    margin-bottom: 5px;
+    font-size: 1.1rem;
+    margin-bottom: 4px;
     line-height: 1.5;
     color: var(--text-primary);
 }
 
 .network-tagline {
     color: var(--text-secondary);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     line-height: 1.5;
 }
 
@@ -620,31 +602,29 @@ body {
     }
     
     .network-cards {
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 14px;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
 }
 
 @media screen and (max-width: 768px) {
     .header {
         padding: 10px 15px;
-        min-height: 80px;
+        min-height: 150px;
     }
     
     .menu-btn, .theme-toggle {
-        width: 40px;
-        height: 40px;
-        padding: 8px;
-        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
+        padding: 6px;
     }
     
     .menu-btn i, .theme-toggle i {
-        font-size: 15px;
+        font-size: 14px;
     }
     
     .header-title h1 {
-        font-size: 1.1rem;
-        margin-bottom: 2px;
+        font-size: 1.2rem;
+        margin-bottom: 3px;
     }
     
     .header-title .subtitle {
@@ -675,29 +655,29 @@ body {
     }
     
     .network-card {
-        padding: 16px;
-        min-height: 80px;
+        padding: 12px;
+        min-height: 65px;
     }
-
+    
     .network-logo {
-        width: 52px;
-        height: 52px;
+        width: 40px;
+        height: 40px;
     }
-
+    
     .network-logo i {
-        font-size: 26px;
+        font-size: 20px;
     }
-
+    
     .network-name {
-        font-size: 1.05rem;
+        font-size: 0.95rem;
     }
-
+    
     .network-tagline {
-        font-size: 0.82rem;
+        font-size: 0.75rem;
     }
     
     .sidebar {
-        width: 290px;
+        width: 240px;
     }
     
     .whatsapp-float {
@@ -706,8 +686,8 @@ body {
     }
     
     .whatsapp-main-btn {
-        width: 50px;
-        height: 50px;
+        width: 45px;
+        height: 45px;
     }
     
     .whatsapp-main-btn i {
@@ -727,22 +707,21 @@ body {
 @media screen and (max-width: 576px) {
     .header {
         padding: 8px 12px;
-        min-height: 90px;
+        min-height: 120px;
     }
     
     .menu-btn, .theme-toggle {
-        width: 38px;
-        height: 38px;
-        padding: 7px;
-        flex-shrink: 0;
+        width: 30px;
+        height: 30px;
+        padding: 5px;
     }
     
     .header-title h1 {
-        font-size: 1.2rem;
+        font-size: 1rem;
     }
     
     .header-title .subtitle {
-        font-size: 0.9rem;
+        font-size: 0.7rem;
     }
     
     .content {
@@ -766,18 +745,15 @@ body {
 @media screen and (max-width: 400px) {
     .header {
         padding: 6px 10px;
-        min-height: 64px;
     }
     
     .menu-btn, .theme-toggle {
-        width: 36px;
-        height: 36px;
-        padding: 6px;
-        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
     }
     
     .header-title h1 {
-        font-size: 0.95rem;
+        font-size: 0.9rem;
     }
     
     .header-title .subtitle {
@@ -785,16 +761,16 @@ body {
     }
     
     .network-card {
-        padding: 14px;
+        padding: 10px;
     }
     
     .network-logo {
-        width: 45px;
-        height: 45px;
+        width: 35px;
+        height: 35px;
     }
     
     .network-name {
-        font-size: 0.95rem;
+        font-size: 0.85rem;
     }
 }
 
