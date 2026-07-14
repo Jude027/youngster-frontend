@@ -116,11 +116,20 @@ function applyStoreBranding(store) {
     const resellerLink = document.getElementById('resellerLink');
     if (resellerLink && waNumber) resellerLink.href = waNumber;
 
-    // Update dashboard menu link to preserve store slug across sub-pages
+    // Update dashboard menu link to preserve store slug across sub-pages.
+    // Skip if we're already ON the dashboard — the link should stay as href="#"
     const dashboardLink = document.getElementById('dashboardMenuLink');
-    if (dashboardLink) {
+    const onDashboard = window.location.pathname.includes('dashboard2') ||
+                        window.location.pathname.startsWith('/referral/');
+    if (dashboardLink && !onDashboard) {
         const slugToUse = store.storeSlug || '';
-        if (slugToUse) dashboardLink.href = `/Dashboard/dashboard2?.htmlstore=${encodeURIComponent(slugToUse)}`;
+        if (slugToUse) {
+            const isStatic = window.location.pathname.endsWith('.html') || window.location.port === '8000';
+            dashboardLink.href = isStatic
+                ? `/Dashboard/dashboard2.html?store=${encodeURIComponent(slugToUse)}`
+                : `/referral/${encodeURIComponent(slugToUse)}`;
+        }
+
     }
 }
 
