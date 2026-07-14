@@ -711,7 +711,7 @@ body {
     }
     
     .whatsapp-main-btn i {
-        font-size: 22px;
+        font-size: 32px;
     }
     
     .whatsapp-options {
@@ -727,7 +727,7 @@ body {
 @media screen and (max-width: 576px) {
     .header {
         padding: 12px 14px;
-        min-height: 110px;
+        min-height: 130px;
     }
     
     .menu-btn, .theme-toggle {
