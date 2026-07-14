@@ -706,8 +706,8 @@ body {
     }
     
     .whatsapp-main-btn {
-        width: 50px;
-        height: 50px;
+        width: 60px;
+        height: 60px;
     }
     
     .whatsapp-main-btn i {
@@ -770,7 +770,7 @@ body {
 @media screen and (max-width: 400px) {
     .header {
         padding: 10px 12px;
-        min-height: 80px;
+        min-height: 90px;
     }
     
     .menu-btn, .theme-toggle {
