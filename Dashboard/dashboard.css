@@ -69,16 +69,16 @@ body {
     border-radius: 0;
 }
 
-/* Header Styles - Reduced height */
+/* Header Styles */
 .header {
     background: var(--header-bg);
-    padding: 15px 25px;
+    padding: 18px 25px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 15px;
     position: relative;
-    min-height: 150px;
+    min-height: 140px;
 }
 
 .header-left {
@@ -91,16 +91,15 @@ body {
     background: rgba(255, 255, 255, 0.2);
     border: none;
     color: white;
-    padding: 12px;
+    padding: 8px;
     border-radius: 8px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
     transition: all 0.3s ease;
-    width: 44px;
-    height: 44px;
+    width: 54px;
+    height: 54px;
 }
 
 .menu-btn:hover {
@@ -115,20 +114,39 @@ body {
 .menu-btn i {
     font-size: 16px;
 }
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease;
+}
+
+.overlay.open {
+    opacity: 1;
+    visibility: visible;
+}
 
 /* SIDEBAR STYLES */
 .sidebar {
     position: fixed;
     top: 0;
-    left: -280px;
-    width: 280px;
+    left: -320px;
+    width: 320px;
     height: 100%;
     background: var(--sidebar-bg);
     color: white;
     transition: left 0.3s ease;
     z-index: 2000;
-    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.2);
+    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.2);
     overflow-y: auto;
+    padding-top: var(--safe-top);
+    -webkit-overflow-scrolling: touch;
 }
 
 .sidebar.open {
@@ -246,7 +264,7 @@ body {
 
 .header-title h1 {
     color: white;
-    font-size: 2.5rem;
+    font-size: 1.4rem;
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
@@ -257,7 +275,7 @@ body {
 
 .header-title .subtitle {
     color: rgba(255, 255, 255, 0.9);
-    font-size: 1.2rem;
+    font-size: 0.85rem;
     font-weight: 400;
 }
 
@@ -277,10 +295,10 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 1rem;
     transition: all 0.3s ease;
-    width: 44px;
-    height: 44px;
+    width: 54px;
+    height: 54px;
     -webkit-tap-highlight-color: transparent;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -337,11 +355,11 @@ body {
     font-size: 1.2rem;
 }
 
-/* Network Cards - Grid Layout - Reduced size */
+/* Network Cards - Grid Layout */
 .network-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 18px;
     margin-bottom: 30px;
 }
 
@@ -359,11 +377,11 @@ body {
 
 .network-card {
     background: var(--card-bg);
-    border-radius: 12px;
-    padding: 15px;
+    border-radius: 14px;
+    padding: 20px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 16px;
     box-shadow: var(--card-shadow);
     transition: all 0.3s ease;
     cursor: pointer;
@@ -371,7 +389,7 @@ body {
     text-decoration: none;
     color: inherit;
     -webkit-tap-highlight-color: transparent;
-    min-height: 90px;
+    min-height: 100px;
 }
 
 .network-card:hover {
@@ -385,9 +403,9 @@ body {
 }
 
 .network-logo {
-    width: 50px;
-    height: 50px;
-    border-radius: 10px;
+    width: 62px;
+    height: 62px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -403,7 +421,7 @@ body {
 }
 
 .network-logo i {
-    font-size: 28px;
+    font-size: 34px;
     color: var(--accent-color);
 }
 
@@ -419,15 +437,15 @@ body {
 
 .network-name {
     font-weight: 700;
-    font-size: 1.1rem;
-    margin-bottom: 4px;
+    font-size: 1.2rem;
+    margin-bottom: 5px;
     line-height: 1.5;
     color: var(--text-primary);
 }
 
 .network-tagline {
     color: var(--text-secondary);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     line-height: 1.5;
 }
 
@@ -602,29 +620,31 @@ body {
     }
     
     .network-cards {
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 14px;
     }
 }
 
 @media screen and (max-width: 768px) {
     .header {
         padding: 10px 15px;
-        min-height: 150px;
+        min-height: 80px;
     }
     
     .menu-btn, .theme-toggle {
-        width: 32px;
-        height: 32px;
-        padding: 6px;
+        width: 40px;
+        height: 40px;
+        padding: 8px;
+        flex-shrink: 0;
     }
     
     .menu-btn i, .theme-toggle i {
-        font-size: 14px;
+        font-size: 15px;
     }
     
     .header-title h1 {
-        font-size: 1.2rem;
-        margin-bottom: 3px;
+        font-size: 1.1rem;
+        margin-bottom: 2px;
     }
     
     .header-title .subtitle {
@@ -655,29 +675,29 @@ body {
     }
     
     .network-card {
-        padding: 12px;
-        min-height: 65px;
+        padding: 16px;
+        min-height: 80px;
     }
-    
+
     .network-logo {
-        width: 40px;
-        height: 40px;
+        width: 52px;
+        height: 52px;
     }
-    
+
     .network-logo i {
-        font-size: 20px;
+        font-size: 26px;
     }
-    
+
     .network-name {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
     }
-    
+
     .network-tagline {
-        font-size: 0.75rem;
+        font-size: 0.82rem;
     }
     
     .sidebar {
-        width: 240px;
+        width: 290px;
     }
     
     .whatsapp-float {
@@ -686,8 +706,8 @@ body {
     }
     
     .whatsapp-main-btn {
-        width: 45px;
-        height: 45px;
+        width: 50px;
+        height: 50px;
     }
     
     .whatsapp-main-btn i {
@@ -706,22 +726,27 @@ body {
 
 @media screen and (max-width: 576px) {
     .header {
-        padding: 8px 12px;
-        min-height: 120px;
+        padding: 12px 14px;
+        min-height: 110px;
     }
     
     .menu-btn, .theme-toggle {
-        width: 30px;
-        height: 30px;
-        padding: 5px;
+        width: 44px;
+        height: 44px;
+        padding: 9px;
+        flex-shrink: 0;
+    }
+
+    .menu-btn i, .theme-toggle i {
+        font-size: 18px;
     }
     
     .header-title h1 {
-        font-size: 1rem;
+        font-size: 1.35rem;
     }
     
     .header-title .subtitle {
-        font-size: 0.7rem;
+        font-size: 1rem;
     }
     
     .content {
@@ -744,33 +769,40 @@ body {
 
 @media screen and (max-width: 400px) {
     .header {
-        padding: 6px 10px;
+        padding: 10px 12px;
+        min-height: 80px;
     }
     
     .menu-btn, .theme-toggle {
-        width: 28px;
-        height: 28px;
+        width: 42px;
+        height: 42px;
+        padding: 8px;
+        flex-shrink: 0;
+    }
+
+    .menu-btn i, .theme-toggle i {
+        font-size: 17px;
     }
     
     .header-title h1 {
-        font-size: 0.9rem;
+        font-size: 1.1rem;
     }
     
     .header-title .subtitle {
-        font-size: 0.65rem;
+        font-size: 0.8rem;
     }
     
     .network-card {
-        padding: 10px;
+        padding: 14px;
     }
     
     .network-logo {
-        width: 35px;
-        height: 35px;
+        width: 45px;
+        height: 45px;
     }
     
     .network-name {
-        font-size: 0.85rem;
+        font-size: 0.95rem;
     }
 }
 
