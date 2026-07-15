@@ -1321,7 +1321,7 @@ document.getElementById('saveApiConfig')?.addEventListener('click', async () => 
             name:                  document.getElementById('apiConfigName').value.trim() || 'Default',
             enabled:               document.getElementById('apiEnabled').checked,
             type:                  document.getElementById('apiType').value,
-            baseUrl:               document.getElementById('baseUrl').value,
+            baseUrl:               document.getElementById('baseUrl').value.trim().replace(/,+$/, '').replace(/\/+$/, ''),
             authHeaderName:        document.getElementById('authHeaderName').value,
             authHeaderValue:       document.getElementById('authHeaderValue').value,
             orderEndpoint:         document.getElementById('orderEndpoint').value,
