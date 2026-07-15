@@ -721,27 +721,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 const verifyResult = await verifyRes.json();
 
                 if (!verifyRes.ok || !verifyResult.success) {
-                    // Verification failed â€” ask the customer if they want to proceed anyway.
-                    // If they do, the order is flagged isUnverified=true so the backend
-                    // routes it through the secondary API config (if configured).
+                    // Verification failed – ask the customer if they want to proceed anyway.
                     const proceed = confirm(
                         (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
-                        '\n\nThis phone number is not verified on our new portal at the moment. Would you like to proceed anyway? This order will take 2-3 days to be delivered if you can’t wait don’t proceed. Thank you ' +
-                        '\n\nNOTE: THESE ORDERS CAN’T BE CANCELLED OR REFUNDED! '
+                        'You'll be redirected to MTN EXPRESS which accepts all numbers to complete your purchase ' 
                     );
                     if (!proceed) {
                         orderBtn.disabled = false;
                         orderBtn.innerHTML = originalBtnHTML;
                         return;
                     }
-                    // Mark order as unverified so backend picks the right API config
-                    orderBtn._isUnverified = true;
+                    // User clicked OK on unverified number – redirect to purchase page
+                    window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
+                    return;
                 } else {
                     orderBtn._isUnverified = false;
                 }
             } catch (err) {
                 console.error('Beneficiary verification failed:', err);
-                // Network error during verification â€” ask if they want to continue unverified
+                // Network error during verification – ask if they want to continue unverified
                 const proceed = confirm(
                     'Could not verify this number right now (network error).\n\nWould you like to proceed anyway?'
                 );
@@ -750,7 +748,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     orderBtn.innerHTML = originalBtnHTML;
                     return;
                 }
-                orderBtn._isUnverified = true;
+                // User clicked OK on network error – redirect to purchase page
+                window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
+                return;
             }
 
             orderBtn.disabled = false;
