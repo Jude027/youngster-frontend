@@ -1307,7 +1307,7 @@ document.getElementById('apiConfigSelect')?.addEventListener('change', async (e)
     }
 });
 
-// â”€â”€ Save config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// Save config 
 
 document.getElementById('saveApiConfig')?.addEventListener('click', async () => {
     if (!selectedProviderForAPI) { alert('Please select a provider'); return; }
