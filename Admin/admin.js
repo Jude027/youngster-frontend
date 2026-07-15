@@ -1,4 +1,4 @@
-// Admin panel â€“ full management (including Role Price Mapping)
+// Admin panel full management (including Role Price Mapping)
 const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 let token = localStorage.getItem('token');
 
@@ -1506,21 +1506,28 @@ document.getElementById('testApiConfig')?.addEventListener('click', async () => 
     }
 
     try {
-        alert('Testing API connection for ' + selectedProviderForAPI);
         const res = await fetch(`${API_BASE}/admin/provider-balance/${selectedProviderForAPI}`, { headers: authHeaders() });
         const text = await res.text();
-        
+
         let result;
         try {
             result = JSON.parse(text);
         } catch (e) {
-            throw new Error(`Server returned HTML/non-JSON response (status ${res.status}): ${text.slice(0, 300)}`);
+            alert(
+                `❌ API returned a non-JSON response (HTTP ${res.status}).\n\n` +
+                `This usually means:\n` +
+                `• The base URL or balance endpoint is wrong\n` +
+                `• Your API key is domain-restricted (needs Origin header whitelisting)\n\n` +
+                `Response preview: ${text.slice(0, 200)}`
+            );
+            return;
         }
 
         if (result.success) {
-            alert('API Connection Successful!\nBalance: ' + result.balance + ' ' + (result.currency || 'GHS'));
+            alert(`✅ API Connection Successful!\nBalance: ${result.balance ?? 'N/A'} ${result.currency || 'GHS'}`);
         } else {
-            alert('API Connection Failed:\n' + result.message);
+            const reason = result.message || result.error || 'No balance endpoint configured or API returned an error.';
+            alert(`❌ API Connection Failed:\n${reason}`);
         }
     } catch (err) {
         console.error(err);
