@@ -1508,7 +1508,14 @@ document.getElementById('testApiConfig')?.addEventListener('click', async () => 
     try {
         alert('Testing API connection for ' + selectedProviderForAPI);
         const res = await fetch(`${API_BASE}/admin/provider-balance/${selectedProviderForAPI}`, { headers: authHeaders() });
-        const result = await res.json();
+        const text = await res.text();
+        
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            throw new Error(`Server returned HTML/non-JSON response (status ${res.status}): ${text.slice(0, 300)}`);
+        }
 
         if (result.success) {
             alert('API Connection Successful!\nBalance: ' + result.balance + ' ' + (result.currency || 'GHS'));
