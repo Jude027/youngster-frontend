@@ -457,21 +457,17 @@ function showPaymentModal(orderDetails) {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    gatewayName:     'Moolre',
-                    phoneNumber:     phone,
-                    beneficiary:     orderDetails.beneficiary,
-                    amount:          orderDetails.amount,
-                    provider:        network,              // MoMo payment network
-                    paymentNetwork:  network,
-                    orderProvider:   orderDetails.package, // actual data bundle provider
-                    packageProvider: orderDetails.package,
-                    description:     `${orderDetails.package} ${orderDetails.bundle_size}`,
-                    packageName:     orderDetails.bundle_size,
-                    bundle_size:     orderDetails.bundle_size,
-                    storeSlug:       new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                    clientType:      localStorage.getItem('clientType') || 'Customers',
-                    guestSessionId:  localStorage.getItem('guestSessionId') || null,
-                    isUnverified:    orderDetails.isUnverified === true,
+                    gatewayName:  'Moolre',
+                    phoneNumber:  phone,
+                    beneficiary:  orderDetails.beneficiary,
+                    amount:       orderDetails.amount,
+                    provider:     network,
+                    description:  `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    packageName:  orderDetails.package,
+                    bundle_size:  orderDetails.bundle_size,
+                    storeSlug:    new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                    clientType:   localStorage.getItem('clientType') || 'Customers',
+                    isUnverified: orderDetails.isUnverified === true,
                 }),
             });
 
@@ -717,38 +713,45 @@ document.addEventListener('DOMContentLoaded', function() {
                     headers,
                     body: JSON.stringify({
                         phone: phoneNumber,
-                        is_ported_number: isPorted
+                        is_ported_number: isPorted,
+                        packageName: bundleName,
+                        provider: provider
                     })
                 });
                 const verifyResult = await verifyRes.json();
 
                 if (!verifyRes.ok || !verifyResult.success) {
-                    // Verification failed â€” redirect to external portal for unverified numbers
+                    // Verification failed â€” ask the customer if they want to proceed anyway.
+                    // If they do, the order is flagged isUnverified=true so the backend
+                    // routes it through the secondary API config (if configured).
                     const proceed = confirm(
                         (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
-                        '\n\nThis phone number is not verified on our new portal. Click OK to be redirected to our other portal to complete this order.'
+                        '\n\nThis phone number is not verified on our new portal at the moment. Would you like to proceed anyway? This order will take 2-3 days to be delivered if you can’t wait don’t proceed. Thank you ' +
+                        '\n\nNOTE: THESE ORDERS CAN’T BE CANCELLED OR REFUNDED! '
                     );
-                    orderBtn.disabled = false;
-                    orderBtn.innerHTML = originalBtnHTML;
-                    if (proceed) {
-                        window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
+                    if (!proceed) {
+                        orderBtn.disabled = false;
+                        orderBtn.innerHTML = originalBtnHTML;
+                        return;
                     }
-                    return;
+                    // Mark order as unverified so backend picks the right API config
+                    orderBtn._isUnverified = true;
                 } else {
                     orderBtn._isUnverified = false;
                 }
             } catch (err) {
                 console.error('Beneficiary verification failed:', err);
-                // Network error during verification - redirect to external portal
-                const proceedOnError = confirm(
-                    'Could not verify this number right now (network error).\n\nClick OK to be redirected to our other portal to complete this order.'
+                // Network error during verification â€” ask if they want to continue unverified
+                const proceed = confirm(
+                    'Could not verify this number right now (network error).\n\nWould you like to proceed anyway?'
                 );
-                orderBtn.disabled = false;
-                orderBtn.innerHTML = originalBtnHTML;
-                if (proceedOnError) {
-                    window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
+                if (!proceed) {
+                    orderBtn.disabled = false;
+                    orderBtn.innerHTML = originalBtnHTML;
+                    return;
                 }
-                return;            }
+                orderBtn._isUnverified = true;
+            }
 
             orderBtn.disabled = false;
             orderBtn.innerHTML = originalBtnHTML;
