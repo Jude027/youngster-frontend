@@ -724,7 +724,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     // Verification failed – ask the customer if they want to proceed anyway.
                     const proceed = confirm(
                         (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
-                        '\n\nYou\'ll be redirected to MTN EXPRESS which accepts all numbers to complete your purchase.'
+                        '\n\nClick OK to be redirected to MTN EXPRESS which accepts all numbers to complete your purchase.'
                     );
                     if (!proceed) {
                         orderBtn.disabled = false;
