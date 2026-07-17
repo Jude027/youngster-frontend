@@ -176,7 +176,7 @@ function renderOrders(ordersList) {
 
         // WhatsApp report button — uses store's own number saved in localStorage
         const waNumber    = localStorage.getItem('storeWhatsapp') || '0501784283';
-        const isCompleted = statusRaw === 'Completed' || statusRaw === 'Complete';
+        const isCompleted = ['completed', 'complete'].includes(statusRaw);
         const waMsg = encodeURIComponent(
             `Hello, I'd like a report for my order:\nBeneficiary: ${order.beneficiary || '-'}\nPackage: ${order.package || '-'} ${bundleSize}\nAmount: GHS ${parseFloat(order.amount || 0).toFixed(2)}\nDate: ${createdDate}\nStatus: ${statusDisplay}`
         );
@@ -359,11 +359,6 @@ function applyBrandingFromCache() {
                     width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
                     ${name.charAt(0).toUpperCase()}</span>`;
             }
-        }
-        // Patch dashboard link to carry store slug back
-        if (storeSlug) {
-            const dashLink = document.getElementById('dashboardMenuLink');
-            if (dashLink) dashLink.href = `../dashboard2.html?store=${encodeURIComponent(storeSlug)}`;
         }
     } else {
         // Clear branding cache if it doesn't match the current storeSlug
