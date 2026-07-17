@@ -19,13 +19,17 @@
 
 (function () {
 
-    const API = 'https://youngster-backend-production.up.railway.app/api';
+    const API = window.getYoungsterApiBase
+        ? window.getYoungsterApiBase()
+        : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5000/api'
+            : 'https://youngster-backend-production.up.railway.app/api';
 
     // Validity labels per provider — shown in the bundle details panel
     const VALIDITY = {
         'mtn':         '90 days',
         'telecel':     '60 days',
-        'at ishare':   'Non Expiry',
+        'at ishare':   '60 days',
         'at bigtime':  'Non Expiry',
         'mtn afa':     'Lifetime',
     };
@@ -171,6 +175,14 @@
             return;
         }
 
+        // Read clientType from URL ?client= param first — set by the referral link.
+        // This ensures sub-agents, agents etc. only see prices set for their type.
+        // Fall back to localStorage then empty string (server returns nothing if no
+        // prices set for that type, which is the correct behaviour).
+        const resolvedClientType = clientType
+            || localStorage.getItem('clientType')
+            || '';
+
         // If no clientType is present the customer arrived without a typed referral
         // link — show no prices rather than leaking another type's pricing.
         if (!resolvedClientType) {
@@ -183,14 +195,6 @@
             while (bundleSelect.options.length > 1) bundleSelect.remove(1);
             return;
         }
-
-        // Read clientType from URL ?client= param first — set by the referral link.
-        // This ensures sub-agents, agents etc. only see prices set for their type.
-        // Fall back to localStorage then empty string (server returns nothing if no
-        // prices set for that type, which is the correct behaviour).
-        const resolvedClientType = clientType
-            || localStorage.getItem('clientType')
-            || '';
 
         const bundleSelect = document.getElementById('bundle');
         if (!bundleSelect) {
