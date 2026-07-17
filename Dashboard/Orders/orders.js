@@ -380,15 +380,8 @@ async function applyUserStoreBranding() {
         const storeSlug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
         let store;
 
-        if (token) {
-            const res = await fetch(`${API_BASE}/store-settings`, {
-                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-                cache: 'no-store'
-            });
-            if (!res.ok) return;
-            store = await res.json();
-            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
-        } else if (storeSlug) {
+        if (storeSlug) {
+            // Prioritize storefront branding by slug (so customers see the shop they are visiting)
             const res = await fetch(`${API_BASE}/storefront/${encodeURIComponent(storeSlug)}`);
             if (!res.ok) {
                 // Clear branding cache if store settings don't exist
@@ -399,6 +392,15 @@ async function applyUserStoreBranding() {
                 return;
             }
             store = await res.json();
+        } else if (token) {
+            // Fallback: logged-in user viewing their own store dashboard
+            const res = await fetch(`${API_BASE}/store-settings`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                cache: 'no-store'
+            });
+            if (!res.ok) return;
+            store = await res.json();
+            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
         } else {
             return;
         }
