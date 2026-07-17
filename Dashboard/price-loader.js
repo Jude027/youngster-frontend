@@ -2,7 +2,11 @@
 // Utility to load referral prices dynamically for package pages
 // Supports both logged-in users and public referral visits
 
-const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+const API_BASE = window.getYoungsterApiBase
+    ? window.getYoungsterApiBase()
+    : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+        ? 'http://localhost:5000/api'
+        : 'https://youngster-backend-production.up.railway.app/api';
 /**
  * Detect if this is a referral/storefront visit
  * Returns the store slug if visiting via referral, null otherwise
