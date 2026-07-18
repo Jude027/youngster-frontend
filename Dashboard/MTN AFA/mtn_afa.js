@@ -649,6 +649,192 @@ async function applyUserStoreBranding() {
     }
 }
 
+// ── Moolre Payment Modal ──────────────────────────────────────────────────────
+function showPaymentModal(orderDetails) {
+    const existing = document.getElementById('moolrePayModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'moolrePayModal';
+    modal.innerHTML = `
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);
+            display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px;">
+            <div style="background:#fff;border-radius:16px;padding:28px 24px;
+                max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:inherit;">
+
+                <div style="text-align:center;margin-bottom:20px;">
+                    <div style="width:56px;height:56px;background:linear-gradient(135deg,#6a11cb,#2575fc);
+                        border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                        <i class="fas fa-mobile-alt" style="color:#fff;font-size:22px;"></i>
+                    </div>
+                    <h2 style="margin:0;font-size:18px;color:#1a1a2e;">Mobile Money Payment</h2>
+                    <p style="margin:6px 0 0;color:#666;font-size:13px;">Enter the MoMo number to charge</p>
+                </div>
+
+                <div style="background:#f8f9ff;border-radius:10px;padding:12px 16px;margin-bottom:18px;">
+                    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                        <span style="color:#666;font-size:13px;">Service</span>
+                        <span style="font-weight:600;font-size:13px;">${orderDetails.bundle_size}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+                        <span style="color:#666;font-size:13px;">Phone</span>
+                        <span style="font-weight:600;font-size:13px;">${orderDetails.beneficiary}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;border-top:1px solid #e0e0e0;padding-top:8px;margin-top:4px;">
+                        <span style="color:#666;font-size:14px;font-weight:600;">Amount</span>
+                        <span style="font-weight:700;font-size:16px;color:#6a11cb;">GHS ${parseFloat(orderDetails.amount).toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <div id="payModalStep1">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">MoMo Phone Number</label>
+                    <input type="tel" id="momoPhone" placeholder="0XX XXX XXXX" inputmode="numeric" maxlength="10"
+                        style="width:100%;box-sizing:border-box;padding:12px 14px;border:2px solid #e0e0e0;
+                        border-radius:8px;font-size:15px;outline:none;margin-bottom:12px;">
+                    <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">Network</label>
+                    <select id="momoNetwork" style="width:100%;box-sizing:border-box;padding:12px;
+                        border:2px solid #e0e0e0;border-radius:8px;font-size:14px;background:#fff;margin-bottom:16px;">
+                        <option value="MTN">MTN</option>
+                        <option value="Telecel">Telecel</option>
+                        <option value="AirtelTigo">AirtelTigo</option>
+                    </select>
+                    <button id="momoPayBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#6a11cb,#2575fc);
+                        color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">
+                        <i class="fas fa-paper-plane"></i> Send Payment Prompt
+                    </button>
+                    <button id="momoCancel" style="width:100%;padding:10px;background:transparent;color:#888;
+                        border:none;font-size:13px;cursor:pointer;margin-top:8px;">Cancel</button>
+                </div>
+
+                <div id="payModalStep2" style="display:none;text-align:center;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:36px;color:#6a11cb;margin-bottom:16px;"></i>
+                    <h3 style="margin:0 0 8px;color:#1a1a2e;">Waiting for payment...</h3>
+                    <p id="payModalMsg" style="color:#666;font-size:13px;margin:0 0 16px;">
+                        Check your phone and approve the MoMo prompt.</p>
+                    <button id="momoCancelWait" style="padding:10px 24px;background:transparent;color:#e74c3c;
+                        border:1px solid #e74c3c;border-radius:8px;font-size:13px;cursor:pointer;">Cancel</button>
+                </div>
+
+                <div id="payModalStep3" style="display:none;text-align:center;">
+                    <div id="payResultIcon" style="font-size:48px;margin-bottom:12px;"></div>
+                    <h3 id="payResultTitle" style="margin:0 0 8px;"></h3>
+                    <p id="payResultMsg" style="color:#666;font-size:13px;margin:0 0 20px;"></p>
+                    <button id="payResultClose" style="padding:12px 32px;background:linear-gradient(135deg,#6a11cb,#2575fc);
+                        color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">Done</button>
+                </div>
+            </div>
+        </div>`;
+
+    document.body.appendChild(modal);
+
+    const step1 = document.getElementById('payModalStep1');
+    const step2 = document.getElementById('payModalStep2');
+    const step3 = document.getElementById('payModalStep3');
+    const momoPhone = document.getElementById('momoPhone');
+
+    momoPhone.value = '';
+    momoPhone.addEventListener('input', () => { momoPhone.value = momoPhone.value.replace(/[^0-9]/g, ''); });
+
+    document.getElementById('momoCancel').addEventListener('click', () => modal.remove());
+    document.getElementById('momoCancelWait').addEventListener('click', () => modal.remove());
+    document.getElementById('payResultClose').addEventListener('click', () => modal.remove());
+
+    document.getElementById('momoPayBtn').addEventListener('click', async () => {
+        const phone   = momoPhone.value.trim();
+        const network = document.getElementById('momoNetwork').value;
+
+        if (!phone || phone.length !== 10) {
+            momoPhone.style.border = '2px solid #e74c3c';
+            momoPhone.focus();
+            return;
+        }
+        momoPhone.style.border = '2px solid #e0e0e0';
+        step1.style.display = 'none';
+        step2.style.display = 'block';
+
+        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+        const token  = localStorage.getItem('token');
+        const headers = { 'Content-Type': 'application/json' };
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+
+        try {
+            const res = await fetch(`${API_BASE}/payment/initiate`, {
+                method: 'POST', headers,
+                body: JSON.stringify({
+                    gatewayName:    'Moolre',
+                    phoneNumber:    phone,
+                    beneficiary:    orderDetails.beneficiary,
+                    amount:         orderDetails.amount,
+                    provider:       network,
+                    paymentNetwork: network,
+                    orderProvider:  orderDetails.package || 'MTN AFA',
+                    packageProvider: orderDetails.package || 'MTN AFA',
+                    description:    `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    packageName:    orderDetails.bundle_size,
+                    bundle_size:    orderDetails.bundle_size,
+                    storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                    clientType:     localStorage.getItem('clientType') || 'Customers',
+                    extra:          orderDetails.extra || {},
+                }),
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.message || 'Payment initiation failed');
+
+            const transactionId = data.transactionId;
+
+            if (data.requiresOtp) {
+                const returnUrl = window.location.pathname + window.location.search;
+                localStorage.setItem('otpTransactionId', transactionId);
+                localStorage.setItem('otpPhoneNumber',   phone);
+                localStorage.setItem('otpReturnUrl',     returnUrl);
+                modal.remove();
+                window.location.href = `../payment-otp.html?txid=${encodeURIComponent(transactionId)}&phone=${encodeURIComponent(phone)}&return=${encodeURIComponent(returnUrl)}`;
+                return;
+            }
+
+            // Poll for status
+            const deadline = Date.now() + 180000;
+            const poll = async () => {
+                try {
+                    const r = await fetch(`${API_BASE}/payment/status/${transactionId}`, { headers });
+                    const d = await r.json();
+                    const status = (d.status || d.transaction?.status || 'pending').toLowerCase();
+                    document.getElementById('payModalMsg').textContent =
+                        status === 'pending' ? 'Waiting for MoMo PIN approval...' :
+                        status === 'processing' ? 'Processing...' : 'Checking...';
+                    if (status === 'success') {
+                        step2.style.display = 'none'; step3.style.display = 'block';
+                        document.getElementById('payResultIcon').textContent = '✅';
+                        document.getElementById('payResultTitle').textContent = 'Payment Successful!';
+                        document.getElementById('payResultTitle').style.color = '#27ae60';
+                        document.getElementById('payResultMsg').textContent = 'Registration submitted successfully.';
+                    } else if (status === 'failed' || status === 'cancelled') {
+                        step2.style.display = 'none'; step3.style.display = 'block';
+                        document.getElementById('payResultIcon').textContent = '❌';
+                        document.getElementById('payResultTitle').textContent = 'Payment Failed';
+                        document.getElementById('payResultTitle').style.color = '#e74c3c';
+                        document.getElementById('payResultMsg').textContent = 'Payment not completed. Please try again.';
+                    } else if (Date.now() >= deadline) {
+                        step2.style.display = 'none'; step3.style.display = 'block';
+                        document.getElementById('payResultIcon').textContent = '⏱️';
+                        document.getElementById('payResultTitle').textContent = 'Timed Out';
+                        document.getElementById('payResultTitle').style.color = '#e74c3c';
+                        document.getElementById('payResultMsg').textContent = 'No response. Contact support if you approved the payment.';
+                    } else {
+                        setTimeout(poll, 10000);
+                    }
+                } catch { if (Date.now() < deadline) setTimeout(poll, 10000); }
+            };
+            setTimeout(poll, 15000);
+
+        } catch (err) {
+            step2.style.display = 'none';
+            step1.style.display = 'block';
+            alert(err.message || 'Could not initiate payment. Please try again.');
+        }
+    });
+}
+
 // Initialize everything when the page loads
 
 // ── Moolre Payment Link helper ────────────────────────────────────────────────
@@ -805,58 +991,23 @@ document.addEventListener('DOMContentLoaded', function() {
             timestamp: new Date().toISOString()
         };
         
-        // Submit order to backend
-        const submitBtn = registrationForm.querySelector('.submit-btn');
-        const originalBtnText = submitBtn ? submitBtn.innerHTML : '';
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
-            submitBtn.disabled = true;
-        }
-
-        const result = await submitOrder({
+        // Use the payment modal — same flow as MTN, Telecel, AT
+        showPaymentModal({
             beneficiary: formData.phone,
             package:     'MTN AFA',
             bundle_size: 'AFA Registration',
             amount:      afaPrice,
             isPorted:    formData.isPorted,
-            extra:       { fullname: formData.fullname, location: formData.location,
-                           region: formData.region, ghanaCard: formData.ghanaCard, dob: formData.dob },
+            extra:       {
+                fullname:  formData.fullname,
+                location:  formData.location,
+                region:    formData.region,
+                ghanaCard: formData.ghanaCard,
+                dob:       formData.dob,
+            },
         });
 
-        if (!result.success) {
-            if (submitBtn) { submitBtn.innerHTML = originalBtnText; submitBtn.disabled = false; }
-            alert(result.message);
-            return;
-        }
-
-        localStorage.setItem('paymentTransactionId', result.transactionId);
-        localStorage.setItem('pendingOrderData', JSON.stringify({
-            package:     'MTN AFA',
-            bundle_size: 'AFA Registration',
-            amount:      afaPrice,
-            beneficiary: formData.phone,
-            phoneNumber: formData.phone,
-            transactionId: result.transactionId,
-            storeSlug:   new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-            clientType:  localStorage.getItem('clientType') || 'Customers'
-        }));
-
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-key"></i> Redirecting to OTP...';
-            submitBtn.disabled = true;
-        }
-        const returnUrl = `/Dashboard/payment-processing.html?transactionId=${result.transactionId}`;
-        localStorage.setItem('otpTransactionId', result.transactionId);
-        localStorage.setItem('otpPhoneNumber',   formData.phone);
-        localStorage.setItem('otpReturnUrl',     returnUrl);
-        setTimeout(() => {
-            window.location.href = `../payment-otp.html?txid=${result.transactionId}&phone=${encodeURIComponent(formData.phone)}&return=${encodeURIComponent(returnUrl)}`;
-        }, 600);
-
-        // Show success notification
-        showNotificationToast(`Registration successful!`, `Welcome ${formData.fullname.split(' ')[0]}`, 'success');
-        
-        // Clear form
+        // Clear form after opening modal
         registrationForm.reset();
         clearAllFieldErrors();
         
