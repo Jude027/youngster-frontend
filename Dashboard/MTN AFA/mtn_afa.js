@@ -774,6 +774,7 @@ function showPaymentModal(orderDetails) {
                     bundle_size:    orderDetails.bundle_size,
                     storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
                     clientType:     localStorage.getItem('clientType') || 'Customers',
+                    guestSessionId: localStorage.getItem('guestSessionId') || '',
                     extra:          orderDetails.extra || {},
                 }),
             });
