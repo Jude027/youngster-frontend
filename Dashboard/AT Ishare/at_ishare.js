@@ -50,28 +50,6 @@ function initializeSidebar() {
         });
     }
     
-    // Logout functionality - UPDATED TO SHOW NOTIFICATION
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.preventDefault(); // Prevent any default behavior
-            e.stopPropagation(); // Stop event bubbling
-            
-            if (confirm('Are you sure you want to log out?')) {
-                // Clear login state
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('username');
-                
-                // Show logout notification
-                showLogoutNotification();
-                
-                // Redirect to login page after notification delay
-                setTimeout(() => {
-                    window.location.href = '../index.html';
-                }, 1500); // Redirect after 1.5 seconds (notification shows for 3 seconds)
-            }
-        });
-    }
-    
     // Close sidebar when clicking on a menu item (except orders with submenu)
     document.querySelectorAll('.menu-item:not(#ordersMenu)').forEach(item => {
         item.addEventListener('click', () => {
@@ -521,8 +499,8 @@ function showPaymentModal(orderDetails) {
     const momoPhone = document.getElementById('momoPhone');
     const momoNetwork = document.getElementById('momoNetwork');
 
-    // Pre-fill phone if beneficiary is on same network
-    momoPhone.value = orderDetails.beneficiary || '';
+    // Leave blank — customer enters their own MoMo payment number
+    momoPhone.value = '';
 
     // Numeric only
     momoPhone.addEventListener('input', () => {
