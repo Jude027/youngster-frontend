@@ -514,8 +514,8 @@ function showPaymentModal(orderDetails) {
     const momoPhone = document.getElementById('momoPhone');
     const momoNetwork = document.getElementById('momoNetwork');
 
-    // Pre-fill phone if beneficiary is on same network
-    momoPhone.value = orderDetails.beneficiary || '';
+    // Leave blank — customer enters their own MoMo payment number
+    momoPhone.value = '';
 
     // Numeric only
     momoPhone.addEventListener('input', () => {
