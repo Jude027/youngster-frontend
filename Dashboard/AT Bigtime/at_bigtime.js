@@ -438,8 +438,8 @@ function showPaymentModal(orderDetails) {
     const momoPhone = document.getElementById('momoPhone');
     const momoNetwork = document.getElementById('momoNetwork');
 
-    // Pre-fill phone if beneficiary is on same network
-    momoPhone.value = orderDetails.beneficiary || '';
+    // Leave blank — customer enters their own MoMo payment number
+    momoPhone.value = '';
 
     // Numeric only
     momoPhone.addEventListener('input', () => {
@@ -692,49 +692,17 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-                    // Submit order to backend
-            const originalText = purchaseBundle.innerHTML;
-            purchaseBundle.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            purchaseBundle.disabled = true;
+                    const selectedOption = bundleSelect.options[bundleSelect.selectedIndex];
+        const bundleName = selectedOption ? selectedOption.text.split(' - ')[0].trim() : '';
+        const amount = parseFloat(selectedOption?.getAttribute('data-price')) || 0;
+        const portedEl = document.getElementById('portedNetwork');
 
-            const selectedOption = bundleSelect.options[bundleSelect.selectedIndex];
-            const bundleSize = selectedOption ? selectedOption.text.split(' - ')[0].trim() : '';
-            const amount = parseFloat(selectedOption?.getAttribute('data-price')) || 0;
-            const portedEl = document.getElementById('portedNetwork');
-
-            const result = await submitOrder({
-                beneficiary: phoneInput.value.trim(),
-                package:     new URLSearchParams(window.location.search).get('provider') || 'AT Bigtime',
-                bundle_size: bundleSize,
-                amount:      amount,
-                isPorted:    portedEl ? portedEl.checked : false,
-            });
-
-            if (result.success) {
-                localStorage.setItem('paymentTransactionId', result.transactionId);
-                localStorage.setItem('pendingOrderData', JSON.stringify({
-                    package:     new URLSearchParams(window.location.search).get('provider') || 'AT Bigtime',
-                    bundle_size: bundleSize,
-                    amount:      amount,
-                    beneficiary: phoneInput.value.trim(),
-                    phoneNumber: phoneInput.value.trim(),
-                    transactionId: result.transactionId,
-                    storeSlug:   new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                    clientType:  localStorage.getItem('clientType') || 'Customers'
-                }));
-
-                purchaseBundle.innerHTML = '<i class="fas fa-key"></i> Redirecting to OTP...';
-                const returnUrl = `/Dashboard/payment-processing.html?transactionId=${result.transactionId}`;
-                localStorage.setItem('otpTransactionId', result.transactionId);
-                localStorage.setItem('otpPhoneNumber',   phoneInput.value.trim());
-                localStorage.setItem('otpReturnUrl',     returnUrl);
-                setTimeout(() => {
-                    window.location.href = `../payment-otp.html?txid=${result.transactionId}&phone=${encodeURIComponent(phoneInput.value.trim())}&return=${encodeURIComponent(returnUrl)}`;
-                }, 400);
-            } else {
-                purchaseBundle.innerHTML = originalText;
-                purchaseBundle.disabled = false;
-                alert(result.message);
-            }
+        showPaymentModal({
+            beneficiary: phoneInput.value.trim(),
+            package:     new URLSearchParams(window.location.search).get('provider') || 'AT Bigtime',
+            bundle_size: bundleName,
+            amount:      amount,
+            isPorted:    portedEl ? portedEl.checked : false,
+        });
     });
 });
