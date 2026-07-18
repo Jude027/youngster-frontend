@@ -257,31 +257,38 @@ function updateNumberType() {
 async function applyUserStoreBranding() {
     try {
         const token = localStorage.getItem('token');
-        if (!token) return;
+        const storeSlug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
+        let store;
 
-        const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) return;
-
-        const store = await response.json();
-
-        // Cache slug so dashboard link navigates back with ?store= param
-        if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        if (storeSlug) {
+            const response = await fetch(`https://youngster-backend-production.up.railway.app/api/storefront/${encodeURIComponent(storeSlug)}`);
+            if (!response.ok) return;
+            store = await response.json();
+        } else if (token) {
+            const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) return;
+            store = await response.json();
+            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        } else {
+            return;
+        }
 
         // Apply store branding to sidebar
         const sidebarTitle = document.getElementById('sidebarTitle');
-        if (sidebarTitle) sidebarTitle.textContent = store.storeName;
+        if (sidebarTitle && store.storeName) sidebarTitle.textContent = store.storeName;
 
         const sidebarLogo = document.getElementById('sidebarLogo');
-        if (sidebarLogo && store.storeLogo) {
-            sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-        } else if (sidebarLogo && store.storeName) {
-            sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
+        if (sidebarLogo) {
+            if (store.storeLogo) {
+                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+            } else if (store.storeName) {
+                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
+            }
         }
     } catch (err) {
         console.warn('Could not load user store details:', err);
@@ -457,17 +464,18 @@ function showPaymentModal(orderDetails) {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    gatewayName: 'Moolre',
-                    phoneNumber: phone,
-                    beneficiary: orderDetails.beneficiary,
-                    amount: orderDetails.amount,
-                    provider: network,
-                    description: `${orderDetails.package} ${orderDetails.bundle_size}`,
-                    packageName: orderDetails.package,
-                    bundle_size: orderDetails.bundle_size,
-                    storeSlug: new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                    clientType: localStorage.getItem('clientType') || 'Customers',
-                    isUnverified: orderDetails.isUnverified === true,
+                    gatewayName:    'Moolre',
+                    phoneNumber:    phone,
+                    beneficiary:    orderDetails.beneficiary,
+                    amount:         orderDetails.amount,
+                    provider:       network,
+                    description:    `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    packageName:    orderDetails.package,
+                    bundle_size:    orderDetails.bundle_size,
+                    storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                    clientType:     localStorage.getItem('clientType') || 'Customers',
+                    guestSessionId: localStorage.getItem('guestSessionId') || '',
+                    isUnverified:   orderDetails.isUnverified === true,
                 }),
             });
 
