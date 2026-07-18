@@ -230,28 +230,25 @@
                 price: p.price
             }))
         );
+        // Always rebuild from scratch — wipe any options added by price-loader.js
+        // or hardcoded in the HTML to prevent duplicates and inactive ghost entries.
+        // Remove all non-placeholder options first, then build fresh from API prices.
+        while (bundleSelect.options.length > 1) bundleSelect.remove(1);
+
         const gbToPrice = buildGbMap(allPrices, provider);
         console.log('[storefront-prices] Built price map:', gbToPrice);
 
         if (Object.keys(gbToPrice).length === 0) {
-            console.warn('[storefront-prices] ⚠️ No prices found for provider:', provider, 
-                'This means the provider name might not match exactly, or no prices have been set for this provider');
-            // Show a helpful message to the user
-            const placeholder = bundleSelect.options[0];
-            if (placeholder) {
-                placeholder.textContent = 'No prices available - Contact seller';
-                placeholder.disabled = false;
-            }
+            console.warn('[storefront-prices] ⚠️ No prices found for provider:', provider);
+            const empty = document.createElement('option');
+            empty.value = '';
+            empty.textContent = 'No prices available — contact seller';
+            empty.disabled = true;
+            bundleSelect.appendChild(empty);
             return;
         }
 
-        // Decide whether to patch existing options or build from scratch
-        const hasExistingOptions = Array.from(bundleSelect.options).some(o => o.value);
-        if (hasExistingOptions) {
-            patchExistingOptions(bundleSelect, gbToPrice, provider);
-        } else {
-            buildOptionsFromScratch(bundleSelect, gbToPrice, provider);
-        }
+        buildOptionsFromScratch(bundleSelect, gbToPrice, provider);
 
         // Refresh details panel if something is already selected
         refreshDetailsPanel(bundleSelect);
