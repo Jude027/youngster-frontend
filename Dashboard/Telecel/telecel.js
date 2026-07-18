@@ -558,18 +558,19 @@ function showPaymentModal(orderDetails) {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    gatewayName:  'Moolre',
-                    phoneNumber:  phone,
-                    beneficiary:  orderDetails.beneficiary,
-                    amount:       orderDetails.amount,
-                    provider:     network,
+                    gatewayName:    'Moolre',
+                    phoneNumber:    phone,
+                    beneficiary:    orderDetails.beneficiary,
+                    amount:         orderDetails.amount,
+                    provider:       network,
                     paymentNetwork: network,
                     orderProvider:  orderDetails.package || 'Telecel',
-                    description:  `${orderDetails.package} ${orderDetails.bundle_size}`,
-                    packageName:  orderDetails.bundle_size,
-                    bundle_size:  orderDetails.bundle_size,
-                    storeSlug:    new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                    clientType:   localStorage.getItem('clientType') || 'Customers',
+                    description:    `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    packageName:    orderDetails.bundle_size,
+                    bundle_size:    orderDetails.bundle_size,
+                    storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                    clientType:     localStorage.getItem('clientType') || 'Customers',
+                    guestSessionId: localStorage.getItem('guestSessionId') || '',
                 }),
             });
 
@@ -583,14 +584,15 @@ function showPaymentModal(orderDetails) {
 
             localStorage.setItem('paymentTransactionId', transactionId);
             localStorage.setItem('pendingOrderData', JSON.stringify({
-                package:     orderDetails.package,
-                bundle_size: orderDetails.bundle_size,
-                amount:      orderDetails.amount,
-                beneficiary: orderDetails.beneficiary,
-                phoneNumber: phone,
-                transactionId: transactionId,
-                storeSlug:   new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                clientType:  localStorage.getItem('clientType') || 'Customers'
+                package:        orderDetails.package,
+                bundle_size:    orderDetails.bundle_size,
+                amount:         orderDetails.amount,
+                beneficiary:    orderDetails.beneficiary,
+                phoneNumber:    phone,
+                transactionId:  transactionId,
+                storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                clientType:     localStorage.getItem('clientType') || 'Customers',
+                guestSessionId: localStorage.getItem('guestSessionId') || ''
             }));
 
             const returnUrl = `/Dashboard/payment-processing.html?transactionId=${transactionId}`;
