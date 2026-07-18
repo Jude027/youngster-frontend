@@ -50,6 +50,28 @@ function initializeSidebar() {
         });
     }
     
+    // Logout functionality - UPDATED TO SHOW NOTIFICATION
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent any default behavior
+            e.stopPropagation(); // Stop event bubbling
+            
+            if (confirm('Are you sure you want to log out?')) {
+                // Clear login state
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('username');
+                
+                // Show logout notification
+                showLogoutNotification();
+                
+                // Redirect to login page after notification delay
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500); // Redirect after 1.5 seconds (notification shows for 3 seconds)
+            }
+        });
+    }
+    
     // Close sidebar when clicking on a menu item (except orders with submenu)
     document.querySelectorAll('.menu-item:not(#ordersMenu)').forEach(item => {
         item.addEventListener('click', () => {
@@ -543,18 +565,19 @@ function showPaymentModal(orderDetails) {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    gatewayName:  'Moolre',
-                    phoneNumber:  phone,
-                    beneficiary:  orderDetails.beneficiary,
-                    amount:       orderDetails.amount,
-                    provider:     network,
+                    gatewayName:    'Moolre',
+                    phoneNumber:    phone,
+                    beneficiary:    orderDetails.beneficiary,
+                    amount:         orderDetails.amount,
+                    provider:       network,
                     paymentNetwork: network,
                     orderProvider:  orderDetails.package || 'AT Ishare',
-                    description:  `${orderDetails.package} ${orderDetails.bundle_size}`,
-                    packageName:  orderDetails.bundle_size,
-                    bundle_size:  orderDetails.bundle_size,
-                    storeSlug:    new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                    clientType:   localStorage.getItem('clientType') || 'Customers',
+                    description:    `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    packageName:    orderDetails.bundle_size,
+                    bundle_size:    orderDetails.bundle_size,
+                    storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                    clientType:     localStorage.getItem('clientType') || 'Customers',
+                    guestSessionId: localStorage.getItem('guestSessionId') || '',
                 }),
             });
 
@@ -568,14 +591,15 @@ function showPaymentModal(orderDetails) {
 
             localStorage.setItem('paymentTransactionId', transactionId);
             localStorage.setItem('pendingOrderData', JSON.stringify({
-                package:     orderDetails.package,
-                bundle_size: orderDetails.bundle_size,
-                amount:      orderDetails.amount,
-                beneficiary: orderDetails.beneficiary,
-                phoneNumber: phone,
-                transactionId: transactionId,
-                storeSlug:   new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                clientType:  localStorage.getItem('clientType') || 'Customers'
+                package:        orderDetails.package,
+                bundle_size:    orderDetails.bundle_size,
+                amount:         orderDetails.amount,
+                beneficiary:    orderDetails.beneficiary,
+                phoneNumber:    phone,
+                transactionId:  transactionId,
+                storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                clientType:     localStorage.getItem('clientType') || 'Customers',
+                guestSessionId: localStorage.getItem('guestSessionId') || ''
             }));
 
             const returnUrl = `/Dashboard/payment-processing.html?transactionId=${transactionId}`;
