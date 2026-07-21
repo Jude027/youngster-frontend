@@ -183,6 +183,12 @@
             || localStorage.getItem('clientType')
             || '';
 
+        const bundleSelect = document.getElementById('bundle');
+        if (!bundleSelect) {
+            console.warn('[storefront-prices] bundle dropdown not found');
+            return;
+        }
+
         // If no clientType is present the customer arrived without a typed referral
         // link — show no prices rather than leaking another type's pricing.
         if (!resolvedClientType) {
@@ -193,12 +199,6 @@
                 placeholder.disabled = false;
             }
             while (bundleSelect.options.length > 1) bundleSelect.remove(1);
-            return;
-        }
-
-        const bundleSelect = document.getElementById('bundle');
-        if (!bundleSelect) {
-            console.warn('[storefront-prices] bundle dropdown not found');
             return;
         }
 
