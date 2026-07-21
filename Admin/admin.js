@@ -777,9 +777,9 @@ async function openDisplayConfigModal(providerName) {
                     <input type="text" id="dcValidity" value="${existing.validity || ''}" placeholder="90 days">
                 </div>
                 <div class="input-group">
-                    <label>Storefront Section</label>
-                    <select id="dcStorefrontSection" style="padding:10px;border:1px solid #ccc;border-radius:4px;width:100%;">
-                        <option value="data_bundle" ${existing.storefrontSection !== 'special_offers' ? 'selected' : ''}>Buy Data Bundles</option>
+                    <label>Dashboard Section</label>
+                    <select id="dcStorefrontSection" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd;">
+                        <option value="data_bundle" ${(existing.storefrontSection || 'data_bundle') === 'data_bundle' ? 'selected' : ''}>Buy Data Bundles</option>
                         <option value="special_offers" ${existing.storefrontSection === 'special_offers' ? 'selected' : ''}>Special Offers</option>
                     </select>
                 </div>
@@ -1329,7 +1329,7 @@ document.getElementById('saveApiConfig')?.addEventListener('click', async () => 
             name:                  document.getElementById('apiConfigName').value.trim() || 'Default',
             enabled:               document.getElementById('apiEnabled').checked,
             type:                  document.getElementById('apiType').value,
-            baseUrl:               document.getElementById('baseUrl').value.trim().replace(/,+$/, '').replace(/\/+$/, ''),
+            baseUrl:               document.getElementById('baseUrl').value,
             authHeaderName:        document.getElementById('authHeaderName').value,
             authHeaderValue:       document.getElementById('authHeaderValue').value,
             orderEndpoint:         document.getElementById('orderEndpoint').value,
@@ -1514,28 +1514,14 @@ document.getElementById('testApiConfig')?.addEventListener('click', async () => 
     }
 
     try {
+        alert('Testing API connection for ' + selectedProviderForAPI);
         const res = await fetch(`${API_BASE}/admin/provider-balance/${selectedProviderForAPI}`, { headers: authHeaders() });
-        const text = await res.text();
-
-        let result;
-        try {
-            result = JSON.parse(text);
-        } catch (e) {
-            alert(
-                `❌ API returned a non-JSON response (HTTP ${res.status}).\n\n` +
-                `This usually means:\n` +
-                `• The base URL or balance endpoint is wrong\n` +
-                `• Your API key is domain-restricted (needs Origin header whitelisting)\n\n` +
-                `Response preview: ${text.slice(0, 200)}`
-            );
-            return;
-        }
+        const result = await res.json();
 
         if (result.success) {
-            alert(`✅ API Connection Successful!\nBalance: ${result.balance ?? 'N/A'} ${result.currency || 'GHS'}`);
+            alert('API Connection Successful!\nBalance: ' + result.balance + ' ' + (result.currency || 'GHS'));
         } else {
-            const reason = result.message || result.error || 'No balance endpoint configured or API returned an error.';
-            alert(`❌ API Connection Failed:\n${reason}`);
+            alert('API Connection Failed:\n' + result.message);
         }
     } catch (err) {
         console.error(err);
