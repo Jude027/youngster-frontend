@@ -253,6 +253,68 @@
         // Refresh details panel if something is already selected
         refreshDetailsPanel(bundleSelect);
 
+        // Apply displayConfig customizations (page title, colours, labels etc.)
+        // from the first price row that carries one — set by the admin display config modal.
+        const config = allPrices.find(p => p.displayConfig && p.provider &&
+            normalizeProviderName(p.provider) === normalizeProviderName(provider))?.displayConfig
+            || allPrices.find(p => p.displayConfig)?.displayConfig;
+
+        if (config) {
+            // Header colour
+            if (config.headerColor) {
+                document.documentElement.style.setProperty('--accent-color', config.headerColor);
+                document.documentElement.style.setProperty('--accent-gradient',
+                    `linear-gradient(135deg, ${config.headerColor} 0%, #2575fc 100%)`);
+                document.documentElement.style.setProperty('--header-bg',
+                    `linear-gradient(135deg, ${config.headerColor} 0%, #2575fc 100%)`);
+            }
+            // Page title & subtitle
+            const titleEl = document.getElementById('pageTitle');
+            if (titleEl && config.pageTitle) {
+                titleEl.textContent = config.pageTitle;
+                document.title = config.pageTitle;
+            }
+            const subtitleEl = document.getElementById('pageSubtitle');
+            if (subtitleEl && config.pageSubtitle) subtitleEl.textContent = config.pageSubtitle;
+
+            // Note box
+            const noteBox  = document.getElementById('noteBox');
+            const noteText = document.getElementById('noteText');
+            if (noteBox && noteText) {
+                if (config.noteText) { noteText.textContent = config.noteText; noteBox.style.display = 'block'; }
+                else noteBox.style.display = 'none';
+            }
+            // Ported checkbox visibility
+            const portedContainer = document.getElementById('portedContainer');
+            if (portedContainer) portedContainer.style.display = config.showPortedCheckbox === false ? 'none' : '';
+
+            // Valid prefixes hint
+            const prefixHint     = document.getElementById('prefixHint');
+            const validPrefixesEl = document.getElementById('validPrefixes');
+            if (prefixHint && validPrefixesEl) {
+                if (config.showPrefixes !== false && config.validPrefixes) {
+                    validPrefixesEl.textContent = config.validPrefixes;
+                    prefixHint.style.display = 'block';
+                } else {
+                    prefixHint.style.display = 'none';
+                }
+            }
+            // Label overrides
+            const bundleLabelEl = document.getElementById('bundleLabel');
+            if (bundleLabelEl && config.bundleLabel) bundleLabelEl.textContent = `Select ${config.bundleLabel}`;
+            const purchaseBtnText = document.getElementById('purchaseBtnText');
+            if (purchaseBtnText && config.purchaseLabel) purchaseBtnText.textContent = config.purchaseLabel;
+            const deliveryTextEl = document.getElementById('deliveryText');
+            if (deliveryTextEl && config.deliveryText) deliveryTextEl.textContent = config.deliveryText;
+
+            // Update validity on all options
+            if (config.validity) {
+                Array.from(bundleSelect.options).forEach(opt => {
+                    if (opt.value) opt.setAttribute('data-validity', config.validity);
+                });
+            }
+        }
+
         // Keep details panel in sync on every change
         bundleSelect.addEventListener('change', () => refreshDetailsPanel(bundleSelect));
     }
@@ -260,9 +322,12 @@
     // Run after DOM is ready, deferred slightly so storefront-inject.js
     // (which sets localStorage.storeSlug/clientType) has time to complete
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(run, 100));
+        document.addEventListener('DOMContentLoaded', () => setTimeout(run, 50));
     } else {
-        setTimeout(run, 100);
+        setTimeout(run, 50);
     }
+
+    // Re-run when generic-package.js requests a refresh (e.g. after visibilitychange)
+    document.addEventListener('storefront-prices-refresh', () => setTimeout(run, 50));
 
 })();
