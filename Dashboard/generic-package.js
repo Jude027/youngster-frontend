@@ -73,7 +73,12 @@ function checkAuthentication() {
 function loadProviderInfo() {
     const params = new URLSearchParams(window.location.search);
     providerName = params.get('provider') || 'Provider';
-    const logoUrl = params.get('logo') || '';
+    let logoUrl = params.get('logo') || '';
+    if (!logoUrl) {
+        try {
+            logoUrl = localStorage.getItem(`logo_${providerName}`) || '';
+        } catch (_) {}
+    }
     
     // Set page title and subtitle
     document.getElementById('pageTitle').textContent = `Purchase ${providerName} Bundle`;
@@ -349,6 +354,71 @@ document.addEventListener('DOMContentLoaded', function() {
                 bundleSelect.innerHTML = '<option value="">No bundles available</option>';
                 return;
             }
+
+            // Apply Display Settings if available
+            if (prices.length > 0 && prices[0].displayConfig) {
+                const config = prices[0].displayConfig;
+
+                // Header Color / Accent
+                if (config.headerColor) {
+                    document.documentElement.style.setProperty('--accent-color', config.headerColor);
+                    document.documentElement.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${config.headerColor} 0%, #2575fc 100%)`);
+                    document.documentElement.style.setProperty('--header-bg', `linear-gradient(135deg, ${config.headerColor} 0%, #2575fc 100%)`);
+                }
+
+                // Page Title & Subtitle
+                if (config.pageTitle) {
+                    document.getElementById('pageTitle').textContent = config.pageTitle;
+                    document.title = config.pageTitle;
+                }
+                if (config.pageSubtitle) {
+                    document.getElementById('pageSubtitle').textContent = config.pageSubtitle;
+                }
+
+                // Note Box Text
+                const noteBox = document.getElementById('noteBox');
+                const noteText = document.getElementById('noteText');
+                if (noteBox && noteText) {
+                    if (config.noteText) {
+                        noteText.textContent = config.noteText;
+                        noteBox.style.display = 'block';
+                    } else if (config.noteText === '') {
+                        noteBox.style.display = 'none';
+                    }
+                }
+
+                // Ported Network Checkbox
+                const portedContainer = document.getElementById('portedContainer');
+                if (portedContainer && config.showPortedCheckbox === false) {
+                    portedContainer.style.display = 'none';
+                }
+
+                // Prefixes Hint
+                const prefixHint = document.getElementById('prefixHint');
+                const validPrefixes = document.getElementById('validPrefixes');
+                if (prefixHint && validPrefixes) {
+                    if (config.showPrefixes !== false && config.validPrefixes) {
+                        validPrefixes.textContent = config.validPrefixes;
+                        prefixHint.style.display = 'block';
+                    } else {
+                        prefixHint.style.display = 'none';
+                    }
+                }
+
+                // Labels & Button text
+                if (config.bundleLabel) {
+                    const bundleLabelEl = document.getElementById('bundleLabel');
+                    if (bundleLabelEl) bundleLabelEl.textContent = `Select ${config.bundleLabel}`;
+                }
+                if (config.purchaseLabel) {
+                    const purchaseBtnText = document.getElementById('purchaseBtnText');
+                    if (purchaseBtnText) purchaseBtnText.textContent = config.purchaseLabel;
+                }
+                if (config.deliveryText) {
+                    const deliveryTextEl = document.getElementById('deliveryText');
+                    if (deliveryTextEl) deliveryTextEl.textContent = config.deliveryText;
+                }
+            }
             
             // Sort by package size
             prices.sort((a, b) => {
@@ -358,11 +428,12 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             // Populate options from loaded prices
+            const validityVal = (prices[0]?.displayConfig?.validity) || '90 days';
             prices.forEach((priceObj, index) => {
                 const option = document.createElement('option');
                 option.value = index + 1;
                 option.setAttribute('data-price', priceObj.price.toFixed(2));
-                option.setAttribute('data-validity', '90 days');
+                option.setAttribute('data-validity', validityVal);
                 option.setAttribute('data-network', providerName);
                 option.textContent = `${priceObj.packageName} - ${priceObj.price.toFixed(2)} GHS`;
                 bundleSelect.appendChild(option);
