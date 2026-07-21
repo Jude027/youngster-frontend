@@ -429,12 +429,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Load bundles on page load
-    loadBundles();
+    // NOTE: storefront-prices.js (loaded after this script) handles populating
+    // the bundle dropdown AND applying displayConfig. We only need to set up
+    // the change/purchase handlers here.
     
-    // Refresh prices when page becomes visible again — handles the case where
-    // the admin edited prices then navigated back to this page (bfcache or tab switch).
+    // Refresh prices when page becomes visible again (e.g. after admin edits)
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') loadBundles();
+        if (document.visibilityState === 'visible') {
+            // Clear dropdown and let storefront-prices.js re-run
+            if (bundleSelect) {
+                while (bundleSelect.options.length > 1) bundleSelect.remove(1);
+                if (bundleSelect.options[0]) bundleSelect.options[0].textContent = 'Loading bundles…';
+            }
+            // Re-trigger storefront-prices run() by dispatching a custom event
+            document.dispatchEvent(new Event('storefront-prices-refresh'));
+        }
     });
     
     // Update bundle details when selection changes
