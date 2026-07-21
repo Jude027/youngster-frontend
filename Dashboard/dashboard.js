@@ -108,19 +108,40 @@ async function loadDynamicProviders() {
 
         if (newProviders.length === 0) return; // No new providers
 
-        // Add new providers to the network-cards section
-        const networkCardsContainer = document.querySelector('.network-cards');
-        if (!networkCardsContainer) return;
+        // Fetch base prices to inspect storefrontSection configuration per provider
+        let basePrices = [];
+        try {
+            const bpRes = await fetch('https://youngster-backend-production.up.railway.app/api/base-prices', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (bpRes.ok) basePrices = await bpRes.json();
+        } catch (_) {}
 
-        // Also guard against cards that may already exist in the DOM
-        // (e.g. if this function somehow runs twice, or a card was server-rendered)
-        const existingCardNames = new Set(
-            Array.from(networkCardsContainer.querySelectorAll('.network-name'))
-                .map(el => normalise(el.textContent))
-        );
+        const sectionMap = {};
+        basePrices.forEach(bp => {
+            if (bp.provider && bp.displayConfig?.storefrontSection) {
+                sectionMap[normalise(bp.provider)] = bp.displayConfig.storefrontSection;
+            }
+        });
+
+        const networkCardsContainer = document.querySelector('.network-cards');
+        const specialOffersContainer = document.querySelector('.special-offers');
         
         newProviders.forEach(provider => {
-            if (existingCardNames.has(normalise(provider.name))) return; // already on page — skip
+            const key = normalise(provider.name);
+            const targetSection = sectionMap[key] || 'data_bundle';
+            const container = (targetSection === 'special_offers' && specialOffersContainer)
+                ? specialOffersContainer
+                : networkCardsContainer;
+
+            if (!container) return;
+
+            const existingCardNames = new Set(
+                Array.from(container.querySelectorAll('.network-name'))
+                    .map(el => normalise(el.textContent))
+            );
+            if (existingCardNames.has(key)) return; // already on page — skip
+
             const card = document.createElement('a');
             card.href = '#';
             card.className = 'network-card';
@@ -135,12 +156,12 @@ async function loadDynamicProviders() {
                 </div>
                 <div class="network-info">
                     <div class="network-name">${provider.name}</div>
-                    <div class="network-tagline">Dynamic Package</div>
+                    <div class="network-tagline">${targetSection === 'special_offers' ? 'Special Package' : 'Dynamic Package'}</div>
                 </div>
                 <i class="fas fa-chevron-right"></i>
             `;
             
-            networkCardsContainer.appendChild(card);
+            container.appendChild(card);
         });
     } catch (err) {
         console.warn('Could not load dynamic providers:', err);
@@ -149,31 +170,42 @@ async function loadDynamicProviders() {
 
 // Handle clicks on dynamic provider cards
 function handleDynamicProviderClick(providerName, logoUrl) {
-    // Navigate to a generic package page for dynamic providers
-    // For now, we'll create a generic URL or redirect to a dynamic page handler
     const provider = encodeURIComponent(providerName);
-    const logo = encodeURIComponent(logoUrl || '');
-    
-    // Navigate to a generic package page that can handle any provider
-    window.location.href = `./generic-package.html?provider=${provider}&logo=${logo}`;
+    if (logoUrl) {
+        try {
+            localStorage.setItem(`logo_${providerName}`, logoUrl);
+        } catch (e) {
+            console.warn('Could not cache logoUrl in localStorage:', e);
+        }
+    }
+    const logoParam = (logoUrl && !logoUrl.startsWith('data:')) ? `&logo=${encodeURIComponent(logoUrl)}` : '';
+    window.location.href = `./generic-package.html?provider=${provider}${logoParam}`;
 }
 
 // Apply user store branding to dashboard
 async function applyUserStoreBranding() {
     try {
         const token = localStorage.getItem('token');
-        if (!token) return;
-        
-        const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        if (!response.ok) return;
-        
-        const store = await response.json();
+        const storeSlug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
+        let store;
+
+        if (storeSlug) {
+            const response = await fetch(`https://youngster-backend-production.up.railway.app/api/storefront/${encodeURIComponent(storeSlug)}`);
+            if (!response.ok) return;
+            store = await response.json();
+        } else if (token) {
+            const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!response.ok) return;
+            store = await response.json();
+            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        } else {
+            return;
+        }
         
         // Update document title
         if (store.storeName) {
@@ -206,10 +238,12 @@ async function applyUserStoreBranding() {
         if (sidebarTitle) sidebarTitle.textContent = store.storeName;
         
         const sidebarLogo = document.getElementById('sidebarLogo');
-        if (sidebarLogo && store.storeLogo) {
-            sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-        } else if (sidebarLogo && store.storeName) {
-            sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
+        if (sidebarLogo) {
+            if (store.storeLogo) {
+                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+            } else if (store.storeName) {
+                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
+            }
         }
     } catch (err) {
         console.warn('Could not load user store details:', err);
