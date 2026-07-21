@@ -345,28 +345,29 @@ document.addEventListener('DOMContentLoaded', function() {
             
             bundleSelect.setAttribute('data-network', providerName);
             
-            // Clear existing options
+            // Clear existing options except the first placeholder
             while (bundleSelect.options.length > 1) {
                 bundleSelect.remove(1);
             }
             
-            if (prices.length === 0) {
-                bundleSelect.innerHTML = '<option value="">No bundles available</option>';
+            if (!prices || prices.length === 0) {
+                bundleSelect.options[0].textContent = 'No bundles available for this store';
+                bundleDetails.style.display = 'none';
                 return;
             }
 
-            // Apply Display Settings if available
-            if (prices.length > 0 && prices[0].displayConfig) {
-                const config = prices[0].displayConfig;
+            // Reset placeholder
+            bundleSelect.options[0].textContent = 'Select a bundle';
+            bundleSelect.options[0].value = '';
 
-                // Header Color / Accent
+            // Apply Display Settings if available
+            const config = prices.find(p => p.displayConfig)?.displayConfig;
+            if (config) {
                 if (config.headerColor) {
                     document.documentElement.style.setProperty('--accent-color', config.headerColor);
                     document.documentElement.style.setProperty('--accent-gradient', `linear-gradient(135deg, ${config.headerColor} 0%, #2575fc 100%)`);
                     document.documentElement.style.setProperty('--header-bg', `linear-gradient(135deg, ${config.headerColor} 0%, #2575fc 100%)`);
                 }
-
-                // Page Title & Subtitle
                 if (config.pageTitle) {
                     document.getElementById('pageTitle').textContent = config.pageTitle;
                     document.title = config.pageTitle;
@@ -374,78 +375,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (config.pageSubtitle) {
                     document.getElementById('pageSubtitle').textContent = config.pageSubtitle;
                 }
-
-                // Note Box Text
                 const noteBox = document.getElementById('noteBox');
                 const noteText = document.getElementById('noteText');
                 if (noteBox && noteText) {
                     if (config.noteText) {
                         noteText.textContent = config.noteText;
                         noteBox.style.display = 'block';
-                    } else if (config.noteText === '') {
+                    } else {
                         noteBox.style.display = 'none';
                     }
                 }
-
-                // Ported Network Checkbox
                 const portedContainer = document.getElementById('portedContainer');
-                if (portedContainer && config.showPortedCheckbox === false) {
-                    portedContainer.style.display = 'none';
+                if (portedContainer) {
+                    portedContainer.style.display = config.showPortedCheckbox === false ? 'none' : '';
                 }
-
-                // Prefixes Hint
                 const prefixHint = document.getElementById('prefixHint');
-                const validPrefixes = document.getElementById('validPrefixes');
-                if (prefixHint && validPrefixes) {
+                const validPrefixesEl = document.getElementById('validPrefixes');
+                if (prefixHint && validPrefixesEl) {
                     if (config.showPrefixes !== false && config.validPrefixes) {
-                        validPrefixes.textContent = config.validPrefixes;
+                        validPrefixesEl.textContent = config.validPrefixes;
                         prefixHint.style.display = 'block';
                     } else {
                         prefixHint.style.display = 'none';
                     }
                 }
-
-                // Labels & Button text
-                if (config.bundleLabel) {
-                    const bundleLabelEl = document.getElementById('bundleLabel');
-                    if (bundleLabelEl) bundleLabelEl.textContent = `Select ${config.bundleLabel}`;
-                }
-                if (config.purchaseLabel) {
-                    const purchaseBtnText = document.getElementById('purchaseBtnText');
-                    if (purchaseBtnText) purchaseBtnText.textContent = config.purchaseLabel;
-                }
-                if (config.deliveryText) {
-                    const deliveryTextEl = document.getElementById('deliveryText');
-                    if (deliveryTextEl) deliveryTextEl.textContent = config.deliveryText;
-                }
+                const bundleLabelEl = document.getElementById('bundleLabel');
+                if (bundleLabelEl && config.bundleLabel) bundleLabelEl.textContent = `Select ${config.bundleLabel}`;
+                const purchaseBtnText = document.getElementById('purchaseBtnText');
+                if (purchaseBtnText && config.purchaseLabel) purchaseBtnText.textContent = config.purchaseLabel;
+                const deliveryTextEl = document.getElementById('deliveryText');
+                if (deliveryTextEl && config.deliveryText) deliveryTextEl.textContent = config.deliveryText;
             }
             
-            // Sort by package size
-            prices.sort((a, b) => {
-                const aSize = parseInt(a.packageName) || 0;
-                const bSize = parseInt(b.packageName) || 0;
-                return aSize - bSize;
-            });
+            // Sort by numeric package size
+            prices.sort((a, b) => (parseInt(a.packageName) || 0) - (parseInt(b.packageName) || 0));
             
-            // Populate options from loaded prices
-            const validityVal = (prices[0]?.displayConfig?.validity) || '90 days';
+            const validityVal = config?.validity || '90 days';
             prices.forEach((priceObj, index) => {
                 const option = document.createElement('option');
                 option.value = index + 1;
                 option.setAttribute('data-price', priceObj.price.toFixed(2));
                 option.setAttribute('data-validity', validityVal);
                 option.setAttribute('data-network', providerName);
-                option.textContent = `${priceObj.packageName} - ${priceObj.price.toFixed(2)} GHS`;
+                option.textContent = `${priceObj.packageName} - GHS ${priceObj.price.toFixed(2)}`;
                 bundleSelect.appendChild(option);
             });
         } catch (err) {
             console.error('Failed to load bundles:', err);
-            bundleSelect.innerHTML = '<option value="">Error loading bundles</option>';
+            if (bundleSelect.options.length <= 1) {
+                bundleSelect.options[0].textContent = 'Could not load bundles — tap to retry';
+            }
         }
     }
     
     // Load bundles on page load
     loadBundles();
+    
+    // Refresh prices when page becomes visible again — handles the case where
+    // the admin edited prices then navigated back to this page (bfcache or tab switch).
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') loadBundles();
+    });
     
     // Update bundle details when selection changes
     if (bundleSelect && bundleDetails) {
