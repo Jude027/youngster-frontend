@@ -1,4 +1,4 @@
-// Admin panel full management (including Role Price Mapping)
+// Admin panel â€“ full management (including Role Price Mapping)
 const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 let token = localStorage.getItem('token');
 
@@ -776,6 +776,13 @@ async function openDisplayConfigModal(providerName) {
                     <label>Validity Text (e.g. "90 days", "Non Expiry")</label>
                     <input type="text" id="dcValidity" value="${existing.validity || ''}" placeholder="90 days">
                 </div>
+                <div class="input-group">
+                    <label>Storefront Section</label>
+                    <select id="dcStorefrontSection" style="padding:10px;border:1px solid #ccc;border-radius:4px;width:100%;">
+                        <option value="data_bundle" ${existing.storefrontSection !== 'special_offers' ? 'selected' : ''}>Buy Data Bundles</option>
+                        <option value="special_offers" ${existing.storefrontSection === 'special_offers' ? 'selected' : ''}>Special Offers</option>
+                    </select>
+                </div>
             </div>
             <button class="btn-save" id="dcSaveBtn"><i class="fas fa-save"></i> Save Display Settings</button>
         </div>
@@ -797,7 +804,8 @@ async function openDisplayConfigModal(providerName) {
             bundleLabel: document.getElementById('dcBundleLabel').value.trim() || 'Bundle',
             purchaseLabel: document.getElementById('dcPurchaseLabel').value.trim() || 'Purchase Bundle',
             deliveryText: document.getElementById('dcDeliveryText').value.trim() || 'Fast delivery',
-            validity: document.getElementById('dcValidity').value.trim()
+            validity: document.getElementById('dcValidity').value.trim(),
+            storefrontSection: document.getElementById('dcStorefrontSection').value
         };
 
         try {
@@ -1307,7 +1315,7 @@ document.getElementById('apiConfigSelect')?.addEventListener('change', async (e)
     }
 });
 
-// Save config 
+// â”€â”€ Save config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 document.getElementById('saveApiConfig')?.addEventListener('click', async () => {
     if (!selectedProviderForAPI) { alert('Please select a provider'); return; }
