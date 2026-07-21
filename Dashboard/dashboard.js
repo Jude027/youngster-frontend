@@ -179,7 +179,15 @@ function handleDynamicProviderClick(providerName, logoUrl) {
         }
     }
     const logoParam = (logoUrl && !logoUrl.startsWith('data:')) ? `&logo=${encodeURIComponent(logoUrl)}` : '';
-    window.location.href = `./generic-package.html?provider=${provider}${logoParam}`;
+
+    // Carry store and client params so storefront-prices.js can fetch the right prices
+    const currentParams = new URLSearchParams(window.location.search);
+    const store      = currentParams.get('store')  || localStorage.getItem('storeSlug') || '';
+    const clientType = currentParams.get('client') || localStorage.getItem('clientType') || '';
+    const storeParam  = store      ? `&store=${encodeURIComponent(store)}`           : '';
+    const clientParam = clientType ? `&client=${encodeURIComponent(clientType)}`     : '';
+
+    window.location.href = `./generic-package.html?provider=${provider}${logoParam}${storeParam}${clientParam}`;
 }
 
 // Apply user store branding to dashboard
