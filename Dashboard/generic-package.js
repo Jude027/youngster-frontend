@@ -84,6 +84,9 @@ function loadProviderInfo() {
     document.getElementById('pageTitle').textContent = `Purchase ${providerName} Bundle`;
     document.getElementById('pageSubtitle').textContent = `Get your ${providerName} data bundle now`;
     document.title = `Purchase ${providerName} Bundle`;
+
+    // Persist so storefront-prices.js getContext() reads the correct provider
+    localStorage.setItem('providerName', providerName);
     
     // Set provider logo
     const logoDiv = document.getElementById('providerLogoDiv');
