@@ -69,6 +69,24 @@ function checkAuthentication() {
     return true;
 }
 
+// Load provider info immediately at parse time so localStorage.providerName
+// is set before storefront-prices.js starts its retry loop.
+(function initProviderEarly() {
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get('provider');
+    if (name) {
+        localStorage.setItem('providerName', name);
+    }
+    const slug = params.get('store');
+    if (slug) {
+        localStorage.setItem('storeSlug', slug);
+    }
+    const client = params.get('client');
+    if (client) {
+        localStorage.setItem('clientType', client);
+    }
+})();
+
 // Load provider logo and set page title
 function loadProviderInfo() {
     const params = new URLSearchParams(window.location.search);
