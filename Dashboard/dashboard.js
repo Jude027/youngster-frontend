@@ -77,26 +77,44 @@ function handlePackageCardClick(packageName) {
 async function loadDynamicProviders() {
     try {
         const token = localStorage.getItem('token');
-        if (!token) return; // Only load for logged-in users
-        
-        const res = await fetch('https://youngster-backend-production.up.railway.app/api/providers', {
-            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
-        });
-        
-        if (!res.ok) return;
-        
-        const providers = await res.json();
-
-        // List of hardcoded providers that have dedicated pages.
-        // Normalised (lowercase, trimmed, collapsed whitespace) so "telecel",
-        // " Telecel ", "TELECEL" etc. are all correctly recognised as duplicates.
-        const hardcodedProviders = ['MTN', 'MTN EXPRESS', 'Telecel', 'AT Ishare', 'AT Bigtime', 'MTN AFA'];
+        const API_URL = 'https://youngster-backend-production.up.railway.app/api';
         const normalise = (s) => String(s || '').toLowerCase().trim().replace(/\s+/g, ' ');
-        const hardcodedNormalised = hardcodedProviders.map(normalise);
 
-        // Filter out hardcoded providers (by normalised match) to get only new/dynamic ones.
-        // Also de-duplicate the dynamic list itself in case the same provider was
-        // saved more than once with different casing/spacing.
+        let providers = [];
+        let sectionMap = {};
+
+        if (token) {
+            // Logged-in dealer — authenticated endpoints
+            const res = await fetch(`${API_URL}/providers`, {
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
+            });
+            if (!res.ok) return;
+            providers = await res.json();
+
+            try {
+                const bpRes = await fetch(`${API_URL}/base-prices`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (bpRes.ok) {
+                    const bp = await bpRes.json();
+                    bp.forEach(p => {
+                        if (p.provider && p.displayConfig?.storefrontSection)
+                            sectionMap[normalise(p.provider)] = p.displayConfig.storefrontSection;
+                    });
+                }
+            } catch (_) {}
+        } else {
+            // Guest — public endpoint, no token needed
+            const res = await fetch(`${API_URL}/storefront-providers`);
+            if (!res.ok) return;
+            providers = await res.json();
+            providers.forEach(p => {
+                if (p.storefrontSection) sectionMap[normalise(p.name)] = p.storefrontSection;
+            });
+        }
+
+        const hardcodedProviders = ['MTN', 'MTN EXPRESS', 'Telecel', 'AT Ishare', 'AT Bigtime', 'MTN AFA'];
+        const hardcodedNormalised = hardcodedProviders.map(normalise);
         const seen = new Set(hardcodedNormalised);
         const newProviders = [];
         for (const p of providers) {
@@ -106,41 +124,23 @@ async function loadDynamicProviders() {
             newProviders.push(p);
         }
 
-        if (newProviders.length === 0) return; // No new providers
-
-        // Fetch base prices to inspect storefrontSection configuration per provider
-        let basePrices = [];
-        try {
-            const bpRes = await fetch('https://youngster-backend-production.up.railway.app/api/base-prices', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (bpRes.ok) basePrices = await bpRes.json();
-        } catch (_) {}
-
-        const sectionMap = {};
-        basePrices.forEach(bp => {
-            if (bp.provider && bp.displayConfig?.storefrontSection) {
-                sectionMap[normalise(bp.provider)] = bp.displayConfig.storefrontSection;
-            }
-        });
+        if (newProviders.length === 0) return;
 
         const networkCardsContainer = document.querySelector('.network-cards');
         const specialOffersContainer = document.querySelector('.special-offers');
-        
+
         newProviders.forEach(provider => {
             const key = normalise(provider.name);
             const targetSection = sectionMap[key] || 'data_bundle';
             const container = (targetSection === 'special_offers' && specialOffersContainer)
-                ? specialOffersContainer
-                : networkCardsContainer;
-
+                ? specialOffersContainer : networkCardsContainer;
             if (!container) return;
 
             const existingCardNames = new Set(
                 Array.from(container.querySelectorAll('.network-name'))
                     .map(el => normalise(el.textContent))
             );
-            if (existingCardNames.has(key)) return; // already on page — skip
+            if (existingCardNames.has(key)) return;
 
             const card = document.createElement('a');
             card.href = '#';
@@ -149,18 +149,15 @@ async function loadDynamicProviders() {
                 handleDynamicProviderClick(provider.name, provider.logoUrl);
                 return false;
             };
-            
             card.innerHTML = `
                 <div class="network-logo">
-                    <img src="${provider.logoUrl || 'https://via.placeholder.com/50?text=' + provider.name}" alt="${provider.name} Logo" style="object-fit: contain;">
+                    <img src="${provider.logoUrl || 'https://via.placeholder.com/50?text=' + encodeURIComponent(provider.name)}" alt="${provider.name} Logo" style="object-fit:contain;">
                 </div>
                 <div class="network-info">
                     <div class="network-name">${provider.name}</div>
                     <div class="network-tagline">${targetSection === 'special_offers' ? 'Special Package' : 'Dynamic Package'}</div>
                 </div>
-                <i class="fas fa-chevron-right"></i>
-            `;
-            
+                <i class="fas fa-chevron-right"></i>`;
             container.appendChild(card);
         });
     } catch (err) {
@@ -340,7 +337,7 @@ function initializeSidebar() {
                     localStorage.removeItem('username');
                     
                     // Redirect to login page
-                    window.location.href = 'login.html';
+                    window.location.href = '../Registration form/login_and_signup.html';
                 }, 1500); // Wait for notification to show
             }
         });
