@@ -38,7 +38,7 @@ async function loadPricesForProvider(provider, clientType = null) {
             const resolvedClientType = params.get('client')
                 || localStorage.getItem('clientType')
                 || clientType
-                || 'Customers';
+                || '';
 
             const url = new URL(`${API_BASE}/storefront-prices`, window.location.origin);
             url.searchParams.set('store', storeSlug);
