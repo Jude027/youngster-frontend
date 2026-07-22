@@ -318,46 +318,63 @@
         bundleSelect.addEventListener('change', () => refreshDetailsPanel(bundleSelect));
     }
 
-    // Run after DOM is ready. Retry up to 10 times (every 300ms) so we wait
-    // for storefront-inject.js to finish its async API fetch and set
-    // localStorage.storeSlug / clientType before we try to load prices.
-    let _runAttempts = 0;
-    let _hasRun = false;
+    // ── Bootstrap ─────────────────────────────────────────────────────────────
+    // Strategy: try immediately, then keep retrying every 250 ms until both
+    // `store` AND `provider` are available (max 15 attempts = ~3.75 s).
+    // Also react instantly when storefront-inject.js fires its context event.
 
-    async function runWithRetry() {
-        _runAttempts++;
-        const { store, clientType, provider } = getContext();
+    let _attempts   = 0;
+    let _succeeded  = false;
+    const MAX_TRIES = 15;
 
-        if ((!store || !provider) && _runAttempts < 10) {
-            console.log(`[storefront-prices] Context not ready (attempt ${_runAttempts}), retrying in 300ms...`, { store, provider, clientType });
-            setTimeout(runWithRetry, 300);
+    async function tryRun() {
+        if (_succeeded) return;
+        _attempts++;
+
+        const { store, provider } = getContext();
+
+        if (!store || !provider) {
+            if (_attempts < MAX_TRIES) {
+                setTimeout(tryRun, 250);
+            } else {
+                console.warn('[storefront-prices] Gave up waiting for store/provider context after', _attempts, 'attempts', getContext());
+            }
             return;
         }
 
-        _hasRun = true;
         await run();
+        _succeeded = true;
     }
 
-    // Run immediately when storefront-inject.js signals context is ready
+    // Instant trigger when storefront-inject.js finishes
     document.addEventListener('storefront-context-ready', () => {
-        if (!_hasRun) {
-            _runAttempts = 0;
-            _hasRun = true;
-            run();
+        if (!_succeeded) {
+            _attempts = 0;  // reset so tryRun uses fresh context
+            tryRun();
         }
     });
 
+    // Start polling as soon as DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(runWithRetry, 100));
+        document.addEventListener('DOMContentLoaded', tryRun);
     } else {
-        setTimeout(runWithRetry, 100);
+        tryRun();
     }
 
-    // Re-run when generic-package.js requests a refresh (e.g. after visibilitychange)
+    // Re-run on visibility change (e.g. user comes back after editing prices)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            _succeeded = false;
+            _attempts  = 0;
+            tryRun();
+        }
+    });
+
+    // Re-run when generic-package.js requests a refresh
     document.addEventListener('storefront-prices-refresh', () => {
-        _runAttempts = 0;
-        _hasRun = false;
-        setTimeout(runWithRetry, 50);
+        _succeeded = false;
+        _attempts  = 0;
+        tryRun();
     });
 
 })();
