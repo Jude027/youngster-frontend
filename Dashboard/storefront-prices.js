@@ -223,17 +223,12 @@
 
         console.log('[storefront-prices] Loaded for store:', store, '| clientType:', resolvedClientType);
         console.log('[storefront-prices] Provider being matched:', provider);
-        console.log('[storefront-prices] All available prices from API:', allPrices);
-        console.log('[storefront-prices] Available providers in API response:', [...new Set(allPrices.map(p => p.provider))]);
-        console.log(
-            allPrices
-                .filter(p => p.provider.toLowerCase().includes('at'))
-                .map(p => ({
-                provider: p.provider,
-                packageName: p.packageName,
-                price: p.price
-            }))
-        );
+        console.log('[storefront-prices] Total prices from API:', allPrices.length);
+        console.log('[storefront-prices] Provider names in API response:', [...new Set(allPrices.map(p => p.provider))]);
+        console.log('[storefront-prices] Client types in API response:', [...new Set(allPrices.map(p => p.clientType))]);
+        if (allPrices.length === 0) {
+            console.error('[storefront-prices] ❌ API returned EMPTY — check: 1) store slug matches DB, 2) clientType matches ReferralPrice, 3) backend deployed with latest changes');
+        }
         // Always rebuild from scratch — wipe any options added by price-loader.js
         // or hardcoded in the HTML to prevent duplicates and inactive ghost entries.
         // Remove all non-placeholder options first, then build fresh from API prices.
