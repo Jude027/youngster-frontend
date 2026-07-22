@@ -61,26 +61,30 @@
             normalizeProviderName(p.provider) === providerNorm
         );
 
-        // 2. Prefix match: DB entry is a shorter form of the requested provider.
+        // 2. Singular/plural tolerance: "Results_checker" matches "Results_checkers"
+        //    Strip a trailing 's' from both sides and compare.
+        if (matching.length === 0) {
+            const providerStem = providerNorm.replace(/s$/, '');
+            matching = allPrices.filter(p => {
+                const dbStem = normalizeProviderName(p.provider).replace(/s$/, '');
+                return dbStem === providerStem;
+            });
+        }
+
+        // 3. Prefix match: DB entry is a shorter form of the requested provider.
         //    e.g. DB stores "AT" but the page requests "AT Bigtime"
         if (matching.length === 0) {
             matching = allPrices.filter(p => {
                 const dbNorm = normalizeProviderName(p.provider);
-                // "at bigtime".startsWith("at ") → true, but won't cross-match siblings
                 return providerNorm.startsWith(dbNorm + ' ');
             });
         }
 
-        // 3. Specific-keyword fallback: use the LONGEST word in the provider name.
-        //    This prevents "at bigtime" from falling back to the generic keyword "at"
-        //    and accidentally matching "at ishare" prices (and vice-versa).
-        //    Only words longer than 2 chars are considered — short words like "at"
-        //    are too ambiguous when multiple providers share the same prefix.
+        // 4. Specific-keyword fallback
         if (matching.length === 0) {
             const words = providerNorm.split(' ').filter(w => w.length > 2);
-            // Sort longest → shortest; pick the most distinctive word
             const specificWord = words.sort((a, b) => b.length - a.length)[0]
-                              || providerNorm.split(' ')[0]; // last resort: first word
+                              || providerNorm.split(' ')[0];
             matching = allPrices.filter(p => 
                 normalizeProviderName(p.provider).includes(specificWord)
             );
