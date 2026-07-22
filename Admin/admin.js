@@ -559,6 +559,59 @@ async function loadBasePrices() {
     const res = await fetch(`${API_BASE}/base-prices`, { headers: authHeaders() });
     allBasePrices = await res.json();
     renderBasePricesTable();
+
+    // Render customize buttons for ALL providers — including those that only
+    // exist in ReferralPrice (no BasePrice rows) like AT Ishare, Results_checkers.
+    renderProviderCustomizeSection();
+}
+
+async function renderProviderCustomizeSection() {
+    // Get provider names from both BasePrice and ReferralPrice
+    const basePriceProviders = [...new Set(allBasePrices.map(p => p.provider).filter(Boolean))];
+
+    let referralProviders = [];
+    try {
+        const res = await fetch(`${API_BASE}/referral-prices`, { headers: authHeaders() });
+        if (res.ok) {
+            const rp = await res.json();
+            referralProviders = [...new Set(rp.map(p => p.provider).filter(Boolean))];
+        }
+    } catch (e) { console.warn('Could not load referral prices for customize section', e); }
+
+    // Union of all providers
+    const allProviderNames = [...new Set([...basePriceProviders, ...referralProviders])].sort();
+
+    // Find or create the customize section container
+    let section = document.getElementById('providerCustomizeSection');
+    if (!section) {
+        section = document.createElement('div');
+        section.id = 'providerCustomizeSection';
+        section.style.cssText = 'margin-top:24px;padding:16px;background:#f8f9fa;border-radius:8px;border:1px solid #e0e0e0;';
+        // Insert after the base prices table's parent
+        const basePricesTable = document.getElementById('basePricesBody');
+        const tableContainer = basePricesTable?.closest('table')?.parentElement;
+        if (tableContainer) tableContainer.parentElement.insertBefore(section, tableContainer.nextSibling);
+        else document.querySelector('.tab-content')?.appendChild(section);
+    }
+
+    section.innerHTML = `
+        <h3 style="margin:0 0 12px;font-size:1rem;color:#333;">
+            <i class="fas fa-paint-brush" style="color:#9b59b6;"></i>
+            Provider Display Settings
+        </h3>
+        <p style="font-size:0.85rem;color:#666;margin:0 0 12px;">
+            Customize how each provider's storefront page looks (title, colours, labels).
+        </p>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;">
+            ${allProviderNames.map(name => `
+                <button onclick="openDisplayConfigModal('${name.replace(/'/g, "\\'")}')"
+                    style="padding:8px 14px;background:#9b59b6;color:white;border:none;
+                    border-radius:6px;cursor:pointer;font-size:0.9rem;display:flex;
+                    align-items:center;gap:6px;">
+                    <i class="fas fa-paint-brush"></i> ${name}
+                </button>
+            `).join('')}
+        </div>`;
 }
 
 function renderBasePricesTable() {
@@ -720,8 +773,19 @@ function renderBasePricesTable() {
 
 // â”€â”€ Display Config Modal (generic-package.html customization) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function openDisplayConfigModal(providerName) {
-    // Find any existing displayConfig for this provider (from first matching row)
-    const existing = allBasePrices.find(p => p.provider === providerName && p.displayConfig)?.displayConfig || {};
+    // Find any existing displayConfig — check allBasePrices first, then fetch from API
+    // for providers that have no BasePrice rows (e.g. AT Ishare, Results_checkers).
+    let existing = allBasePrices.find(p => p.provider === providerName && p.displayConfig)?.displayConfig;
+    if (!existing) {
+        try {
+            const res = await fetch(
+                `${API_BASE}/admin/base-prices/display-config-get?provider=${encodeURIComponent(providerName)}`,
+                { headers: authHeaders() }
+            );
+            if (res.ok) existing = (await res.json()).displayConfig || {};
+        } catch { existing = {}; }
+    }
+    existing = existing || {};
 
     const modal = document.createElement('div');
     modal.className = 'modal';
