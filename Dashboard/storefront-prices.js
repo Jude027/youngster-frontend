@@ -319,15 +319,46 @@
         bundleSelect.addEventListener('change', () => refreshDetailsPanel(bundleSelect));
     }
 
-    // Run after DOM is ready, deferred slightly so storefront-inject.js
-    // (which sets localStorage.storeSlug/clientType) has time to complete
+    // Run after DOM is ready. Retry up to 10 times (every 300ms) so we wait
+    // for storefront-inject.js to finish its async API fetch and set
+    // localStorage.storeSlug / clientType before we try to load prices.
+    let _runAttempts = 0;
+    let _hasRun = false;
+
+    async function runWithRetry() {
+        _runAttempts++;
+        const { store, clientType, provider } = getContext();
+
+        if ((!store || !provider) && _runAttempts < 10) {
+            console.log(`[storefront-prices] Context not ready (attempt ${_runAttempts}), retrying in 300ms...`, { store, provider, clientType });
+            setTimeout(runWithRetry, 300);
+            return;
+        }
+
+        _hasRun = true;
+        await run();
+    }
+
+    // Run immediately when storefront-inject.js signals context is ready
+    document.addEventListener('storefront-context-ready', () => {
+        if (!_hasRun) {
+            _runAttempts = 0;
+            _hasRun = true;
+            run();
+        }
+    });
+
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(run, 50));
+        document.addEventListener('DOMContentLoaded', () => setTimeout(runWithRetry, 100));
     } else {
-        setTimeout(run, 50);
+        setTimeout(runWithRetry, 100);
     }
 
     // Re-run when generic-package.js requests a refresh (e.g. after visibilitychange)
-    document.addEventListener('storefront-prices-refresh', () => setTimeout(run, 50));
+    document.addEventListener('storefront-prices-refresh', () => {
+        _runAttempts = 0;
+        _hasRun = false;
+        setTimeout(runWithRetry, 50);
+    });
 
 })();
