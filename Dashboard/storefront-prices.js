@@ -47,9 +47,9 @@
         return VALIDITY[provider.toLowerCase()] || '—';
     }
 
-    // Normalize provider name: trim, lowercase, and collapse multiple spaces
+    // Normalize provider name: trim, lowercase, collapse spaces, treat underscores as spaces
     function normalizeProviderName(name) {
-        return String(name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+        return String(name || '').trim().toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ');
     }
 
     // Build GB→price map from API response filtered to the requested provider
@@ -92,9 +92,17 @@
 
         const gbToPrice = {};
         for (const entry of matching) {
-            // packageName is stored as e.g. "1 GB", "2 GB" — extract leading number
-            const m = String(entry.packageName).match(/(\d+(?:\.\d+)?)/);
-            if (m) gbToPrice[m[1]] = parseFloat(entry.price);
+            const pkgName = String(entry.packageName || '').trim();
+            if (!pkgName) continue;
+
+            // Try to extract a leading number (e.g. "1GB" → "1", "2 GB" → "2")
+            const m = pkgName.match(/^(\d+(?:\.\d+)?)/);
+            if (m) {
+                gbToPrice[m[1]] = parseFloat(entry.price);
+            } else {
+                // Non-numeric package name (e.g. "BECE RESULTS CHECKERS") — use full name as key
+                gbToPrice[pkgName] = parseFloat(entry.price);
+            }
         }
         return gbToPrice;
     }
@@ -126,12 +134,15 @@
 
     // Build options from scratch (dropdown was empty — just placeholder)
     function buildOptionsFromScratch(bundleSelect, gbToPrice, provider) {
-        // Remove all non-placeholder options first
         while (bundleSelect.options.length > 1) bundleSelect.remove(1);
 
-        const sizes = Object.keys(gbToPrice).sort((a, b) => parseFloat(a) - parseFloat(b));
+        const keys = Object.keys(gbToPrice).sort((a, b) => {
+            const na = parseFloat(a), nb = parseFloat(b);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+        });
 
-        if (sizes.length === 0) {
+        if (keys.length === 0) {
             const empty = document.createElement('option');
             empty.value    = '';
             empty.textContent = 'No bundles available';
@@ -140,15 +151,17 @@
             return;
         }
 
-        sizes.forEach((gb, i) => {
-            const price = gbToPrice[gb].toFixed(2);
-            const label = `${gb} GB`; // full label e.g. "1 GB"
+        keys.forEach(key => {
+            const price = gbToPrice[key].toFixed(2);
+            // Numeric key → show as "X GB", text key → show as-is
+            const isNumeric = !isNaN(parseFloat(key)) && isFinite(key);
+            const label = isNumeric ? `${key} GB` : key;
             const opt   = document.createElement('option');
-            opt.value   = label;       // full label stored as value — used by submitOrder
+            opt.value   = label;
             opt.setAttribute('data-price',    price);
             opt.setAttribute('data-validity',  getValidity(provider));
             opt.setAttribute('data-network',   provider);
-            opt.textContent = `${label} - ${price} GHS`;
+            opt.textContent = `${label} - GHS ${price}`;
             bundleSelect.appendChild(opt);
         });
     }
