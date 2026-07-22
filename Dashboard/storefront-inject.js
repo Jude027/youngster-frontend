@@ -214,6 +214,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         });
 
+        // Signal other scripts (storefront-prices.js) that context is ready
+        document.dispatchEvent(new CustomEvent('storefront-context-ready', {
+            detail: { storeSlug: resolvedSlug, clientType: localStorage.getItem('clientType') || '' }
+        }));
+
     } catch (err) {
         console.error('[StorefrontInject] Error fetching store branding:', err);
     }
