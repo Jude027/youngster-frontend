@@ -80,11 +80,26 @@ async function loadDynamicProviders() {
         const API_URL = 'https://youngster-backend-production.up.railway.app/api';
         const normalise = (s) => String(s || '').toLowerCase().trim().replace(/\s+/g, ' ');
 
+        // Results checkers is now a static card in the HTML — add it to the
+        // hardcoded list so the dynamic loader never adds a duplicate.
+        const hardcodedProviders = ['MTN', 'MTN EXPRESS', 'Telecel', 'AT Ishare', 'AT Bigtime', 'MTN AFA', 'Results checkers', 'Results Checkers'];
+        const hardcodedNormalised = hardcodedProviders.map(normalise);
+
+        // ── Step 1: render from localStorage cache immediately ──────────────
+        const CACHE_KEY = 'dynamicProvidersCache';
+        const cachedRaw = localStorage.getItem(CACHE_KEY);
+        if (cachedRaw) {
+            try {
+                const cached = JSON.parse(cachedRaw);
+                _renderDynamicCards(cached, hardcodedNormalised, normalise);
+            } catch (_) { localStorage.removeItem(CACHE_KEY); }
+        }
+
+        // ── Step 2: fetch fresh data in background ───────────────────────────
         let providers = [];
         let sectionMap = {};
 
         if (token) {
-            // Logged-in dealer — authenticated endpoints
             const res = await fetch(`${API_URL}/providers`, {
                 headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
             });
@@ -92,9 +107,7 @@ async function loadDynamicProviders() {
             providers = await res.json();
 
             try {
-                const bpRes = await fetch(`${API_URL}/base-prices`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                const bpRes = await fetch(`${API_URL}/base-prices`, { headers: { 'Authorization': `Bearer ${token}` } });
                 if (bpRes.ok) {
                     const bp = await bpRes.json();
                     bp.forEach(p => {
@@ -104,7 +117,6 @@ async function loadDynamicProviders() {
                 }
             } catch (_) {}
         } else {
-            // Guest — public endpoint, no token needed
             const res = await fetch(`${API_URL}/storefront-providers`);
             if (!res.ok) return;
             providers = await res.json();
@@ -113,55 +125,54 @@ async function loadDynamicProviders() {
             });
         }
 
-        const hardcodedProviders = ['MTN', 'MTN EXPRESS', 'Telecel', 'AT Ishare', 'AT Bigtime', 'MTN AFA'];
-        const hardcodedNormalised = hardcodedProviders.map(normalise);
-        const seen = new Set(hardcodedNormalised);
-        const newProviders = [];
-        for (const p of providers) {
-            const key = normalise(p.name);
-            if (seen.has(key)) continue;
-            seen.add(key);
-            newProviders.push(p);
-        }
+        // Enrich with section info and save to cache
+        const enriched = providers.map(p => ({
+            name: p.name,
+            logoUrl: p.logoUrl || '',
+            storefrontSection: sectionMap[normalise(p.name)] || p.storefrontSection || 'data_bundle'
+        }));
+        localStorage.setItem(CACHE_KEY, JSON.stringify(enriched));
 
-        if (newProviders.length === 0) return;
+        // Re-render with fresh data (dedup handles any cards already on page)
+        _renderDynamicCards(enriched, hardcodedNormalised, normalise);
 
-        const networkCardsContainer = document.querySelector('.network-cards');
-        const specialOffersContainer = document.querySelector('.special-offers');
-
-        newProviders.forEach(provider => {
-            const key = normalise(provider.name);
-            const targetSection = sectionMap[key] || 'data_bundle';
-            const container = (targetSection === 'special_offers' && specialOffersContainer)
-                ? specialOffersContainer : networkCardsContainer;
-            if (!container) return;
-
-            const existingCardNames = new Set(
-                Array.from(container.querySelectorAll('.network-name'))
-                    .map(el => normalise(el.textContent))
-            );
-            if (existingCardNames.has(key)) return;
-
-            const card = document.createElement('a');
-            card.href = '#';
-            card.className = 'network-card';
-            card.onclick = function() {
-                handleDynamicProviderClick(provider.name, provider.logoUrl);
-                return false;
-            };
-            card.innerHTML = `
-                <div class="network-logo">
-                    <img src="${provider.logoUrl || 'https://via.placeholder.com/50?text=' + encodeURIComponent(provider.name)}" alt="${provider.name} Logo" style="object-fit:contain;">
-                </div>
-                <div class="network-info">
-                    <div class="network-name">${provider.name}</div>
-                    <div class="network-tagline">${targetSection === 'special_offers' ? 'Special Package' : 'Dynamic Package'}</div>
-                </div>
-                <i class="fas fa-chevron-right"></i>`;
-            container.appendChild(card);
-        });
     } catch (err) {
         console.warn('Could not load dynamic providers:', err);
+    }
+}
+
+function _renderDynamicCards(providers, hardcodedNormalised, normalise) {
+    const seen = new Set(hardcodedNormalised);
+    // Also collect names already visible in the DOM to prevent duplicate static+dynamic cards
+    document.querySelectorAll('.network-name').forEach(el => seen.add(normalise(el.textContent)));
+
+    const networkCardsContainer = document.querySelector('.network-cards');
+    const specialOffersContainer = document.querySelector('.special-offers');
+
+    for (const provider of providers) {
+        const key = normalise(provider.name);
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        const targetSection = provider.storefrontSection;
+        const container = (targetSection === 'special_offers' && specialOffersContainer)
+            ? specialOffersContainer : networkCardsContainer;
+        if (!container) continue;
+
+        const card = document.createElement('a');
+        card.href = '#';
+        card.className = 'network-card';
+        card.onclick = function() { handleDynamicProviderClick(provider.name, provider.logoUrl); return false; };
+        card.innerHTML = `
+            <div class="network-logo">
+                <img src="${provider.logoUrl || 'https://via.placeholder.com/50?text=' + encodeURIComponent(provider.name)}" alt="${provider.name} Logo" style="object-fit:contain;">
+            </div>
+            <div class="network-info">
+                <div class="network-name">${provider.name}</div>
+                <div class="network-tagline">${targetSection === 'special_offers' ? 'Special Package' : 'Dynamic Package'}</div>
+            </div>
+            <i class="fas fa-chevron-right"></i>`;
+        container.appendChild(card);
     }
 }
 
