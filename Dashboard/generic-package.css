@@ -37,7 +37,7 @@ body.sidebar-open { margin-left:250px; }
 .header h1 { font-size:24px; font-weight:700; margin-bottom:8px; }
 .header p  { font-size:14px; opacity:0.9; }
 
-.menu-btn { position:absolute; left:20px; top:50%; transform:translateY(-50%); background:rgba(255,255,255,0.2); border:none; color:white; padding:12px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; transition:all 0.3s ease; width:44px; height:44px; z-index:10; }
+.menu-btn { position:absolute; left:20px; top:20px; transform:none; background:rgba(255,255,255,0.2); border:none; color:white; padding:12px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:16px; transition:all 0.3s ease; width:44px; height:44px; z-index:10; }
 .menu-btn:hover { background:rgba(255,255,255,0.3); }
 
 .content { padding:30px; }
@@ -101,14 +101,16 @@ input:focus, select:focus { outline:none; border-color:var(--accent-color); box-
 .overlay.open { display:block; }
 .sidebar { position:fixed; left:-260px; top:0; width:250px; height:100vh; background:var(--sidebar-bg); z-index:1000; transition:left 0.3s ease; overflow-y:auto; }
 .sidebar.open { left:0; }
-.sidebar-header { padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); }
-.close-btn { background:rgba(255,255,255,0.2); border:none; color:white; width:36px; height:36px; border-radius:8px; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; margin-bottom:15px; }
-.sidebar-title { color:white; font-size:16px; font-weight:700; margin-bottom:10px; }
-.brand-logo { width:60px; height:60px; border-radius:8px; overflow:hidden; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; }
-.menu { list-style:none; padding:15px 0; }
-.menu-item { display:flex; align-items:center; gap:12px; padding:14px 20px; color:rgba(255,255,255,0.8); text-decoration:none; transition:all 0.3s; font-size:14px; font-weight:500; cursor:pointer; }
-.menu-item:hover, .menu-item.active { background:rgba(255,255,255,0.15); color:white; border-right:3px solid white; }
-.menu-item i { width:20px; text-align:center; }
+.sidebar-header { padding:20px; border-bottom:1px solid rgba(255,255,255,0.1); display:flex; justify-content:space-between; align-items:center; }
+.close-btn { background:rgba(255,255,255,0.1); border:none; color:white; width:40px; height:40px; border-radius:8px; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.close-btn:hover { background:rgba(255,255,255,0.2); }
+.sidebar-title { color:white; font-size:18px; font-weight:600; flex:1; text-align:center; }
+.brand-logo { width:40px; height:40px; border-radius:8px; overflow:hidden; background:white; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.menu { list-style:none; padding:0; margin:0; }
+.menu-item { display:flex; align-items:center; gap:15px; padding:16px 20px; color:rgba(255,255,255,0.85); text-decoration:none; transition:all 0.3s; font-size:15px; font-weight:500; cursor:pointer; border-left:4px solid transparent; min-height:56px; }
+.menu-item:hover { background:rgba(255,255,255,0.1); border-left-color:#3498db; color:white; }
+.menu-item.active { background:rgba(255,255,255,0.15); border-left-color:#e74c3c; color:white; }
+.menu-item i { width:20px; text-align:center; font-size:16px; }
 
 /* Notification */
 .notification { position:fixed; top:20px; right:20px; background:white; border-radius:8px; padding:16px 20px; box-shadow:0 5px 15px rgba(0,0,0,0.2); display:flex; align-items:center; gap:12px; z-index:1100; transform:translateX(150%); transition:transform 0.4s ease; border-left:4px solid #4CAF50; }
