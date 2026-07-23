@@ -85,7 +85,12 @@ function initializeSidebar() {
         dashboardLink.addEventListener('click', (e) => {
             e.preventDefault();
             closeSidebar();
-            window.location.href = '../../Dashboard/dashboard2.html';
+            const slug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store') || '';
+            const client = localStorage.getItem('clientType') || new URLSearchParams(window.location.search).get('client') || '';
+            let url = '../dashboard2.html';
+            if (slug) url += '?store=' + encodeURIComponent(slug);
+            if (client) url += (slug ? '&' : '?') + 'client=' + encodeURIComponent(client);
+            window.location.href = url;
         });
     }
 }
@@ -467,8 +472,7 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
+        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
