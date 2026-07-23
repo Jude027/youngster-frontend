@@ -113,9 +113,16 @@ header {
     overflow: hidden;
 }
 
-/* Table wrapper – no forced horizontal scroll on desktop */
+/* Table wrapper – scrollable on mobile so all columns are accessible */
 .table-wrapper {
-    overflow-x: visible;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.dynamic-table-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    transition: none;
 }
 
 .pricing-table {
@@ -124,13 +131,14 @@ header {
     table-layout: auto;
 }
 
-.pricing-table th, 
+.pricing-table th,
 .pricing-table td {
-    padding: 12px 15px;
+    padding: 12px 8px;
     text-align: center;
     font-size: 0.9rem;
     color: var(--text-primary);
     border-bottom: 1px solid var(--border-color);
+    min-width: 90px;
 }
 
 .pricing-table th {
@@ -150,10 +158,6 @@ header {
     font-weight: 600;
     display: flex;
     align-items: center;
-}
-
-.dynamic-table-container {
-    transition: none; /* avoids transition reflow */
 }
 .provider-logo {
     width: 30px;
@@ -209,15 +213,18 @@ header {
     display: flex;
     justify-content: center;
 }
+
 .set-price-input {
-    width: 100px;
-    padding: 6px 10px;
-    font-size: 0.85rem;
+    width: 100%;
+    min-width: 75px;
+    padding: 8px 6px;
+    font-size: 0.9rem;
     text-align: center;
     border: 1px solid var(--border-color);
     border-radius: 5px;
     background: var(--bg-secondary);
     color: var(--text-primary);
+    box-sizing: border-box;
 }
 .set-price-input.error {
     border-color: #e53e3e;
