@@ -592,24 +592,37 @@ function showPaymentModal(orderDetails) {
 
             transactionId = data.transactionId;
 
-            localStorage.setItem('paymentTransactionId', transactionId);
-            localStorage.setItem('pendingOrderData', JSON.stringify({
-                package:        orderDetails.package,
-                bundle_size:    orderDetails.bundle_size,
-                amount:         orderDetails.amount,
-                beneficiary:    orderDetails.beneficiary,
-                phoneNumber:    phone,
-                transactionId:  transactionId,
-                storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                clientType:     localStorage.getItem('clientType') || 'Customers',
-                guestSessionId: localStorage.getItem('guestSessionId') || ''
-            }));
+            if (data.requiresOtp) {
+                const returnUrl = window.location.pathname + window.location.search;
+                localStorage.setItem('otpTransactionId', transactionId);
+                localStorage.setItem('otpPhoneNumber', phone);
+                localStorage.setItem('otpReturnUrl', returnUrl);
+                modal.remove();
+                window.location.href = `../payment-otp.html?txid=${encodeURIComponent(transactionId)}&phone=${encodeURIComponent(phone)}&return=${encodeURIComponent(returnUrl)}`;
+                return;
+            }
 
-            const returnUrl = `/Dashboard/payment-processing.html?transactionId=${transactionId}`;
-            localStorage.setItem('otpTransactionId', transactionId);
-            localStorage.setItem('otpPhoneNumber',   phone);
-            localStorage.setItem('otpReturnUrl',     returnUrl);
-            window.location.href = `../payment-otp.html?txid=${transactionId}&phone=${encodeURIComponent(phone)}&return=${encodeURIComponent(returnUrl)}`;
+            const deadline = Date.now() + 180000;
+            const poll = async () => {
+                try {
+                    const r = await fetch(`${API_BASE}/payment/status/${transactionId}`, { headers });
+                    const d = await r.json();
+                    const status = (d.status || d.transaction?.status || 'pending').toLowerCase();
+                    document.getElementById('payModalMsg').textContent =
+                        status === 'pending' ? 'A USSD prompt has been sent. Enter your MoMo PIN to approve.' :
+                        status === 'processing' ? 'Processing your payment…' : 'Checking payment…';
+                    if (status === 'success') {
+                        showResult(true, '✅', 'Payment Successful!', `Your ${orderDetails.bundle_size} bundle for ${orderDetails.beneficiary} is being processed.`);
+                    } else if (status === 'failed' || status === 'cancelled') {
+                        showResult(false, '❌', 'Payment Failed', 'The payment was not completed. Please try again.');
+                    } else if (Date.now() >= deadline) {
+                        showResult(false, '⏱️', 'Payment Timed Out', 'No response received. If you approved, please contact support.');
+                    } else {
+                        setTimeout(poll, 10000);
+                    }
+                } catch { if (Date.now() < deadline) setTimeout(poll, 10000); }
+            };
+            setTimeout(poll, 15000);
 
         } catch (err) {
             step2.style.display = 'none';
