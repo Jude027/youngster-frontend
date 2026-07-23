@@ -57,9 +57,12 @@ function initializeSidebar() {
         dashboardLink.addEventListener('click', (e) => {
             e.preventDefault();
             closeSidebar();
-            const slug = localStorage.getItem('storeSlug');
-            const base = '../../Dashboard/dashboard2.html';
-            window.location.href = slug ? base + '?store=' + encodeURIComponent(slug) : base;
+            const slug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store') || '';
+            const client = localStorage.getItem('clientType') || new URLSearchParams(window.location.search).get('client') || '';
+            let url = '../dashboard2.html';
+            if (slug) url += '?store=' + encodeURIComponent(slug);
+            if (client) url += (slug ? '&' : '?') + 'client=' + encodeURIComponent(client);
+            window.location.href = url;
         });
     }
 }
@@ -841,9 +844,7 @@ function showPaymentModal(orderDetails) {
 // ── Moolre Payment Link helper ────────────────────────────────────────────────
 async function getMoolrePaymentLink() {
     try {
-        const h = window.location.hostname;
-        const api = (h === 'localhost' || h === '127.0.0.1') ? 'https://youngster-backend-production.up.railway.app/api' : `http://${h}:5000/api`;
-        const res = await fetch(`${api}/payment-gateways`);
+        const res = await fetch('https://youngster-backend-production.up.railway.app/api/payment-gateways');
         if (res.ok) {
             const gateways = await res.json();
             const moolre = gateways.find(g => /moolre/i.test(g.name));
