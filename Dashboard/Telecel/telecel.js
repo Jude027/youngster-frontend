@@ -85,9 +85,12 @@ function initializeSidebar() {
         dashboardLink.addEventListener('click', (e) => {
             e.preventDefault();
             closeSidebar();
-            const slug = localStorage.getItem('storeSlug');
-            const base = '../../Dashboard/dashboard2.html';
-            window.location.href = slug ? base + '?store=' + encodeURIComponent(slug) : base;
+            const slug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store') || '';
+            const client = localStorage.getItem('clientType') || new URLSearchParams(window.location.search).get('client') || '';
+            let url = '../dashboard2.html';
+            if (slug) url += '?store=' + encodeURIComponent(slug);
+            if (client) url += (slug ? '&' : '?') + 'client=' + encodeURIComponent(client);
+            window.location.href = url;
         });
     }
 }
@@ -159,25 +162,17 @@ function showLogoutNotification() {
 // Check authentication on page load
 function checkUserSession() {
     const isReferralVisit = window.location.pathname.includes('/referral/') ||
-                        new URLSearchParams(window.location.search).get('store');
+        new URLSearchParams(window.location.search).get('store');
     if (isReferralVisit) return true;
 
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const username = localStorage.getItem('username');
     
     if (isLoggedIn !== 'true' || !username) {
-        console.log('No active session found. Redirecting to login...');
-        
-        // Show logout notification before redirecting
         showLogoutNotification();
-        
-        // Redirect to login page after delay
-        setTimeout(() => {
-            window.location.href = '../index.html';
-        }, 1500);
+        setTimeout(() => { window.location.href = '../index.html'; }, 1500);
         return false;
     }
-    
     return true;
 }
 
@@ -543,8 +538,7 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-            ? 'https://youngster-backend-production.up.railway.app/api' : `https://${window.location.hostname}/api`;
+        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
