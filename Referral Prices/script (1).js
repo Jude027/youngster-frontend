@@ -264,7 +264,7 @@ function buildTables() {
 
         let tableHtml = `<table class="pricing-table"><thead><tr><th>Package</th><th>Original Price</th>`;
         for (let ct of allClientTypes) {
-            tableHtml += `<th><div class="column-header"><div class="column-main">Set Prices (GHS)</div><div class="column-sub">(${ct})</div></div></th>`;
+            tableHtml += `<th style="min-width:90px;"><div class="column-header"><div class="column-main">Set Prices (GHS)</div><div class="column-sub">(${ct})</div></div></th>`;
         }
         tableHtml += `</thead><tbody>`;
 
@@ -280,7 +280,7 @@ function buildTables() {
             for (let ct of allClientTypes) {
                 const saved = referralPrices.find(rp => rp.provider === providerName && rp.packageName === pkg && rp.clientType === ct);
                 const priceValue = saved ? saved.price : '';
-                tableHtml += `<td><div class="price-input-container"><input type="text" class="set-price-input" data-provider="${providerName}" data-package="${pkg}" data-client="${ct}" data-original="${origEntry ? origEntry.originalPrice : 0}" value="${priceValue}" placeholder="Enter price"></div></td>`;
+                tableHtml += `<td style="min-width:90px;"><div class="price-input-container"><input type="text" class="set-price-input" data-provider="${providerName}" data-package="${pkg}" data-client="${ct}" data-original="${origEntry ? origEntry.originalPrice : 0}" value="${priceValue}" placeholder="Enter price" style="width:100%;min-width:80px;box-sizing:border-box;"></div></td>`;
             }
             tableHtml += `</tr>`;
         }
