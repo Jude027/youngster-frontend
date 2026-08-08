@@ -137,8 +137,6 @@ function applyStoreBranding(store) {
 document.addEventListener('DOMContentLoaded', async () => {
     const slug = detectStoreSlug();
 
-    console.log('[StorefrontInject] slug detected:', slug, '| URL:', window.location.href);
-
     // Apply cached branding immediately — before the network fetch — so the
     // dashboard never shows default content while waiting for the API.
     // Apply cached branding immediately ONLY if it belongs to the current store slug.
@@ -158,20 +156,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     if (!slug) {
-        console.log('[StorefrontInject] No slug found — skipping API fetch');
         return;
     }
 
     try {
         const apiUrl = `${STOREFRONT_API}/storefront/${encodeURIComponent(slug)}?t=${Date.now()}`;
-        console.log('[StorefrontInject] Fetching:', apiUrl);
 
         const res = await fetch(apiUrl);
 
-        console.log('[StorefrontInject] API response status:', res.status);
-        
         if (!res.ok) {
-            console.warn(`[StorefrontInject] Store not found for slug "${slug}" (status ${res.status})`);
             // Clear branding cache if store settings don't exist
             localStorage.removeItem('storeBrandName');
             localStorage.removeItem('storeBrandLogo');
@@ -181,12 +174,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
         const store = await res.json();
-        console.log('[StorefrontInject] Store data received:', {
-            storeName: store.storeName,
-            storeSlug: store.storeSlug,
-            hasLogo: !!store.storeLogo,
-            hasWhatsapp: !!store.whatsappNumber
-        });
         
         const resolvedSlug = store.storeSlug || slug;
         if (resolvedSlug) localStorage.setItem('storeBrandSlug', resolvedSlug);
@@ -220,6 +207,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }));
 
     } catch (err) {
-        console.error('[StorefrontInject] Error fetching store branding:', err);
+        // silent — branding is best-effort, cached values remain
     }
 });
