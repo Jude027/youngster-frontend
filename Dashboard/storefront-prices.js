@@ -188,7 +188,6 @@
 
         // Nothing to do if no store context or no provider
         if (!store || !provider) {
-            console.warn('[storefront-prices] Missing store or provider context', { store, provider });
             return;
         }
 
@@ -202,14 +201,12 @@
 
         const bundleSelect = document.getElementById('bundle');
         if (!bundleSelect) {
-            console.warn('[storefront-prices] bundle dropdown not found');
             return;
         }
 
         // If no clientType is present the customer arrived without a typed referral
         // link — show no prices rather than leaking another type's pricing.
         if (!resolvedClientType) {
-            console.warn('[storefront-prices] No clientType in URL or localStorage — showing no prices');
             const placeholder = bundleSelect.options[0];
             if (placeholder) {
                 placeholder.textContent = 'No bundles available';
@@ -230,28 +227,17 @@
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             allPrices = await res.json();
         } catch (err) {
-            console.warn('[storefront-prices] fetch failed:', err);
             return;
         }
 
-        console.log('[storefront-prices] Loaded for store:', store, '| clientType:', resolvedClientType);
-        console.log('[storefront-prices] Provider being matched:', provider);
-        console.log('[storefront-prices] Total prices from API:', allPrices.length);
-        console.log('[storefront-prices] Provider names in API response:', [...new Set(allPrices.map(p => p.provider))]);
-        console.log('[storefront-prices] Client types in API response:', [...new Set(allPrices.map(p => p.clientType))]);
-        if (allPrices.length === 0) {
-            console.error('[storefront-prices] ❌ API returned EMPTY — check: 1) store slug matches DB, 2) clientType matches ReferralPrice, 3) backend deployed with latest changes');
-        }
         // Always rebuild from scratch — wipe any options added by price-loader.js
         // or hardcoded in the HTML to prevent duplicates and inactive ghost entries.
         // Remove all non-placeholder options first, then build fresh from API prices.
         while (bundleSelect.options.length > 1) bundleSelect.remove(1);
 
         const gbToPrice = buildGbMap(allPrices, provider);
-        console.log('[storefront-prices] Built price map:', gbToPrice);
 
         if (Object.keys(gbToPrice).length === 0) {
-            console.warn('[storefront-prices] ⚠️ No prices found for provider:', provider);
             const empty = document.createElement('option');
             empty.value = '';
             empty.textContent = 'No prices available — contact seller';
@@ -350,7 +336,7 @@
             if (_attempts < MAX_TRIES) {
                 setTimeout(tryRun, 250);
             } else {
-                console.warn('[storefront-prices] Gave up waiting for store/provider context after', _attempts, 'attempts', getContext());
+                // gave up — context never became available
             }
             return;
         }
