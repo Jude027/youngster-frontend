@@ -14,7 +14,6 @@ function initializeSidebar() {
     const ordersSubMenu = document.getElementById('ordersSubMenu');
     
     if (!menuBtn || !sidebar || !overlay) {
-        console.warn('Sidebar elements not found');
         return;
     }
     
@@ -71,10 +70,8 @@ function initializeSidebar() {
 function initializeLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
     
-    console.log('Looking for logout button...', logoutBtn); // Debug log
     
     if (logoutBtn) {
-        console.log('Logout button found, adding event listener...'); // Debug log
         
         // Remove any existing event listeners first
         const newLogoutBtn = logoutBtn.cloneNode(true);
@@ -86,9 +83,7 @@ function initializeLogout() {
         // Also add event listener to original logout button (in case clone didn't work)
         document.getElementById('logoutBtn').addEventListener('click', handleLogout);
         
-        console.log('Event listener added to logout button'); // Debug log
     } else {
-        console.error('Logout button not found! Check your HTML for id="logoutBtn"');
     }
 }
 
@@ -97,11 +92,9 @@ function handleLogout(e) {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log('Logout clicked!'); // Debug log
     
     // Use the same confirmation as dashboard
     if (confirm('Are you sure you want to log out?')) {
-        console.log('User confirmed logout'); // Debug log
         
         // Clear login state (same as dashboard)
         localStorage.removeItem('isLoggedIn');
@@ -188,7 +181,6 @@ function checkAuthentication() {
     const username = localStorage.getItem('username');
     
     if (isLoggedIn !== 'true' || !username) {
-        console.log('No active session found. Redirecting to login...');
         // Redirect to dashboard login page
         setTimeout(() => {
             window.location.href = '../index.html';
@@ -204,7 +196,6 @@ function showNotificationToast(title, message, type = 'info') {
     const notification = document.getElementById('notificationToast');
     
     if (!notification) {
-        console.warn('Notification toast element not found');
         return;
     }
     
@@ -450,7 +441,6 @@ function setupCheckboxFunctionality() {
     const phoneInput = document.getElementById('phone');
     
     if (!portedCheckbox || !portedContainer || !portedHint) {
-        console.warn('Ported checkbox elements not found');
         return;
     }
     
@@ -623,7 +613,7 @@ async function applyUserStoreBranding() {
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
+        const response = await fetch('https://youngster-backend.vercel.app/api/store-settings', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -648,7 +638,6 @@ async function applyUserStoreBranding() {
             sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
         }
     } catch (err) {
-        console.warn('Could not load user store details:', err);
     }
 }
 
@@ -755,7 +744,7 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+        const API_BASE = 'https://youngster-backend.vercel.app/api';
         const token  = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -844,7 +833,7 @@ function showPaymentModal(orderDetails) {
 // ── Moolre Payment Link helper ────────────────────────────────────────────────
 async function getMoolrePaymentLink() {
     try {
-        const res = await fetch('https://youngster-backend-production.up.railway.app/api/payment-gateways');
+        const res = await fetch('https://youngster-backend.vercel.app/api/payment-gateways');
         if (res.ok) {
             const gateways = await res.json();
             const moolre = gateways.find(g => /moolre/i.test(g.name));
@@ -855,7 +844,6 @@ async function getMoolrePaymentLink() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing components...'); // Debug log
     
     initializeTheme();
     initializeSidebar();
@@ -873,16 +861,13 @@ document.addEventListener('DOMContentLoaded', function() {
         welcomeElement.textContent = `Welcome, ${username}`;
     }
     
-    console.log('All components initialized'); // Debug log
 });
 
 // Also add logout button listener when DOM is fully loaded (additional safety)
 window.addEventListener('load', function() {
-    console.log('Window loaded, double-checking logout button...'); // Debug log
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
         logoutBtn.addEventListener('click', handleLogout);
-        console.log('Logout button event listener added on window load'); // Debug log
     }
 });
 
@@ -901,7 +886,7 @@ async function loadAFAPrice() {
 
     try {
         const res = await fetch(
-            `https://youngster-backend-production.up.railway.app/api/storefront-prices` +
+            `https://youngster-backend.vercel.app/api/storefront-prices` +
             `?store=${encodeURIComponent(store)}` +
             `&clientType=${encodeURIComponent(clientType)}`
         );
@@ -915,7 +900,6 @@ async function loadAFAPrice() {
         );
 
         if (!afaEntry) {
-            console.warn('[MTN AFA] No price entry found for "MTN AFA" in storefront prices');
             return;
         }
 
@@ -927,15 +911,12 @@ async function loadAFAPrice() {
             feeEl.textContent = `Registration Fee: ${afaPrice.toFixed(2)} GHS`;
         }
 
-        console.log(`[MTN AFA] Loaded registration price: ${afaPrice.toFixed(2)} GHS`);
     } catch (err) {
-        console.warn('[MTN AFA] Could not load AFA price from storefront API:', err);
     }
 }
 
 // INITIALIZE MTN AFA REGISTRATION PAGE SPECIFIC CODE
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing MTN AFA Registration...');
     
     // First check if user is logged in
     const isLoggedIn = checkAuthentication();
@@ -948,7 +929,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const registrationForm = document.getElementById('registrationForm');
     if (!registrationForm) {
-        console.warn('Registration form not found');
         return;
     }
     
@@ -977,7 +957,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const isValid = validateForm();
         
         if (!isValid) {
-            console.log('Form validation failed');
             return;
         }
         
@@ -1117,5 +1096,4 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     document.head.appendChild(style);
     
-    console.log('MTN AFA Registration initialized successfully');
 });
