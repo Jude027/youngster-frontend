@@ -10,7 +10,7 @@ function authHeaders() {
 function checkAuth() {
     const token = localStorage.getItem('token');
     if (!token) {
-        window.location.href = '../Registration form/login_and_signup.html';
+        window.location.href = '../Registration-form/login_and_signup.html';
         return false;
     }
     return true;
@@ -30,7 +30,7 @@ async function authFetch(url, options = {}) {
             localStorage.clear();
             showNotification('Your session has expired. Please log in again.', 'error');
             setTimeout(() => {
-                window.location.href = '../Registration form/login_and_signup.html';
+                window.location.href = '../Registration-form/login_and_signup.html';
             }, 1500);
             return null;
         }
