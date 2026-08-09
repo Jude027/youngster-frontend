@@ -1,9 +1,9 @@
 // Admin panel â€“ full management (including Role Price Mapping)
-const API_BASE = 'https://youngster-backend.vercel.app';
+const API_BASE = 'https://youngster-backend.vercel.app/api';
 let token = localStorage.getItem('token');
 
 if (!token) {
-    window.location.href = '../Registration%20form/login_and_signup.html';
+    window.location.href = '../Registration-form/login_and_signup.html';
 }
 
 function authHeaders() {
@@ -58,13 +58,13 @@ async function checkAdmin() {
         const user = await res.json();
         if (user.role !== 'admin') {
             alert('Admin access required');
-            window.location.href = '../Registration%20form/login_and_signup.html';
+            window.location.href = '../Registration-form/login_and_signup.html';
         }
         document.getElementById('adminName').innerText = user.username;
     } catch (err) {
         console.error(err);
         alert('Could not verify admin status. Please log in again.');
-        window.location.href = '../Registration%20form/login_and_signup.html';
+        window.location.href = '../Registration-form/login_and_signup.html';
     }
 }
 
@@ -1623,7 +1623,7 @@ window.viewAPILogDetails = (logId) => {
 // ========== LOGOUT ==========
 document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.clear();
-    window.location.href = '../Registration%20form/login_and_signup.html';
+    window.location.href = '../Registration-form/login_and_signup.html';
 });
 
 // ========== SEARCH HANDLERS ==========
