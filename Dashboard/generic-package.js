@@ -17,7 +17,6 @@ function initializeSidebar() {
     const overlay = document.getElementById('overlay');
     
     if (!menuBtn || !sidebar || !overlay) {
-        console.warn('Sidebar elements not found');
         return;
     }
     
@@ -59,7 +58,6 @@ function checkAuthentication() {
     const username = localStorage.getItem('username');
     
     if (isLoggedIn !== 'true' || !username) {
-        console.log('No active session found. Redirecting to login...');
         setTimeout(() => {
             window.location.href = 'index.html';
         }, 100);
@@ -147,7 +145,6 @@ async function applyUserStoreBranding() {
             sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
         }
     } catch (err) {
-        console.warn('Could not load user store details:', err);
     }
 }
 
@@ -256,7 +253,7 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+        const API_BASE = 'https://youngster-backend.vercel.app/api';
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -337,7 +334,6 @@ function showPaymentModal(orderDetails) {
 
 // Initialize everything when the page loads
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, checking authentication...');
     
     // Check authentication first
     const isLoggedIn = checkAuthentication();
@@ -345,7 +341,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return; // Stop initialization if not logged in
     }
     
-    console.log('Authentication passed, initializing components...');
     
     initializeTheme();
     initializeSidebar();
@@ -442,7 +437,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 bundleSelect.appendChild(option);
             });
         } catch (err) {
-            console.error('Failed to load bundles:', err);
             if (bundleSelect.options.length <= 1) {
                 bundleSelect.options[0].textContent = 'Could not load bundles — tap to retry';
             }
