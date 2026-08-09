@@ -70,7 +70,7 @@
         forgotPasswordForm.classList.add('hidden');
     });
 
-    const API_BASE = 'https://youngster-backend.vercel.app';
+    const API_BASE = 'https://youngster-backend.vercel.app/api';
 
     // LOGIN
     if (loginForm) {
@@ -102,7 +102,7 @@
                     if (data.user.role === 'admin') {
                         window.location.href = '../Admin/admin.html';
                     } else {
-                        window.location.href = '../Referral Prices/dealers_referral_prices.html';
+                        window.location.href = '../Referral%20Prices/dealers_referral_prices.html';
                     }
                 } else {
                     alert(data.message || 'Login failed');
@@ -152,7 +152,7 @@
                     if (data.user.role === 'admin') {
                         window.location.href = '../Admin/admin.html';
                     } else {
-                        window.location.href = '../Referral Prices/dealers_referral_prices.html';
+                        window.location.href = '../Referral%20Prices/dealers_referral_prices.html';
                     }
                 } else {
                     alert(data.message || 'Signup failed');
