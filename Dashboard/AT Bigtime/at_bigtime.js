@@ -165,7 +165,6 @@ function checkUserSession() {
     const username = localStorage.getItem('username');
     
     if (isLoggedIn !== 'true' || !username) {
-        console.log('No active session found. Redirecting to login...');
         
         // Show logout notification before redirecting
         showLogoutNotification();
@@ -262,11 +261,9 @@ async function applyUserStoreBranding() {
     try {
         const token = localStorage.getItem('token');
         if (!token) {
-            console.log('No token found, skipping store branding');
             return;
         }
         
-        console.log('Fetching store details...');
         const response = await fetch('https://youngster-backend.vercel.app/api/store-settings', {
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -275,30 +272,24 @@ async function applyUserStoreBranding() {
         });
         
         if (!response.ok) {
-            console.warn('Failed to fetch store details:', response.status);
             return;
         }
         
         const store = await response.json();
-        console.log('Store details received:', store);
         
         // Apply store branding to sidebar
         const sidebarTitle = document.getElementById('sidebarTitle');
         if (sidebarTitle) {
             sidebarTitle.textContent = store.storeName;
-            console.log('Store name updated:', store.storeName);
         }
         
         const sidebarLogo = document.getElementById('sidebarLogo');
         if (sidebarLogo && store.storeLogo) {
             sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-            console.log('Store logo updated:', store.storeLogo);
         } else if (sidebarLogo && store.storeName) {
             sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
-            console.log('Store initial updated:', store.storeName.charAt(0).toUpperCase());
         }
     } catch (err) {
-        console.warn('Could not load user store details:', err);
     }
 }
 
@@ -561,14 +552,10 @@ function showPaymentModal(orderDetails) {
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('AT Bigtime page loaded, initializing components');
     // Initialize theme, sidebar, and notification
     initializeTheme();
-    console.log('Theme initialized');
     initializeSidebar();
-    console.log('Sidebar initialized');
     applyUserStoreBranding(); // Load user's store branding
-    console.log('Store branding function called');
     
     // Set provider context for storefront-prices.js to inject referral prices
     localStorage.setItem('providerName', 'AT Bigtime');
