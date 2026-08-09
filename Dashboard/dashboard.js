@@ -77,7 +77,7 @@ function handlePackageCardClick(packageName) {
 async function loadDynamicProviders() {
     try {
         const token = localStorage.getItem('token');
-        const API_URL = 'https://youngster-backend-production.up.railway.app/api';
+        const API_URL = 'https://youngster-backend.vercel.app/api';
         const normalise = (s) => String(s || '').toLowerCase().trim().replace(/\s+/g, ' ');
 
         // Results checkers is now a static card in the HTML — add it to the
@@ -137,7 +137,6 @@ async function loadDynamicProviders() {
         _renderDynamicCards(enriched, hardcodedNormalised, normalise);
 
     } catch (err) {
-        console.warn('Could not load dynamic providers:', err);
     }
 }
 
@@ -183,7 +182,6 @@ function handleDynamicProviderClick(providerName, logoUrl) {
         try {
             localStorage.setItem(`logo_${providerName}`, logoUrl);
         } catch (e) {
-            console.warn('Could not cache logoUrl in localStorage:', e);
         }
     }
     const logoParam = (logoUrl && !logoUrl.startsWith('data:')) ? `&logo=${encodeURIComponent(logoUrl)}` : '';
@@ -206,11 +204,11 @@ async function applyUserStoreBranding() {
         let store;
 
         if (storeSlug) {
-            const response = await fetch(`https://youngster-backend-production.up.railway.app/api/storefront/${encodeURIComponent(storeSlug)}`);
+            const response = await fetch(`https://youngster-backend.vercel.app/api/storefront/${encodeURIComponent(storeSlug)}`);
             if (!response.ok) return;
             store = await response.json();
         } else if (token) {
-            const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
+            const response = await fetch('https://youngster-backend.vercel.app/api/store-settings', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -262,7 +260,6 @@ async function applyUserStoreBranding() {
             }
         }
     } catch (err) {
-        console.warn('Could not load user store details:', err);
     }
 }
 
@@ -314,7 +311,6 @@ function initializeSidebar() {
     const logoutBtn = document.getElementById('logoutBtn');
     
     if (!menuBtn || !closeBtn || !sidebar || !overlay) {
-        console.log('Some sidebar elements not found');
         return;
     }
     
@@ -393,7 +389,6 @@ if (copyBtn) {
                 document.execCommand('copy');
                 showCopyFeedback(this);
             } catch (err) {
-                console.error('Failed to copy text: ', err);
             }
             document.body.removeChild(textArea);
         }
