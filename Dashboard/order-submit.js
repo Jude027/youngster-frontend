@@ -15,7 +15,7 @@ const ORDER_API = (() => {
     const h = window.location.hostname;
     return (h === 'localhost' || h === '127.0.0.1')
         ? 'http://localhost:5000/api'
-        : 'https://youngster-backend-production.up.railway.app/api';
+        : 'https://youngster-backend.vercel.app/api';
 })();
 
 function orderAuthHeaders() {
@@ -80,7 +80,6 @@ async function submitOrder(orderData) {
         });
 
         const payData = await payRes.json();
-        console.log('[order-submit] payment/initiate response:', payData);
 
         if (!payRes.ok || !payData.success) {
             return {
@@ -92,7 +91,6 @@ async function submitOrder(orderData) {
         transactionId = payData.transactionId;
 
     } catch (err) {
-        console.error('[order-submit] payment initiation error:', err);
         return { success: false, message: 'Network error initiating payment. Please check your connection.' };
     }
 
@@ -117,10 +115,8 @@ async function submitOrder(orderData) {
         });
 
         if (!orderRes.ok) {
-            console.warn('[order-submit] order record failed — payment still initiated');
         }
     } catch (err) {
-        console.warn('[order-submit] order record error (non-fatal):', err);
     }
 
     // Return the transactionId so the page can poll for payment confirmation
@@ -153,7 +149,6 @@ async function pollPaymentStatus(transactionId, onUpdate, timeoutMs = 180000) {
                 const data = await res.json();
                 const status = data.status || data.transaction?.status || 'pending';
 
-                console.log('[order-submit] poll status:', status);
                 if (onUpdate) onUpdate(status);
 
                 if (status === 'success') {
@@ -167,7 +162,6 @@ async function pollPaymentStatus(transactionId, onUpdate, timeoutMs = 180000) {
                     resolve({ status: 'timeout' });
                 }
             } catch (err) {
-                console.warn('[order-submit] poll error:', err);
                 if (Date.now() >= deadline) {
                     clearInterval(timer);
                     resolve({ status: 'timeout' });
