@@ -58,7 +58,7 @@ async function fetchTransactions() {
         const res = await fetch(`${API_BASE}/transactions`, { headers: authHeaders() });
         if (res.status === 401 || res.status === 403) {
             localStorage.clear();
-            window.location.href = '../Registration form/login_and_signup.html';
+            window.location.href = '../Registration-form/login_and_signup.html';
             return;
         }
         if (!res.ok) throw new Error();
@@ -206,7 +206,7 @@ function initializeRefresh() {
 // ── Bootstrap ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
     if (!localStorage.getItem('token')) {
-        window.location.href = '../Registration form/login_and_signup.html';
+        window.location.href = '../Registration-form/login_and_signup.html';
         return;
     }
     initializeTheme();
