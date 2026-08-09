@@ -49,7 +49,7 @@ function initializeSidebar() {
     overlay?.addEventListener('click', closeSidebar);
     if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
-            if (confirm('Log out?')) { localStorage.clear(); window.location.href = '../Registration form/login_and_signup.html'; }
+            if (confirm('Log out?')) { localStorage.clear(); window.location.href = '../Registration-form/login_and_signup.html'; }
         });
     }
     document.querySelectorAll('.menu-item').forEach(i => i.addEventListener('click', closeSidebar));
