@@ -344,7 +344,7 @@ function initializeSidebar() {
                     localStorage.removeItem('username');
                     
                     // Redirect to login page
-                    window.location.href = '../Registration form/login_and_signup.html';
+                    window.location.href = '../Registration-form/login_and_signup.html';
                 }, 1500); // Wait for notification to show
             }
         });
