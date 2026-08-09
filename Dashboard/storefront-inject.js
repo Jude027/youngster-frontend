@@ -8,7 +8,7 @@
 
 const STOREFRONT_API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:5000/api'
-    : 'https://youngster-backend-production.up.railway.app/api';
+    : 'https://youngster-backend.vercel.app';
 
 // ─── Detect slug ──────────────────────────────────────────────────────────────
 // Supports:
