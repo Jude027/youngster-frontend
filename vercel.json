@@ -1,7 +1,8 @@
 {
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/referral/:slug", "destination": "/Dashboard/dashboard2.html" }
+    { "source": "/referral/:slug", "destination": "/Dashboard/dashboard2.html" },
+    { "source": "/Registration-form/:file", "destination": "/Registration form/:file" }
   ],
   "headers": [
     {
