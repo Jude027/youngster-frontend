@@ -307,7 +307,7 @@ async function applyUserStoreBranding() {
 async function getMoolrePaymentLink() {
     try {
         const h = window.location.hostname;
-        const api = (h === 'localhost' || h === '127.0.0.1') ? 'https://youngster-backend-production.up.railway.app/api' : `http://${h}:5000/api`;
+        const api = (h === 'localhost' || h === '127.0.0.1') ? 'https://youngster-backend.vercel.app' : `http://${h}:5000/api`;
         const res = await fetch(`${api}/payment-gateways`);
         if (res.ok) {
             const gateways = await res.json();
