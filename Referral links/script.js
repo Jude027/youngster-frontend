@@ -1,5 +1,5 @@
 // referral links page – connected to backend API
-const API_BASE = 'https://youngster-backend.vercel.app/api';
+const API_BASE = 'https://youngster-backend.vercel.app';
 
 // ─── Auth helpers ────────────────────────────────────────────────────────────
 function authHeaders() {
@@ -83,7 +83,7 @@ function initializeLogout() {
             localStorage.clear();
             showNotification('Logged out successfully', 'success');
             setTimeout(() => {
-                window.location.href = '../Registration form/login_and_signup.html';
+                window.location.href = '../Registration-form/login_and_signup.html';
             }, 1500);
         }
     });
@@ -186,7 +186,7 @@ let currentUser = null;
 // guests to the correct frontend storefront page with branding applied.
 const BACKEND_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:5000'
-    : 'https://youngster-backend-production.up.railway.app';
+    : 'https://youngster-backend.vercel.app';
 
 const referralBaseUrl = BACKEND_BASE + '/referral/';
 
