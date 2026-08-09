@@ -6,7 +6,7 @@ const app = express();
 app.use(express.static(__dirname));
 
 app.get("/", (req, res) => {
-    res.redirect("/Registration%20form/login_and_signup.html");
+    res.redirect("/Registration-form/login_and_signup.html");
 });
 
 const PORT = process.env.PORT || 3000;
