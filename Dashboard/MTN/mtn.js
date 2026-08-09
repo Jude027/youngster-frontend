@@ -15,33 +15,33 @@ function initializeSidebar() {
     const ordersMenu = document.getElementById('ordersMenu');
     const ordersSubMenu = document.getElementById('ordersSubMenu');
     const logoutBtn = document.getElementById('logoutBtn');
-
+    
     // Check if elements exist
     if (!menuBtn || !sidebar) return;
-
+    
     // Toggle sidebar
     menuBtn.addEventListener('click', () => {
         sidebar.classList.add('open');
         if (overlay) overlay.classList.add('open');
         document.body.classList.add('sidebar-open');
     });
-
+    
     // Close sidebar
     function closeSidebar() {
         sidebar.classList.remove('open');
         if (overlay) overlay.classList.remove('open');
         document.body.classList.remove('sidebar-open');
     }
-
+    
     if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
     if (overlay) overlay.addEventListener('click', closeSidebar);
-
+    
     // Toggle orders sub-menu
     if (ordersMenu && ordersSubMenu) {
         ordersMenu.addEventListener('click', (e) => {
             e.stopPropagation();
             ordersSubMenu.classList.toggle('open');
-
+            
             // Rotate chevron icon
             const chevron = ordersMenu.querySelector('.fa-chevron-down');
             if (chevron) {
@@ -49,28 +49,28 @@ function initializeSidebar() {
             }
         });
     }
-
+    
     // Logout functionality
     if (logoutBtn) {
         logoutBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
-
+            
             if (confirm('Are you sure you want to log out?')) {
                 // Clear login state
                 localStorage.removeItem('isLoggedIn');
                 localStorage.removeItem('username');
-
+                
                 // Show logout notification
                 showLogoutNotification();
-
+                
                 // Redirect to login page after notification delay
                 setTimeout(() => {
                 }, 1500);
             }
         });
     }
-
+    
     // Close sidebar when clicking on a menu item (except orders with submenu)
     document.querySelectorAll('.menu-item:not(#ordersMenu)').forEach(item => {
         item.addEventListener('click', () => {
@@ -100,7 +100,7 @@ function showLogoutNotification() {
             document.body.removeChild(notification);
         }
     });
-
+    
     // Create notification element
     const notification = document.createElement('div');
     notification.className = 'logout-notification';
@@ -124,7 +124,7 @@ function showLogoutNotification() {
             <i class="fas fa-check-circle"></i> You have been logged out successfully!
         </div>
     `;
-
+    
     // Add notification styles if not already added
     if (!document.querySelector('#logout-notification-styles')) {
         const style = document.createElement('style');
@@ -141,9 +141,9 @@ function showLogoutNotification() {
         `;
         document.head.appendChild(style);
     }
-
+    
     document.body.appendChild(notification);
-
+    
     // Auto remove after 3 seconds
     setTimeout(() => {
         notification.style.animation = 'notificationSlideOut 0.3s ease';
@@ -162,29 +162,29 @@ function showLogoutNotification() {
 function initializeNotification() {
     const notification = document.getElementById('notification');
     const notificationClose = document.getElementById('notificationClose');
-
-    if (!notification) return { showNotification: () => { }, hideNotification: () => { } };
-
+    
+    if (!notification) return { showNotification: () => {}, hideNotification: () => {} };
+    
     // Function to show notification
     function showNotification() {
         notification.classList.add('show');
-
+        
         // Auto hide after 5 seconds
         setTimeout(() => {
             hideNotification();
         }, 5000);
     }
-
+    
     // Function to hide notification
     function hideNotification() {
         notification.classList.remove('show');
     }
-
+    
     // Close notification when close button is clicked
     if (notificationClose) {
         notificationClose.addEventListener('click', hideNotification);
     }
-
+    
     return { showNotification, hideNotification };
 }
 
@@ -192,28 +192,28 @@ function initializeNotification() {
 function validateMTNPhoneNumber(phone, allowAllFormats = false) {
     // Remove any non-numeric characters
     const cleanPhone = phone.replace(/[^0-9]/g, '');
-
+    
     // Check if it's a 10-digit number
     if (cleanPhone.length !== 10) {
         return { isValid: false, message: 'Phone number must be 10 digits' };
     }
-
+    
     // If ported number checkbox is checked, allow all formats
     if (allowAllFormats) {
         return { isValid: true, message: '' };
     }
-
+    
     // Check if it starts with valid MTN prefixes
     const validPrefixes = ['024', '054', '055', '059', '025', '053'];
     const prefix = cleanPhone.substring(0, 3);
-
+    
     if (!validPrefixes.includes(prefix)) {
-        return {
-            isValid: false,
-            message: `Invalid MTN Number format. Must start with: ${validPrefixes.join(', ')} or if the number is ported then please tick the 'Ported' option.`
+        return { 
+            isValid: false, 
+            message: `Invalid MTN Number format. Must start with: ${validPrefixes.join(', ')} or if the number is ported then please tick the 'Ported' option.` 
         };
     }
-
+    
     return { isValid: true, message: '' };
 }
 
@@ -223,17 +223,17 @@ function initializeCustomCheckboxes() {
     const portedNumberContainer = document.getElementById('portedNumberContainer');
     const portedNumberCheckbox = document.getElementById('portedNumber');
     const portedNumberBox = document.getElementById('portedNumberBox');
-
+    
     if (portedNumberContainer && portedNumberCheckbox && portedNumberBox) {
-        portedNumberContainer.addEventListener('click', function (e) {
+        portedNumberContainer.addEventListener('click', function(e) {
             e.preventDefault();
             portedNumberCheckbox.checked = !portedNumberCheckbox.checked;
             portedNumberBox.classList.toggle('checked', portedNumberCheckbox.checked);
-
+            
             // Update the number type in bundle details
             updateNumberType();
         });
-
+        
         // Initialize the box state
         portedNumberBox.classList.toggle('checked', portedNumberCheckbox.checked);
     }
@@ -243,7 +243,7 @@ function initializeCustomCheckboxes() {
 function updateNumberType() {
     const portedNumberCheckbox = document.getElementById('portedNumber');
     const numberTypeElement = document.getElementById('numberType');
-
+    
     if (portedNumberCheckbox && numberTypeElement) {
         if (portedNumberCheckbox.checked) {
             numberTypeElement.textContent = 'Ported';
@@ -257,41 +257,33 @@ function updateNumberType() {
 async function applyUserStoreBranding() {
     try {
         const token = localStorage.getItem('token');
-        const storeSlug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store');
-        let store;
+        if (!token) return;
+        
+        const response = await fetch('https://youngster-backend.vercel.app/api/store-settings', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) return;
+        
+        const store = await response.json();
 
-        if (storeSlug) {
-            const response = await fetch(`https://youngster-backend-production.up.railway.app/api/storefront/${encodeURIComponent(storeSlug)}`);
-            if (!response.ok) return;
-            store = await response.json();
-        } else if (token) {
-            const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-            if (!response.ok) return;
-            store = await response.json();
-            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
-        } else {
-            return;
-        }
+        // Cache slug so dashboard link navigates back with ?store= param
+        if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
 
         // Apply store branding to sidebar
         const sidebarTitle = document.getElementById('sidebarTitle');
-        if (sidebarTitle && store.storeName) sidebarTitle.textContent = store.storeName;
+        if (sidebarTitle) sidebarTitle.textContent = store.storeName;
 
         const sidebarLogo = document.getElementById('sidebarLogo');
-        if (sidebarLogo) {
-            if (store.storeLogo) {
-                sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-            } else if (store.storeName) {
-                sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
-            }
+        if (sidebarLogo && store.storeLogo) {
+            sidebarLogo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName} Logo" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
+        } else if (sidebarLogo && store.storeName) {
+            sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
         }
     } catch (err) {
-        console.warn('Could not load user store details:', err);
     }
 }
 
@@ -451,7 +443,7 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+        const API_BASE = 'https://youngster-backend.vercel.app/api';
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
@@ -464,18 +456,21 @@ function showPaymentModal(orderDetails) {
                 method: 'POST',
                 headers,
                 body: JSON.stringify({
-                    gatewayName:    'Moolre',
-                    phoneNumber:    phone,
-                    beneficiary:    orderDetails.beneficiary,
-                    amount:         orderDetails.amount,
-                    provider:       network,
-                    description:    `${orderDetails.package} ${orderDetails.bundle_size}`,
-                    packageName:    orderDetails.package,
-                    bundle_size:    orderDetails.bundle_size,
-                    storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
-                    clientType:     localStorage.getItem('clientType') || 'Customers',
-                    guestSessionId: localStorage.getItem('guestSessionId') || '',
-                    isUnverified:   orderDetails.isUnverified === true,
+                    gatewayName:     'Moolre',
+                    phoneNumber:     phone,
+                    beneficiary:     orderDetails.beneficiary,
+                    amount:          orderDetails.amount,
+                    provider:        network,              // MoMo payment network
+                    paymentNetwork:  network,
+                    orderProvider:   orderDetails.package, // actual data bundle provider
+                    packageProvider: orderDetails.package,
+                    description:     `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    packageName:     orderDetails.bundle_size,
+                    bundle_size:     orderDetails.bundle_size,
+                    storeSlug:       new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
+                    clientType:      localStorage.getItem('clientType') || 'Customers',
+                    guestSessionId:  localStorage.getItem('guestSessionId') || null,
+                    isUnverified:    orderDetails.isUnverified === true,
                 }),
             });
 
@@ -521,8 +516,8 @@ function showPaymentModal(orderDetails) {
                         const status = statusData.status || statusData.transaction?.status || 'pending';
 
                         document.getElementById('payModalMsg').textContent =
-                            status === 'pending' ? 'A USSD prompt has been sent. Enter your MoMo PIN to approve.' :
-                                status === 'processing' ? 'Processing your paymentâ€¦' : 'Checking paymentâ€¦';
+                            status === 'pending'    ? 'A USSD prompt has been sent. Enter your MoMo PIN to approve.' :
+                            status === 'processing' ? 'Processing your paymentâ€¦' : 'Checking paymentâ€¦';
 
                         if (status === 'success') {
                             showResult(true, 'âœ…', 'Payment Successful!',
@@ -537,7 +532,6 @@ function showPaymentModal(orderDetails) {
                             scheduleNextPoll();
                         }
                     } catch (e) {
-                        console.warn('Poll error:', e);
                         if (Date.now() < deadline) scheduleNextPoll();
                     }
                 }, delay);
@@ -561,18 +555,18 @@ function showPaymentModal(orderDetails) {
     });
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
     // Initialize theme, sidebar, and notification
     initializeTheme();
     initializeSidebar();
     applyUserStoreBranding(); // Load user's store branding
-
+    
     // Set provider context for storefront-prices.js
     localStorage.setItem('providerName', 'MTN');
-
+    
     const { showNotification } = initializeNotification();
     initializeCustomCheckboxes();
-
+    
     // Bundle dropdown functionality
     const bundleSelect = document.getElementById('bundle');
     const bundleDetails = document.getElementById('bundleDetails');
@@ -580,39 +574,36 @@ document.addEventListener('DOMContentLoaded', function () {
     const bundlePrice = document.getElementById('bundlePrice');
     const bundleValidity = document.getElementById('bundleValidity');
     const bundleNetwork = document.getElementById('bundleNetwork');
-
+    
     // Load prices dynamically
     async function loadAndPopulateBundles() {
         try {
             // Get provider from URL parameter or default to MTN
             const params = new URLSearchParams(window.location.search);
             const provider = params.get('provider') || 'MTN';
-            console.log('Loading prices for provider:', provider);
-            console.log('Current URL:', window.location.href);
-
+            
             const prices = await loadPricesForProvider(provider);
-            console.log('Loaded prices:', prices);
-
+            
             // Update data-network attribute on the select element
             bundleSelect.setAttribute('data-network', provider);
-
+            
             // Clear existing options
             while (bundleSelect.options.length > 1) {
                 bundleSelect.remove(1);
             }
-
+            
             if (prices.length === 0) {
                 bundleSelect.innerHTML = '<option value="">No bundles available</option>';
                 return;
             }
-
+            
             // Sort by package size
             prices.sort((a, b) => {
                 const aSize = parseInt(a.packageName) || 0;
                 const bSize = parseInt(b.packageName) || 0;
                 return aSize - bSize;
             });
-
+            
             // Populate options from loaded prices
             prices.forEach((priceObj, index) => {
                 const option = document.createElement('option');
@@ -623,21 +614,20 @@ document.addEventListener('DOMContentLoaded', function () {
                 option.textContent = `${priceObj.packageName} - ${priceObj.price.toFixed(2)} GHS`;
                 bundleSelect.appendChild(option);
             });
-
+            
             bundleSelect.innerHTML = bundleSelect.innerHTML; // Trigger UI update
         } catch (err) {
-            console.error('Failed to load bundles:', err);
             bundleSelect.innerHTML = '<option value="">Error loading bundles</option>';
         }
     }
-
+    
     // Load bundles on page load
     loadAndPopulateBundles();
-
+    
     if (bundleSelect && bundleDetails) {
-        bundleSelect.addEventListener('change', function () {
+        bundleSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
-
+            
             if (selectedOption.value && bundleSize && bundlePrice && bundleValidity && bundleNetwork) {
                 bundleSize.textContent = selectedOption.text.split(' - ')[0]; // Extract package size from text
                 bundlePrice.textContent = selectedOption.getAttribute('data-price') + ' GHS';
@@ -649,41 +639,40 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
-
+    
     // Ported number checkbox
     const portedNumberCheckbox = document.getElementById('portedNumber');
-
+    
     // Numeric-only input for phone number field
     const phoneInput = document.getElementById('phone');
     if (phoneInput) {
-        phoneInput.addEventListener('input', function (e) {
+        phoneInput.addEventListener('input', function(e) {
             // Remove any non-numeric characters
             this.value = this.value.replace(/[^0-9]/g, '');
-
+            
             // Validate phone number
             const validation = validateMTNPhoneNumber(this.value, portedNumberCheckbox ? portedNumberCheckbox.checked : false);
             if (!validation.isValid && this.value.length > 0) {
                 // Show validation error
-                console.log(validation.message);
             }
         });
     }
-
+    
     // Form submission
     const orderBtn = document.getElementById('purchaseBundle');
-
+    
     if (orderBtn && phoneInput && bundleSelect) {
-        orderBtn.addEventListener('click', async function () {
+        orderBtn.addEventListener('click', async function() {
             const phoneNumber = phoneInput.value.trim();
             const selectedBundle = bundleSelect.value;
             const selectedBundlePrice = bundleSelect.options[bundleSelect.selectedIndex]?.getAttribute('data-price');
-
+            
             if (!phoneNumber) {
                 alert('Please enter a phone number');
                 phoneInput.focus();
                 return;
             }
-
+            
             // Validate phone number
             const validation = validateMTNPhoneNumber(phoneNumber, portedNumberCheckbox ? portedNumberCheckbox.checked : false);
             if (!validation.isValid) {
@@ -691,7 +680,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 phoneInput.focus();
                 return;
             }
-
+            
             if (!selectedBundle) {
                 alert('Please select a bundle');
                 bundleSelect.focus();
@@ -710,7 +699,7 @@ document.addEventListener('DOMContentLoaded', function () {
             orderBtn.disabled = true;
             orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying number...';
 
-            const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+            const API_BASE = 'https://youngster-backend.vercel.app/api';
             const token = localStorage.getItem('token');
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
@@ -721,45 +710,37 @@ document.addEventListener('DOMContentLoaded', function () {
                     headers,
                     body: JSON.stringify({
                         phone: phoneNumber,
-                        is_ported_number: isPorted,
-                        packageName: bundleName,
-                        provider: provider
+                        is_ported_number: isPorted
                     })
                 });
                 const verifyResult = await verifyRes.json();
 
                 if (!verifyRes.ok || !verifyResult.success) {
-                    // Verification failed – ask the customer if they want to proceed anyway.
+                    // Verification failed â€” redirect to external portal for unverified numbers
                     const proceed = confirm(
                         (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
-                        '\n\nYou\'ll be redirected to MTN EXPRESS which accepts all numbers to complete your purchase.'
+                        '\n\nThis phone number is not verified on our new portal. Click OK to be redirected to our other portal to complete this order.'
                     );
-                    if (!proceed) {
-                        orderBtn.disabled = false;
-                        orderBtn.innerHTML = originalBtnHTML;
-                        return;
+                    orderBtn.disabled = false;
+                    orderBtn.innerHTML = originalBtnHTML;
+                    if (proceed) {
+                        window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
                     }
-                    // User clicked OK on unverified number – redirect to purchase page
-                    window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
                     return;
                 } else {
                     orderBtn._isUnverified = false;
                 }
             } catch (err) {
-                console.error('Beneficiary verification failed:', err);
-                // Network error during verification – ask if they want to continue unverified
-                const proceed = confirm(
-                    'Could not verify this number right now (network error).\n\nWould you like to proceed anyway?'
+                // Network error during verification - redirect to external portal
+                const proceedOnError = confirm(
+                    'Could not verify this number right now (network error).\n\nClick OK to be redirected to our other portal to complete this order.'
                 );
-                if (!proceed) {
-                    orderBtn.disabled = false;
-                    orderBtn.innerHTML = originalBtnHTML;
-                    return;
+                orderBtn.disabled = false;
+                orderBtn.innerHTML = originalBtnHTML;
+                if (proceedOnError) {
+                    window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
                 }
-                // User clicked OK on network error – redirect to purchase page
-                window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
-                return;
-            }
+                return;            }
 
             orderBtn.disabled = false;
             orderBtn.innerHTML = originalBtnHTML;
@@ -767,11 +748,11 @@ document.addEventListener('DOMContentLoaded', function () {
             // Open Moolre payment modal â€” customer enters their MoMo number
             // and gets a USSD push prompt to approve the payment
             showPaymentModal({
-                beneficiary: phoneNumber,
-                package: provider,
-                bundle_size: bundleName,
-                amount: amount,
-                isPorted: isPorted,
+                beneficiary:  phoneNumber,
+                package:      provider,
+                bundle_size:  bundleName,
+                amount:       amount,
+                isPorted:     isPorted,
                 isUnverified: orderBtn._isUnverified === true,
             });
         });
