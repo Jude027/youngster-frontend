@@ -76,7 +76,7 @@ function initializeLogout() {
     logoutBtn.addEventListener('click', () => {
         if (confirm('Are you sure you want to log out?')) {
             localStorage.clear();
-            window.location.href = '../Registration%20form/login_and_signup.html';
+            window.location.href = '../Registration-form/login_and_signup.html';
         }
     });
 }
@@ -264,7 +264,7 @@ function initializeRefreshButton() {
 // Bootstrapper
 document.addEventListener('DOMContentLoaded', () => {
     if (!localStorage.getItem('token')) {
-        window.location.href = '../Registration%20form/login_and_signup.html';
+        window.location.href = '../Registration-form/login_and_signup.html';
         return;
     }
     initializeTheme();
