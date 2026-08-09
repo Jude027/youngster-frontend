@@ -93,7 +93,7 @@ async function fetchOrders() {
         if (res.status === 401 || res.status === 403) {
             localStorage.clear();
             alert('Session expired. Please log in again.');
-            window.location.href = '../Registration%20form/login_and_signup.html';
+            window.location.href = '../Registration-form/login_and_signup.html';
             return;
         }
         if (!res.ok) throw new Error('Failed to load orders');
