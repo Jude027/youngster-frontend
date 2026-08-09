@@ -165,7 +165,6 @@ function checkUserSession() {
     const username = localStorage.getItem('username');
     
     if (isLoggedIn !== 'true' || !username) {
-        console.log('No active session found. Redirecting to login...');
         
         // Show logout notification before redirecting
         showLogoutNotification();
@@ -378,7 +377,6 @@ async function applyUserStoreBranding() {
             sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
         }
     } catch (err) {
-        console.warn('Could not load user store details:', err);
     }
 }
 
@@ -643,7 +641,6 @@ function showPaymentModal(orderDetails) {
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM loaded, initializing page...');
     
     // Initialize theme, sidebar, and notification
     initializeTheme();
