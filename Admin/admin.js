@@ -1,5 +1,5 @@
 // Admin panel â€“ full management (including Role Price Mapping)
-const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+const API_BASE = 'https://youngster-backend.vercel.app';
 let token = localStorage.getItem('token');
 
 if (!token) {
