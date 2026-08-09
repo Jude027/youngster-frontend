@@ -6,7 +6,7 @@ const API_BASE = window.getYoungsterApiBase
     ? window.getYoungsterApiBase()
     : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
         ? 'http://localhost:5000/api'
-        : 'https://youngster-backend.vercel.app';
+        : 'https://youngster-backend.vercel.app/api';
 /**
  * Detect if this is a referral/storefront visit
  * Returns the store slug if visiting via referral, null otherwise
