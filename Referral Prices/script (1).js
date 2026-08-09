@@ -1,5 +1,5 @@
 // Referral Prices page – original prices are now role-specific (from BasePrice via /api/my-original-prices)
-const API_BASE = 'https://youngster-backend.vercel.app';
+const API_BASE = 'https://youngster-backend.vercel.app/api';
 
 function authHeaders() {
     const token = localStorage.getItem('token');
