@@ -337,7 +337,7 @@ async function applyUserStoreBranding() {
         const token = localStorage.getItem('token');
         if (!token) return;
         
-        const response = await fetch('https://youngster-backend-production.up.railway.app/api/store-settings', {
+        const response = await fetch('https://youngster-backend.vercel.app/api/store-settings', {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
@@ -362,7 +362,6 @@ async function applyUserStoreBranding() {
             sidebarLogo.innerHTML = `<span style="font-size:18px;font-weight:700;color:#6a11cb;width:100%;height:100%;display:flex;align-items:center;justify-content:center;">${store.storeName.charAt(0).toUpperCase()}</span>`;
         }
     } catch (err) {
-        console.warn('Could not load user store details:', err);
     }
 }
 
@@ -373,7 +372,7 @@ async function applyUserStoreBranding() {
 async function getMoolrePaymentLink() {
     try {
         const h = window.location.hostname;
-        const api = (h === 'localhost' || h === '127.0.0.1') ? 'https://youngster-backend-production.up.railway.app/api' : `http://${h}:5000/api`;
+        const api = (h === 'localhost' || h === '127.0.0.1') ? 'https://youngster-backend.vercel.app/api' : `http://${h}:5000/api`;
         const res = await fetch(`${api}/payment-gateways`);
         if (res.ok) {
             const gateways = await res.json();
@@ -538,7 +537,7 @@ function showPaymentModal(orderDetails) {
         step1.style.display = 'none';
         step2.style.display = 'block';
 
-        const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+        const API_BASE = 'https://youngster-backend.vercel.app/api';
 
         const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
