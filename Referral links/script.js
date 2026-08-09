@@ -1,5 +1,5 @@
 // referral links page – connected to backend API
-const API_BASE = 'https://youngster-backend.vercel.app';
+const API_BASE = 'https://youngster-backend.vercel.app/api';
 
 // ─── Auth helpers ────────────────────────────────────────────────────────────
 function authHeaders() {
