@@ -4,7 +4,7 @@ const API_BASE = (() => {
     const h = window.location.hostname;
     return (h === 'localhost' || h === '127.0.0.1')
         ? 'http://localhost:5000/api'
-        : 'https://youngster-backend.vercel.app';
+        : 'https://youngster-backend.vercel.app/api';
 })();
 
 function authHeaders() {
@@ -178,7 +178,7 @@ function initializeLogout() {
     logoutBtn.addEventListener('click', () => {
         if (confirm('Log out?')) {
             localStorage.clear();
-            window.location.href = '../Registration form/login_and_signup.html';
+            window.location.href = '../Registration-form/login_and_signup.html';
         }
     });
 }
