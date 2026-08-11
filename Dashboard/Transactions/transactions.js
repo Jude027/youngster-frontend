@@ -1,5 +1,5 @@
 // transactions.js – Guest platform (My Store)
-const API_BASE = 'https://youngster-backend.vercel.app';
+const API_BASE = 'https://youngster-backend.vercel.app/api';
 
 function authHeaders() {
     const token = localStorage.getItem('token');
