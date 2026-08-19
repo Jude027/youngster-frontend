@@ -137,15 +137,39 @@
                 </h2>
                 <div class="referred-users-content" id="referredUsersContent">
                     <div class="referral-lists" style="display:grid;gap:20px;">
-                        <div class="referral-list" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
-                            <h3 style="margin-bottom:12px;">Active Referrals</h3>
-                            <p style="margin-bottom:12px;color:#4b5563;">These tell you who is actually buying.</p>
-                            <ul id="activeReferralsList" style="list-style:none;padding:0;margin:0;color:#111827;"></ul>
+                        <div class="referral-list" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">
+                            <h3 style="margin-bottom:4px;color:#065f46;display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-circle" style="font-size:10px;color:#10b981;"></i> Active Referrals
+                            </h3>
+                            <p style="margin-bottom:12px;color:#4b5563;font-size:0.85rem;">Ordered in the last 30 days.</p>
+                            <table style="width:100%;border-collapse:collapse;min-width:340px;">
+                                <thead>
+                                    <tr style="background:#f0fdf4;">
+                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #d1fae5;">#</th>
+                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #d1fae5;">Payment Phone</th>
+                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #d1fae5;">Beneficiary</th>
+                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #d1fae5;">Orders</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activeReferralsList"></tbody>
+                            </table>
                         </div>
-                        <div class="referral-list" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;">
-                            <h3 style="margin-bottom:12px;">Inactive Referrals</h3>
-                            <p style="margin-bottom:12px;color:#4b5563;">These tell you who to follow up with or drop.</p>
-                            <ul id="inactiveReferralsList" style="list-style:none;padding:0;margin:0;color:#111827;"></ul>
+                        <div class="referral-list" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">
+                            <h3 style="margin-bottom:4px;color:#991b1b;display:flex;align-items:center;gap:8px;">
+                                <i class="fas fa-circle" style="font-size:10px;color:#f87171;"></i> Inactive Referrals
+                            </h3>
+                            <p style="margin-bottom:12px;color:#4b5563;font-size:0.85rem;">No orders in 30+ days — worth following up.</p>
+                            <table style="width:100%;border-collapse:collapse;min-width:340px;">
+                                <thead>
+                                    <tr style="background:#fff1f2;">
+                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #fee2e2;">#</th>
+                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #fee2e2;">Payment Phone</th>
+                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #fee2e2;">Beneficiary</th>
+                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #fee2e2;">Orders</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inactiveReferralsList"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
