@@ -154,27 +154,39 @@ function applyMetricsToDOM(data) {
 
     if (activeList) {
         const list = data.activeReferralsList || [];
-        activeList.innerHTML = list.length === 0
-            ? '<li style="color:#9ca3af;font-size:0.9rem;">No active referrals yet.</li>'
-            : list.map(r => `
-                <li style="padding:8px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-weight:500;">${r.label}</span>
-                    <span style="background:#d1fae5;color:#065f46;border-radius:12px;padding:2px 10px;font-size:0.8rem;">
-                        ${r.orderCount} order${r.orderCount !== 1 ? 's' : ''}
-                    </span>
-                </li>`).join('');
+        if (list.length === 0) {
+            activeList.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No active referrals yet.</td></tr>';
+        } else {
+            activeList.innerHTML = list.map((r, i) => `
+                <tr>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:0.85rem;">${i + 1}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;font-size:0.9rem;">${r.paymentPhone || r.label}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#4b5563;font-size:0.85rem;">${r.beneficiaryPhone && r.beneficiaryPhone !== r.paymentPhone ? r.beneficiaryPhone : '—'}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">
+                        <span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:600;white-space:nowrap;">
+                            ${r.orderCount} order${r.orderCount !== 1 ? 's' : ''}
+                        </span>
+                    </td>
+                </tr>`).join('');
+        }
     }
     if (inactiveList) {
         const list = data.inactiveReferralsList || [];
-        inactiveList.innerHTML = list.length === 0
-            ? '<li style="color:#9ca3af;font-size:0.9rem;">No inactive referrals.</li>'
-            : list.map(r => `
-                <li style="padding:8px 0;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-weight:500;">${r.label}</span>
-                    <span style="background:#fee2e2;color:#991b1b;border-radius:12px;padding:2px 10px;font-size:0.8rem;">
-                        ${r.orderCount} order${r.orderCount !== 1 ? 's' : ''}
-                    </span>
-                </li>`).join('');
+        if (list.length === 0) {
+            inactiveList.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No inactive referrals.</td></tr>';
+        } else {
+            inactiveList.innerHTML = list.map((r, i) => `
+                <tr>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:0.85rem;">${i + 1}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;font-size:0.9rem;">${r.paymentPhone || r.label}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#4b5563;font-size:0.85rem;">${r.beneficiaryPhone && r.beneficiaryPhone !== r.paymentPhone ? r.beneficiaryPhone : '—'}</td>
+                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">
+                        <span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:600;white-space:nowrap;">
+                            ${r.orderCount} order${r.orderCount !== 1 ? 's' : ''}
+                        </span>
+                    </td>
+                </tr>`).join('');
+        }
     }
 }
 
