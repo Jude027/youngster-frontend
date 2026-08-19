@@ -130,42 +130,42 @@
             </div>
 
             <!-- Referred Users Section -->
-            <div class="referred-users-section">
-                <h2 class="referred-users-title">
+            <div class="referred-users-section" style="margin-top:32px;">
+                <h2 class="referred-users-title" style="text-align:center;margin-bottom:20px;font-size:1.4rem;display:flex;align-items:center;justify-content:center;gap:10px;">
                     <i class="fas fa-users"></i>
-                    Referred Users <span class="referred-users-count" id="referredUsersCount">(0)</span>
+                    Referred Users <span class="referred-users-count" id="referredUsersCount" style="font-size:1rem;color:#6b7280;">(0)</span>
                 </h2>
                 <div class="referred-users-content" id="referredUsersContent">
-                    <div class="referral-lists" style="display:grid;gap:20px;">
-                        <div class="referral-list" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">
-                            <h3 style="margin-bottom:4px;color:#065f46;display:flex;align-items:center;gap:8px;">
+                    <div class="referral-lists" style="display:flex;flex-direction:column;gap:28px;width:100%;">
+                        <div class="referral-list" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;width:100%;box-sizing:border-box;overflow-x:auto;">
+                            <h3 style="margin-bottom:4px;color:#065f46;display:flex;align-items:center;gap:8px;font-size:1.05rem;">
                                 <i class="fas fa-circle" style="font-size:10px;color:#10b981;"></i> Active Referrals
                             </h3>
-                            <p style="margin-bottom:12px;color:#4b5563;font-size:0.85rem;">Ordered in the last 30 days.</p>
-                            <table style="width:100%;border-collapse:collapse;min-width:340px;">
+                            <p style="margin-bottom:14px;color:#4b5563;font-size:0.85rem;">Ordered in the last 30 days.</p>
+                            <table style="width:100%;border-collapse:collapse;">
                                 <thead>
                                     <tr style="background:#f0fdf4;">
-                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #d1fae5;">#</th>
-                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #d1fae5;">Payment Phone</th>
-                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #d1fae5;">Beneficiary</th>
-                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #d1fae5;">Orders</th>
+                                        <th style="padding:11px 14px;text-align:center;font-size:0.82rem;font-weight:600;color:#374151;border-bottom:2px solid #d1fae5;">#</th>
+                                        <th style="padding:11px 14px;text-align:center;font-size:0.82rem;font-weight:600;color:#374151;border-bottom:2px solid #d1fae5;">Payment Phone</th>
+                                        <th style="padding:11px 14px;text-align:center;font-size:0.82rem;font-weight:600;color:#374151;border-bottom:2px solid #d1fae5;">Beneficiary</th>
+                                        <th style="padding:11px 14px;text-align:center;font-size:0.82rem;font-weight:600;color:#374151;border-bottom:2px solid #d1fae5;">Orders</th>
                                     </tr>
                                 </thead>
                                 <tbody id="activeReferralsList"></tbody>
                             </table>
                         </div>
-                        <div class="referral-list" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:16px;overflow-x:auto;">
-                            <h3 style="margin-bottom:4px;color:#991b1b;display:flex;align-items:center;gap:8px;">
+                        <div class="referral-list" style="background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;padding:20px 24px;width:100%;box-sizing:border-box;overflow-x:auto;">
+                            <h3 style="margin-bottom:4px;color:#991b1b;display:flex;align-items:center;gap:8px;font-size:1.05rem;">
                                 <i class="fas fa-circle" style="font-size:10px;color:#f87171;"></i> Inactive Referrals
                             </h3>
-                            <p style="margin-bottom:12px;color:#4b5563;font-size:0.85rem;">No orders in 30+ days — worth following up.</p>
-                            <table style="width:100%;border-collapse:collapse;min-width:340px;">
+                            <p style="margin-bottom:14px;color:#4b5563;font-size:0.85rem;">No orders in 30+ days — worth following up.</p>
+                            <table style="width:100%;border-collapse:collapse;">
                                 <thead>
                                     <tr style="background:#fff1f2;">
-                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #fee2e2;">#</th>
-                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #fee2e2;">Payment Phone</th>
-                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #fee2e2;">Beneficiary</th>
-                                        <th style="padding:10px 12px;text-align:left;font-size:0.8rem;font-weight:600;color:#6b7280;border-bottom:2px solid #fee2e2;">Orders</th>
+                                        <th style="padding:11px 14px;text-align:center;font-size:0.82rem;font-weight:600;color:#374151;border-bottom:2px solid #fee2e2;">#</th>
+                                        <th style="padding:11px 14px;text-align:center;font-size:0.82rem;font-weight:600;color:#374151;border-bottom:2px solid #fee2e2;">Payment Phone</th>
+                                        <th style="padding:11px 14px;text-align:center;font-size:0.82rem;font-weight:600;color:#374151;border-bottom:2px solid #fee2e2;">Beneficiary</th>
+                                        <th style="padding:11px 14px;text-align:center;font-size:0.82rem;font-weight:600;color:#374151;border-bottom:2px solid #fee2e2;">Orders</th>
                                     </tr>
                                 </thead>
                                 <tbody id="inactiveReferralsList"></tbody>
