@@ -158,12 +158,12 @@ function applyMetricsToDOM(data) {
             activeList.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No active referrals yet.</td></tr>';
         } else {
             activeList.innerHTML = list.map((r, i) => `
-                <tr>
-                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:0.85rem;">${i + 1}</td>
-                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;font-size:0.9rem;">${r.paymentPhone || r.label}</td>
-                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#4b5563;font-size:0.85rem;">${r.beneficiaryPhone && r.beneficiaryPhone !== r.paymentPhone ? r.beneficiaryPhone : '—'}</td>
-                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">
-                        <span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:600;white-space:nowrap;">
+                <tr style="transition:background 0.15s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                    <td style="padding:11px 14px;border-bottom:1px solid #f3f4f6;color:#9ca3af;font-size:0.85rem;text-align:center;">${i + 1}</td>
+                    <td style="padding:11px 14px;border-bottom:1px solid #f3f4f6;font-weight:600;font-size:0.9rem;text-align:center;">${r.paymentPhone || r.label}</td>
+                    <td style="padding:11px 14px;border-bottom:1px solid #f3f4f6;color:#4b5563;font-size:0.87rem;text-align:center;">${r.beneficiaryPhone && r.beneficiaryPhone !== r.paymentPhone ? r.beneficiaryPhone : '—'}</td>
+                    <td style="padding:11px 14px;border-bottom:1px solid #f3f4f6;text-align:center;">
+                        <span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:3px 12px;font-size:0.8rem;font-weight:600;white-space:nowrap;">
                             ${r.orderCount} order${r.orderCount !== 1 ? 's' : ''}
                         </span>
                     </td>
@@ -176,12 +176,12 @@ function applyMetricsToDOM(data) {
             inactiveList.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:20px;">No inactive referrals.</td></tr>';
         } else {
             inactiveList.innerHTML = list.map((r, i) => `
-                <tr>
-                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#6b7280;font-size:0.85rem;">${i + 1}</td>
-                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;font-weight:600;font-size:0.9rem;">${r.paymentPhone || r.label}</td>
-                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;color:#4b5563;font-size:0.85rem;">${r.beneficiaryPhone && r.beneficiaryPhone !== r.paymentPhone ? r.beneficiaryPhone : '—'}</td>
-                    <td style="padding:10px 12px;border-bottom:1px solid #f3f4f6;">
-                        <span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:3px 10px;font-size:0.8rem;font-weight:600;white-space:nowrap;">
+                <tr style="transition:background 0.15s;" onmouseover="this.style.background='#f9fafb'" onmouseout="this.style.background=''">
+                    <td style="padding:11px 14px;border-bottom:1px solid #f3f4f6;color:#9ca3af;font-size:0.85rem;text-align:center;">${i + 1}</td>
+                    <td style="padding:11px 14px;border-bottom:1px solid #f3f4f6;font-weight:600;font-size:0.9rem;text-align:center;">${r.paymentPhone || r.label}</td>
+                    <td style="padding:11px 14px;border-bottom:1px solid #f3f4f6;color:#4b5563;font-size:0.87rem;text-align:center;">${r.beneficiaryPhone && r.beneficiaryPhone !== r.paymentPhone ? r.beneficiaryPhone : '—'}</td>
+                    <td style="padding:11px 14px;border-bottom:1px solid #f3f4f6;text-align:center;">
+                        <span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:3px 12px;font-size:0.8rem;font-weight:600;white-space:nowrap;">
                             ${r.orderCount} order${r.orderCount !== 1 ? 's' : ''}
                         </span>
                     </td>
