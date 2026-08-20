@@ -85,6 +85,7 @@ body.sidebar-open {
     transition: all 0.3s ease;
     width: 44px;
     height: 44px;
+    flex-shrink: 0;
 }
 
 .menu-btn:hover {
@@ -92,14 +93,12 @@ body.sidebar-open {
 }
 
 .header-title {
-    font-size: 28px;
+    font-size: 22px;
     font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     margin-left: auto;
-    margin-right: auto;
-    padding-right: 44px; /* offset the menu-btn width so title is truly centred */
 }
 
 .header-title i {
@@ -636,8 +635,7 @@ body.sidebar-open {
     }
     
     .header-title {
-        margin-right: auto;
-        padding-right: 38px;
-        font-size: 22px;
+        font-size: 18px;
+        gap: 8px;
     }
 }
