@@ -291,12 +291,14 @@
         const updateWaitMsg = (secs) => {
             const el = document.getElementById('waitMsg');
             if (!el) return;
-            if (secs < 15) {
+            if (secs < 8) {
                 el.textContent = 'Sending payment prompt to your phone…';
-            } else if (secs < 60) {
-                el.textContent = 'A USSD prompt has been sent. Dial the PIN on your phone to approve.';
+            } else if (secs < 30) {
+                el.textContent = 'USSD prompt sent! Check your phone and enter your MoMo PIN now.';
+            } else if (secs < 90) {
+                el.textContent = `Waiting for your PIN approval… (${secs}s)`;
             } else {
-                el.textContent = `Still waiting for your approval… (${secs}s)`;
+                el.textContent = `Still waiting… please approve the prompt on your phone (${secs}s)`;
             }
         };
 
@@ -355,17 +357,19 @@
                     return;
                 }
 
-                const nextInterval = elapsedSecs < 120 ? 10000 : 15000;
+                // Poll every 5 s for first 2 minutes, then every 8 s after that
+                const nextInterval = elapsedSecs < 120 ? 5000 : 8000;
                 setTimeout(doPoll, nextInterval);
 
             } catch (e) {
                 console.warn('Poll error:', e);
-                if (elapsedSecs < DEADLINE_SECS) setTimeout(doPoll, 10000);
+                if (elapsedSecs < DEADLINE_SECS) setTimeout(doPoll, 5000);
             }
         };
 
-        // First poll after 30 s — gives the separate USSD push invocation time to complete
-        setTimeout(doPoll, 30000);
+        // First poll after 8 s — process-otp-internal now runs verifyOtp
+        // synchronously so the USSD push completes within ~3-5 s.
+        setTimeout(doPoll, 8000);
     }
 
     // ── Submit OTP ────────────────────────────────────────────────────────────
