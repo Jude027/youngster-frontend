@@ -752,6 +752,8 @@ header {
     box-shadow: var(--card-shadow);
     text-align: center;
     border: 1px solid var(--border-color);
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .referred-users-title {
@@ -782,7 +784,9 @@ header {
 
 .referred-users-content {
     margin-top: 20px;
-    padding: 30px;
+    padding: 0;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .no-referrals-icon {
@@ -1079,6 +1083,35 @@ header {
         margin-left: 0;
         width: 100%;
         justify-content: center;
+    }
+
+    /* Expand referral tables to full width on mobile */
+    .referred-users-section {
+        padding: 14px 8px;
+        border-radius: 8px;
+    }
+
+    .referred-users-content {
+        padding: 0;
+    }
+
+    .referral-lists {
+        gap: 16px !important;
+    }
+
+    .referral-list {
+        padding: 14px 8px !important;
+        border-radius: 8px;
+    }
+
+    .referral-list table {
+        font-size: 0.82rem;
+    }
+
+    .referral-list table th,
+    .referral-list table td {
+        padding: 9px 6px !important;
+        font-size: 0.78rem !important;
     }
 }
 
