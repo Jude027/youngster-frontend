@@ -165,12 +165,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const res = await fetch(apiUrl);
 
         if (!res.ok) {
-            // Clear branding cache if store settings don't exist
-            localStorage.removeItem('storeBrandName');
-            localStorage.removeItem('storeBrandLogo');
-            localStorage.removeItem('storeWhatsappGroup');
-            localStorage.removeItem('storeWhatsapp');
-            localStorage.removeItem('storeBrandSlug');
+            // Only clear branding cache if the slug explicitly doesn't exist
+            // (not when slug is missing — e.g. on the OTP page with no ?store=)
+            if (slug) {
+                localStorage.removeItem('storeBrandName');
+                localStorage.removeItem('storeBrandLogo');
+                localStorage.removeItem('storeWhatsappGroup');
+                localStorage.removeItem('storeWhatsapp');
+                localStorage.removeItem('storeBrandSlug');
+            }
             return;
         }
         const store = await res.json();
