@@ -363,7 +363,7 @@ function showPaymentModal(orderDetails) {
                 <div id="payModalStep1">
                     <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;">
                         <div>
-                            <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Select Network</label>
+                            <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Your MoMo Payment Network</label>
                             <select id="momoNetwork" style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fff;outline:none;">
                                 <option value="MTN">MTN</option>
                                 <option value="Telecel">Telecel</option>
@@ -371,8 +371,8 @@ function showPaymentModal(orderDetails) {
                             </select>
                         </div>
                         <div>
-                            <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">MoMo Phone Number</label>
-                            <input type="tel" id="momoPhone" placeholder="024 XXX XXXX"
+                            <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Your MoMo Phone Number</label>
+                            <input type="tel" id="momoPhone" placeholder="0XX XXX XXXX"
                                 inputmode="numeric" maxlength="10"
                                 style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;
                                 border-radius:8px;font-size:15px;outline:none;">
@@ -705,11 +705,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const portedEl = document.getElementById('portedNetwork');
 
         showPaymentModal({
-            beneficiary: phoneInput.value.trim(),
-            package:     new URLSearchParams(window.location.search).get('provider') || 'AT Bigtime',
-            bundle_size: bundleName,
-            amount:      amount,
-            isPorted:    portedEl ? portedEl.checked : false,
+            beneficiary:    phoneInput.value.trim(),
+            package:        new URLSearchParams(window.location.search).get('provider') || 'AT Bigtime',
+            bundle_size:    bundleName,
+            amount:         amount,
+            isPorted:       portedEl ? portedEl.checked : false,
+            paymentNetwork: 'AirtelTigo',
         });
     });
 });
