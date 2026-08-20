@@ -1,9 +1,9 @@
 // Admin panel â€“ full management (including Role Price Mapping)
-const API_BASE = 'https://youngster-backend.vercel.app/api';
+const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
 let token = localStorage.getItem('token');
 
 if (!token) {
-    window.location.href = '../Registration-form/login_and_signup.html';
+    window.location.href = '../Registration%20form/login_and_signup.html';
 }
 
 function authHeaders() {
@@ -58,13 +58,13 @@ async function checkAdmin() {
         const user = await res.json();
         if (user.role !== 'admin') {
             alert('Admin access required');
-            window.location.href = '../Registration-form/login_and_signup.html';
+            window.location.href = '../Registration%20form/login_and_signup.html';
         }
         document.getElementById('adminName').innerText = user.username;
     } catch (err) {
         console.error(err);
         alert('Could not verify admin status. Please log in again.');
-        window.location.href = '../Registration-form/login_and_signup.html';
+        window.location.href = '../Registration%20form/login_and_signup.html';
     }
 }
 
@@ -267,7 +267,10 @@ async function loadOrders() {
         const reportNote = order.report
             ? `<div style="margin-top:6px;color:#b45309;font-size:0.75rem;line-height:1.25;max-width:220px;white-space:normal;">${esc(order.report)}</div>`
             : '';
-        row.insertCell(6).innerHTML = `<span style="${bStyle}">${order.status || 'pending'}</span>${reportNote}`;
+        const unverifiedBadge = order.isUnverified
+            ? `<span style="margin-left:6px;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;border-radius:20px;padding:2px 8px;font-size:0.72rem;font-weight:700;display:inline-block;vertical-align:middle;" title="Beneficiary number failed verification — fulfil manually">⚠ Unverified</span>`
+            : '';
+        row.insertCell(6).innerHTML = `<span style="${bStyle}">${order.status || 'pending'}</span>${unverifiedBadge}${reportNote}`;
         row.insertCell(7).innerText = fmtDT(order.created);
         row.insertCell(8).innerText = fmtDT(order.completed);
         row.insertCell(9).innerHTML = `<button class="action-btn edit-btn" onclick="editOrder('${order._id}')"><i class="fas fa-edit"></i></button>`;
@@ -559,59 +562,6 @@ async function loadBasePrices() {
     const res = await fetch(`${API_BASE}/base-prices`, { headers: authHeaders() });
     allBasePrices = await res.json();
     renderBasePricesTable();
-
-    // Render customize buttons for ALL providers — including those that only
-    // exist in ReferralPrice (no BasePrice rows) like AT Ishare, Results_checkers.
-    renderProviderCustomizeSection();
-}
-
-async function renderProviderCustomizeSection() {
-    // Get provider names from both BasePrice and ReferralPrice
-    const basePriceProviders = [...new Set(allBasePrices.map(p => p.provider).filter(Boolean))];
-
-    let referralProviders = [];
-    try {
-        const res = await fetch(`${API_BASE}/referral-prices`, { headers: authHeaders() });
-        if (res.ok) {
-            const rp = await res.json();
-            referralProviders = [...new Set(rp.map(p => p.provider).filter(Boolean))];
-        }
-    } catch (e) { console.warn('Could not load referral prices for customize section', e); }
-
-    // Union of all providers
-    const allProviderNames = [...new Set([...basePriceProviders, ...referralProviders])].sort();
-
-    // Find or create the customize section container
-    let section = document.getElementById('providerCustomizeSection');
-    if (!section) {
-        section = document.createElement('div');
-        section.id = 'providerCustomizeSection';
-        section.style.cssText = 'margin-top:24px;padding:16px;background:#f8f9fa;border-radius:8px;border:1px solid #e0e0e0;';
-        // Insert after the base prices table's parent
-        const basePricesTable = document.getElementById('basePricesBody');
-        const tableContainer = basePricesTable?.closest('table')?.parentElement;
-        if (tableContainer) tableContainer.parentElement.insertBefore(section, tableContainer.nextSibling);
-        else document.querySelector('.tab-content')?.appendChild(section);
-    }
-
-    section.innerHTML = `
-        <h3 style="margin:0 0 12px;font-size:1rem;color:#333;">
-            <i class="fas fa-paint-brush" style="color:#9b59b6;"></i>
-            Provider Display Settings
-        </h3>
-        <p style="font-size:0.85rem;color:#666;margin:0 0 12px;">
-            Customize how each provider's storefront page looks (title, colours, labels).
-        </p>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;">
-            ${allProviderNames.map(name => `
-                <button onclick="openDisplayConfigModal('${name.replace(/'/g, "\\'")}')"
-                    style="padding:8px 14px;background:#9b59b6;color:white;border:none;
-                    border-radius:6px;cursor:pointer;font-size:0.9rem;display:flex;
-                    align-items:center;gap:6px;">
-                    <i class="fas fa-paint-brush"></i> ${name}
-                </button>
-            `).join('')}
-        </div>`;
 }
 
 function renderBasePricesTable() {
@@ -773,19 +723,8 @@ function renderBasePricesTable() {
 
 // â”€â”€ Display Config Modal (generic-package.html customization) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function openDisplayConfigModal(providerName) {
-    // Find any existing displayConfig — check allBasePrices first, then fetch from API
-    // for providers that have no BasePrice rows (e.g. AT Ishare, Results_checkers).
-    let existing = allBasePrices.find(p => p.provider === providerName && p.displayConfig)?.displayConfig;
-    if (!existing) {
-        try {
-            const res = await fetch(
-                `${API_BASE}/admin/base-prices/display-config-get?provider=${encodeURIComponent(providerName)}`,
-                { headers: authHeaders() }
-            );
-            if (res.ok) existing = (await res.json()).displayConfig || {};
-        } catch { existing = {}; }
-    }
-    existing = existing || {};
+    // Find any existing displayConfig for this provider (from first matching row)
+    const existing = allBasePrices.find(p => p.provider === providerName && p.displayConfig)?.displayConfig || {};
 
     const modal = document.createElement('div');
     modal.className = 'modal';
@@ -841,9 +780,9 @@ async function openDisplayConfigModal(providerName) {
                     <input type="text" id="dcValidity" value="${existing.validity || ''}" placeholder="90 days">
                 </div>
                 <div class="input-group">
-                    <label>Dashboard Section</label>
-                    <select id="dcStorefrontSection" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd;">
-                        <option value="data_bundle" ${(existing.storefrontSection || 'data_bundle') === 'data_bundle' ? 'selected' : ''}>Buy Data Bundles</option>
+                    <label>Storefront Section</label>
+                    <select id="dcStorefrontSection" style="padding:10px;border:1px solid #ccc;border-radius:4px;width:100%;">
+                        <option value="data_bundle" ${existing.storefrontSection !== 'special_offers' ? 'selected' : ''}>Buy Data Bundles</option>
                         <option value="special_offers" ${existing.storefrontSection === 'special_offers' ? 'selected' : ''}>Special Offers</option>
                     </select>
                 </div>
@@ -1393,7 +1332,7 @@ document.getElementById('saveApiConfig')?.addEventListener('click', async () => 
             name:                  document.getElementById('apiConfigName').value.trim() || 'Default',
             enabled:               document.getElementById('apiEnabled').checked,
             type:                  document.getElementById('apiType').value,
-            baseUrl:               document.getElementById('baseUrl').value,
+            baseUrl:               document.getElementById('baseUrl').value.trim().replace(/,+$/, '').replace(/\/+$/, ''),
             authHeaderName:        document.getElementById('authHeaderName').value,
             authHeaderValue:       document.getElementById('authHeaderValue').value,
             orderEndpoint:         document.getElementById('orderEndpoint').value,
@@ -1578,14 +1517,28 @@ document.getElementById('testApiConfig')?.addEventListener('click', async () => 
     }
 
     try {
-        alert('Testing API connection for ' + selectedProviderForAPI);
         const res = await fetch(`${API_BASE}/admin/provider-balance/${selectedProviderForAPI}`, { headers: authHeaders() });
-        const result = await res.json();
+        const text = await res.text();
+
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            alert(
+                `❌ API returned a non-JSON response (HTTP ${res.status}).\n\n` +
+                `This usually means:\n` +
+                `• The base URL or balance endpoint is wrong\n` +
+                `• Your API key is domain-restricted (needs Origin header whitelisting)\n\n` +
+                `Response preview: ${text.slice(0, 200)}`
+            );
+            return;
+        }
 
         if (result.success) {
-            alert('API Connection Successful!\nBalance: ' + result.balance + ' ' + (result.currency || 'GHS'));
+            alert(`✅ API Connection Successful!\nBalance: ${result.balance ?? 'N/A'} ${result.currency || 'GHS'}`);
         } else {
-            alert('API Connection Failed:\n' + result.message);
+            const reason = result.message || result.error || 'No balance endpoint configured or API returned an error.';
+            alert(`❌ API Connection Failed:\n${reason}`);
         }
     } catch (err) {
         console.error(err);
@@ -1623,7 +1576,7 @@ window.viewAPILogDetails = (logId) => {
 // ========== LOGOUT ==========
 document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.clear();
-    window.location.href = '../Registration-form/login_and_signup.html';
+    window.location.href = '../Registration%20form/login_and_signup.html';
 });
 
 // ========== SEARCH HANDLERS ==========
