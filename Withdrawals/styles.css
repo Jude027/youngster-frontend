@@ -98,17 +98,20 @@ body.sidebar-open {
     align-items: center;
     gap: 12px;
     margin-left: auto;
-    margin-right: 20px;
+    margin-right: auto;
+    padding-right: 44px; /* offset the menu-btn width so title is truly centred */
 }
 
 .header-title i {
     background: rgba(255, 255, 255, 0.2);
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
 }
 
 .balance-card {
@@ -633,7 +636,8 @@ body.sidebar-open {
     }
     
     .header-title {
-        margin-right: 10px;
-        font-size: 24px;
+        margin-right: auto;
+        padding-right: 38px;
+        font-size: 22px;
     }
 }
