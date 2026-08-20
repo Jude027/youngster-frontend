@@ -718,31 +718,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 const verifyResult = await verifyRes.json();
 
                 if (!verifyRes.ok || !verifyResult.success) {
-                    // Verification failed â€” redirect to external portal for unverified numbers
+                    // Verification failed — show "Proceed anyway" prompt
                     const proceed = confirm(
                         (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
-                        '\n\nThis phone number is not verified on our new portal. Click OK to be redirected to our other portal to complete this order.'
+                        '\n\nThis phone number could not be verified. The order will be placed but fulfilled manually. Proceed anyway?'
                     );
                     orderBtn.disabled = false;
                     orderBtn.innerHTML = originalBtnHTML;
-                    if (proceed) {
-                        window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
-                    }
-                    return;
+                    if (!proceed) return;
+                    // Mark as unverified — backend will skip API handler
+                    orderBtn._isUnverified = true;
                 } else {
                     orderBtn._isUnverified = false;
                 }
             } catch (err) {
-                // Network error during verification - redirect to external portal
+                // Network error during verification — show "Proceed anyway" prompt
                 const proceedOnError = confirm(
-                    'Could not verify this number right now (network error).\n\nClick OK to be redirected to our other portal to complete this order.'
+                    'Could not verify this number right now (network error).\n\nThe order will be placed but fulfilled manually. Proceed anyway?'
                 );
                 orderBtn.disabled = false;
                 orderBtn.innerHTML = originalBtnHTML;
-                if (proceedOnError) {
-                    window.location.href = 'https://youngsterentgh.pythonanywhere.com/mydashboard/purchase-package/MTN-EXPRESS';
-                }
-                return;            }
+                if (!proceedOnError) return;
+                orderBtn._isUnverified = true;
+            }
 
             orderBtn.disabled = false;
             orderBtn.innerHTML = originalBtnHTML;
