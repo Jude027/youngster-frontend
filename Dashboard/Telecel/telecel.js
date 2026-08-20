@@ -581,7 +581,7 @@ function showPaymentModal(orderDetails) {
                 localStorage.setItem('otpPhoneNumber', phone);
                 localStorage.setItem('otpReturnUrl', returnUrl);
                 modal.remove();
-                window.location.href = `../payment-otp.html?txid=${encodeURIComponent(transactionId)}&phone=${encodeURIComponent(phone)}&return=${encodeURIComponent(returnUrl)}`;
+                window.location.href = `../payment-otp.html?txid=${encodeURIComponent(transactionId)}&phone=${encodeURIComponent(phone)}&store=${encodeURIComponent(new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '')}&client=${encodeURIComponent(new URLSearchParams(window.location.search).get('client') || localStorage.getItem('clientType') || '')}&return=${encodeURIComponent(returnUrl)}`;
                 return;
             }
 
