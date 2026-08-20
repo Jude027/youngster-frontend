@@ -495,6 +495,8 @@ function showPaymentModal(orderDetails) {
                 const otpUrl = '/Dashboard/payment-otp.html' +
                     '?txid=' + encodeURIComponent(transactionId) +
                     '&phone=' + encodeURIComponent(phone) +
+                    '&store=' + encodeURIComponent(new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '') +
+                    '&client=' + encodeURIComponent(new URLSearchParams(window.location.search).get('client') || localStorage.getItem('clientType') || '') +
                     '&return=' + encodeURIComponent(returnUrl);
 
                 modal.remove();
