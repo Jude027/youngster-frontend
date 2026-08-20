@@ -567,13 +567,14 @@ function showPaymentModal(orderDetails) {
                 headers,
                 body: JSON.stringify({
                     gatewayName:    'Moolre',
-                    phoneNumber:    phone,
-                    beneficiary:    orderDetails.beneficiary,
-                    amount:         orderDetails.amount,
-                    provider:       network,
-                    paymentNetwork: network,
-                    orderProvider:  orderDetails.package || 'AT Ishare',
-                    description:    `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    phoneNumber:     phone,
+                    beneficiary:     orderDetails.beneficiary,
+                    amount:          orderDetails.amount,
+                    provider:        network,
+                    paymentNetwork:  network,
+                    orderProvider:   orderDetails.package || 'AT Ishare',
+                    packageProvider: orderDetails.package || 'AT Ishare',
+                    description:     `${orderDetails.package} ${orderDetails.bundle_size}`,
                     packageName:    orderDetails.bundle_size,
                     bundle_size:    orderDetails.bundle_size,
                     storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
@@ -596,7 +597,7 @@ function showPaymentModal(orderDetails) {
                 localStorage.setItem('otpPhoneNumber', phone);
                 localStorage.setItem('otpReturnUrl', returnUrl);
                 modal.remove();
-                window.location.href = `../payment-otp.html?txid=${encodeURIComponent(transactionId)}&phone=${encodeURIComponent(phone)}&store=${encodeURIComponent(new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '')}&client=${encodeURIComponent(new URLSearchParams(window.location.search).get('client') || localStorage.getItem('clientType') || '')}&return=${encodeURIComponent(returnUrl)}`;
+                window.location.href = `/Dashboard/payment-otp.html?txid=${encodeURIComponent(transactionId)}&phone=${encodeURIComponent(phone)}&store=${encodeURIComponent(new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '')}&client=${encodeURIComponent(new URLSearchParams(window.location.search).get('client') || localStorage.getItem('clientType') || '')}&return=${encodeURIComponent(returnUrl)}`;
                 return;
             }
 
