@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Special Posting</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="mtn_afa.css">
+    <style>
+        /* ── WhatsApp floating button ── */
+        .whatsapp-float {
+            position: fixed;
+            bottom: 28px;
+            right: 28px;
+            z-index: 9000;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 10px;
+        }
+        .whatsapp-main-btn {
+            width: 58px; height: 58px;
+            background: #25D366;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(37,211,102,.45);
+            font-size: 30px; color: #fff;
+            transition: transform .2s, box-shadow .2s;
+        }
+        .whatsapp-main-btn:hover {
+            transform: scale(1.08);
+            box-shadow: 0 6px 22px rgba(37,211,102,.55);
+        }
+        .whatsapp-options {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            opacity: 0; visibility: hidden;
+            transform: translateY(10px);
+            transition: opacity .25s, visibility .25s, transform .25s;
+        }
+        .whatsapp-options.open {
+            opacity: 1; visibility: visible; transform: translateY(0);
+        }
+        .whatsapp-option {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 16px; border-radius: 24px;
+            text-decoration: none; font-size: 14px;
+            font-weight: 600; color: #fff;
+            box-shadow: 0 2px 10px rgba(0,0,0,.18);
+            white-space: nowrap;
+        }
+        .join-group  { background: #128C7E; }
+        .chat-admin  { background: #25D366; }
+        .whatsapp-close {
+            width: 34px; height: 34px;
+            background: #e74c3c; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; color: #fff; font-size: 15px;
+            align-self: flex-end;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Overlay -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Sidebar Navigation -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="close-btn" id="closeBtn">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="sidebar-title" id="sidebarTitle"></div>
+            <div class="brand-logo" id="sidebarLogo"></div>
+        </div>
+        <ul class="menu">
+            <a href="#" class="menu-item active" id="dashboardMenuLink">
+                <i class="fas fa-tachometer-alt"></i>
+                <span class="menu-text">Dashboard</span>
+            </a>
+            <a href="../Orders/new_orders.html" class="menu-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="menu-text">Orders</span>
+            </a>
+            <a href="../Transactions/transactions2.html" class="menu-item">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Transactions</span>
+            </a>
+        </ul>
+    </div>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <div class="notification-icon">
+            <i class="fas fa-check"></i>
+        </div>
+        <div class="notification-content">
+            <div class="notification-title">Submitted!</div>
+            <div class="notification-message">Your Special Posting request has been submitted.</div>
+        </div>
+        <button class="notification-close" id="notificationClose">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <div class="container">
+
+        <!-- Left: Benefits -->
+        <div class="benefits-container">
+            <h2 class="benefits-title">Special Posting</h2>
+            <h3 style="margin-bottom:15px;color:#000;">What You Need</h3>
+            <ul class="benefits-list">
+                <li>
+                    <i class="fas fa-check-circle benefit-icon"></i>
+                    <span class="benefit-text">Your full name as it appears officially</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle benefit-icon"></i>
+                    <span class="benefit-text">A valid active phone number</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle benefit-icon"></i>
+                    <span class="benefit-text">Your NSS Index Number</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle benefit-icon"></i>
+                    <span class="benefit-text">Your requested place of posting</span>
+                </li>
+                <li>
+                    <i class="fas fa-check-circle benefit-icon"></i>
+                    <span class="benefit-text">District and Region of the posting location</span>
+                </li>
+            </ul>
+
+            <div class="activation-steps">
+                <h3 class="activation-title">How It Works</h3>
+                <ol class="steps-list">
+                    <li>Fill in the form with your details</li>
+                    <li>Complete the MoMo payment</li>
+                    <li>We submit your posting request</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Right: Form -->
+        <div class="form-container">
+            <button class="menu-btn" id="menuBtn">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="header-container">
+                <div class="header-content">
+                    <div class="logo-text" style="background:linear-gradient(135deg,#f7971e,#ffd200);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">NSS</div>
+                    <h1>Special Posting</h1>
+                    <p>Submit your National Service posting request</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Posting Request Form</h2>
+                    <div class="fee" id="registrationFee">Service Fee: GHS</div>
+                </div>
+
+                <div class="card-body">
+                    <form id="registrationForm">
+
+                        <!-- Name -->
+                        <div class="form-group">
+                            <label for="fullname">Full Name</label>
+                            <div class="input-group">
+                                <i class="fas fa-user input-icon"></i>
+                                <input type="text" id="fullname" placeholder="e.g. John Kwame Mensah" required>
+                            </div>
+                            <div class="field-error" id="fullname-error"></div>
+                        </div>
+
+                        <!-- Phone -->
+                        <div class="form-group">
+                            <label for="phone">Phone Number</label>
+                            <div class="input-group">
+                                <i class="fas fa-phone input-icon"></i>
+                                <input type="tel" id="phone" placeholder="e.g. 0241234567" required>
+                            </div>
+                            <div class="field-error" id="phone-error"></div>
+                        </div>
+
+                        <!-- NSS Number -->
+                        <div class="form-group">
+                            <label for="nssNumber">NSS Number</label>
+                            <div class="input-group">
+                                <i class="fas fa-id-badge input-icon"></i>
+                                <input type="text" id="nssNumber" placeholder="e.g. NSS/2025/12345" required>
+                            </div>
+                            <div class="field-error" id="nssNumber-error"></div>
+                        </div>
+
+                        <!-- Place of Posting -->
+                        <div class="form-group">
+                            <label for="placeOfPosting">Place of Posting</label>
+                            <div class="input-group">
+                                <i class="fas fa-map-pin input-icon"></i>
+                                <input type="text" id="placeOfPosting" placeholder="e.g. Accra Metropolitan Assembly" required>
+                            </div>
+                            <div class="field-error" id="placeOfPosting-error"></div>
+                        </div>
+
+                        <!-- District -->
+                        <div class="form-group">
+                            <label for="district">District</label>
+                            <div class="input-group">
+                                <i class="fas fa-map-marker-alt input-icon"></i>
+                                <input type="text" id="district" placeholder="e.g. Accra Metropolitan" required>
+                            </div>
+                            <div class="field-error" id="district-error"></div>
+                        </div>
+
+                        <!-- Region -->
+                        <div class="form-group">
+                            <label for="region">Region</label>
+                            <div class="input-group">
+                                <i class="fas fa-globe-africa input-icon"></i>
+                                <select id="region" required>
+                                    <option value="" disabled selected>Select your region</option>
+                                    <option value="Greater Accra">Greater Accra</option>
+                                    <option value="Ashanti">Ashanti</option>
+                                    <option value="Western">Western</option>
+                                    <option value="Western North">Western North</option>
+                                    <option value="Eastern">Eastern</option>
+                                    <option value="Central">Central</option>
+                                    <option value="Volta">Volta</option>
+                                    <option value="Oti">Oti</option>
+                                    <option value="Northern">Northern</option>
+                                    <option value="Upper East">Upper East</option>
+                                    <option value="Upper West">Upper West</option>
+                                    <option value="Ahafo">Ahafo</option>
+                                    <option value="North East">North East</option>
+                                    <option value="Savannah">Savannah</option>
+                                    <option value="Bono">Bono</option>
+                                    <option value="Bono East">Bono East</option>
+                                </select>
+                            </div>
+                            <div class="field-error" id="region-error"></div>
+                        </div>
+
+                        <button type="submit" class="submit-btn">
+                            <i class="fas fa-paper-plane"></i>
+                            Submit &amp; Pay
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- WhatsApp Floating Button -->
+    <div class="whatsapp-float" id="whatsappFloat">
+        <div class="whatsapp-options" id="whatsappOptions">
+            <div class="whatsapp-close" id="whatsappClose">
+                <i class="fas fa-times"></i>
+            </div>
+            <a href="https://chat.whatsapp.com/JujGn4qZEddIQ0762gCozS?s=cl&p=i&mlu=4&amv=0"
+               target="_blank" class="whatsapp-option join-group" id="waGroupLink">
+                <i class="fas fa-users"></i>
+                <span>Join Group</span>
+            </a>
+            <a href="https://wa.me/233501784283"
+               target="_blank" class="whatsapp-option chat-admin" id="waAdminLink">
+                <i class="fas fa-headset"></i>
+                <span>Chat Admin</span>
+            </a>
+        </div>
+        <div class="whatsapp-main-btn" id="whatsappBtn">
+            <i class="fab fa-whatsapp"></i>
+        </div>
+    </div>
+
+    <script src="../price-loader.js"></script>
+    <script src="../order-submit.js"></script>
+    <script src="./special_posting.js"></script>
+    <script src="../storefront-inject.js"></script>
+    <script src="../storefront-prices.js"></script>
+</body>
+</html>
