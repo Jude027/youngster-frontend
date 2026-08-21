@@ -2234,3 +2234,110 @@ async function loadPaymentGatewayLogs(gatewayName) {
     setupSearch('withdrawalsTable', 'wdSearch');
     setupSearch('storesTable', 'storeSearch');
 })();
+
+// ==================== MTN VERIFICATIONS TAB ====================
+
+let _mtnVerifData = [];
+
+async function loadMtnVerifications() {
+    const container = document.getElementById('mtnVerifList');
+    const statsEl   = document.getElementById('mtnVerifStats');
+    if (!container) return;
+    container.innerHTML = '<p style="color:#888;font-size:14px;">Loading...</p>';
+
+    try {
+        const res  = await fetch(`${API_BASE}/admin/mtn-verifications`, { headers: authHeaders() });
+        const data = await res.json();
+        _mtnVerifData = Array.isArray(data) ? data : [];
+
+        // Stats bar
+        const totalSubmissions = _mtnVerifData.length;
+        const totalNumbers = _mtnVerifData.reduce((s, d) => s + (d.numbers?.length || 0), 0);
+        if (statsEl) {
+            statsEl.innerHTML = `
+                <div style="background:#e3f2fd;border-radius:10px;padding:10px 16px;font-size:13px;color:#1565c0;font-weight:600;">
+                    <i class="fas fa-layer-group"></i> ${totalSubmissions} submission(s)
+                </div>
+                <div style="background:#e8f5e9;border-radius:10px;padding:10px 16px;font-size:13px;color:#2e7d32;font-weight:600;">
+                    <i class="fas fa-mobile-alt"></i> ${totalNumbers} number(s) total
+                </div>`;
+        }
+
+        if (_mtnVerifData.length === 0) {
+            container.innerHTML = '<p style="color:#888;font-size:14px;text-align:center;padding:40px 0;">No submissions yet.</p>';
+            return;
+        }
+
+        container.innerHTML = _mtnVerifData.map((sub, idx) => {
+            const date    = new Date(sub.submitted).toLocaleString();
+            const nums    = (sub.numbers || []).join('\n');
+            const dealer  = sub.username || sub.storeSlug || 'Unknown dealer';
+            const note    = sub.note ? `<div style="margin-top:6px;font-size:12px;color:#b45309;"><i class="fas fa-sticky-note"></i> ${esc(sub.note)}</div>` : '';
+            return `
+            <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;">
+                <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <div>
+                        <div style="font-size:13px;font-weight:700;color:#1a1a2e;">${esc(dealer)}</div>
+                        <div style="font-size:12px;color:#888;margin-top:2px;">${date}</div>
+                        ${note}
+                    </div>
+                    <div style="display:flex;gap:8px;align-items:center;">
+                        <span style="background:#dbeafe;color:#1d4ed8;border-radius:20px;padding:3px 10px;font-size:12px;font-weight:600;">
+                            ${(sub.numbers || []).length} number(s)
+                        </span>
+                        <button onclick="copySubmission(${idx})"
+                            style="padding:5px 12px;background:#6a11cb;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">
+                            <i class="fas fa-copy"></i> Copy
+                        </button>
+                        <button onclick="deleteMtnVerif('${sub._id}')"
+                            style="padding:5px 10px;background:#fdecea;color:#c62828;border:none;border-radius:6px;font-size:12px;cursor:pointer;">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <textarea readonly style="width:100%;margin-top:12px;padding:10px;border:1px solid #e5e7eb;border-radius:8px;font-family:monospace;font-size:13px;background:#f9fafb;min-height:80px;resize:vertical;">${nums}</textarea>
+            </div>`;
+        }).join('');
+
+    } catch (err) {
+        container.innerHTML = `<p style="color:#c62828;font-size:14px;">Error loading submissions: ${err.message}</p>`;
+    }
+}
+
+window.copySubmission = function(idx) {
+    const sub = _mtnVerifData[idx];
+    if (!sub) return;
+    navigator.clipboard.writeText((sub.numbers || []).join('\n'))
+        .then(() => alert(`Copied ${sub.numbers.length} number(s)!`))
+        .catch(() => alert('Copy failed — please select and copy manually.'));
+};
+
+window.copyAllNumbers = function() {
+    const all = _mtnVerifData.flatMap(s => s.numbers || []);
+    if (all.length === 0) { alert('No numbers to copy.'); return; }
+    // Deduplicate
+    const unique = [...new Set(all)];
+    navigator.clipboard.writeText(unique.join('\n'))
+        .then(() => alert(`Copied ${unique.length} unique number(s) from all submissions!`))
+        .catch(() => alert('Copy failed — please select and copy manually.'));
+};
+
+window.deleteMtnVerif = async function(id) {
+    if (!confirm('Delete this submission?')) return;
+    try {
+        await fetch(`${API_BASE}/admin/mtn-verifications/${id}`, { method: 'DELETE', headers: authHeaders() });
+        loadMtnVerifications();
+    } catch (err) {
+        alert('Delete failed: ' + err.message);
+    }
+};
+
+// Hook into tab switching — load when tab is opened
+const _origTabSwitch = window.__tabSwitchHooked;
+if (!_origTabSwitch) {
+    window.__tabSwitchHooked = true;
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.nav-btn[data-tab="mtn-verifications"]');
+        if (btn) setTimeout(loadMtnVerifications, 50);
+    });
+}
