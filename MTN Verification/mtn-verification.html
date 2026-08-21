@@ -4,98 +4,226 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MTN Verification - J.D. Youngster Enterprise</title>
-
-    <!-- Same CSS stack as other dealer pages -->
-    <link rel="stylesheet" href="../Orders/form_style1.css" type="text/css">
-    <link rel="stylesheet" href="../Orders/navigator1.css" type="text/css">
-    <link rel="stylesheet" href="../Orders/login_page.css" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-
     <style>
-        /* ── Page layout ── */
-        .main-content {
-            padding: 24px 20px;
-            max-width: 740px;
-            margin: 0 auto;
+        /* ── Reset + variables ── */
+        * {
+            margin: 0; padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
+        :root {
+            --bg-primary: #f5f7fa;
+            --bg-secondary: white;
+            --text-primary: #333;
+            --text-secondary: #777;
+            --accent-color: #4361ee;
+            --accent-gradient: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            --header-bg: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            --sidebar-bg: linear-gradient(180deg, #2c3e50 0%, #3498db 100%);
+            --card-bg: white;
+            --card-shadow: 0 4px 6px rgba(0,0,0,.05);
+            --border-color: #e0e0e0;
+        }
+
+        [data-theme="dark"] {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #2d3748;
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --accent-color: #3B82F6;
+            --accent-gradient: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            --header-bg: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+            --sidebar-bg: linear-gradient(180deg, #1a202c 0%, #2d3748 100%);
+            --card-bg: #2d3748;
+            --card-shadow: 0 4px 6px rgba(0,0,0,.3);
+            --border-color: #4a5568;
+        }
+
+        /* ── Body ── */
+        body {
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background .3s, color .3s;
+        }
+
+        /* ── Sidebar ── */
+        .sidebar {
+            position: fixed;
+            top: 0; left: -280px;
+            width: 280px; height: 100%;
+            background: var(--sidebar-bg);
+            color: white;
+            transition: left .3s ease;
+            z-index: 2000;
+            box-shadow: 2px 0 10px rgba(0,0,0,.2);
+            overflow-y: auto;
+        }
+        .sidebar.open { left: 0; }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-title {
+            font-size: 18px; font-weight: 600;
+            flex: 1; text-align: center;
+        }
+        .brand-logo {
+            background: #fff; border: none;
+            border-radius: 8px; padding: 4px;
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .brand-logo img {
+            width: 100%; height: 100%; object-fit: contain;
+            max-width: 40px; max-height: 40px;
+        }
+        .close-btn {
+            background: rgba(255,255,255,.1); border: none;
+            color: white; font-size: 18px; cursor: pointer;
+            padding: 8px; border-radius: 8px;
+            width: 40px; height: 40px;
+            display: flex; align-items: center; justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .close-btn:hover { background: rgba(255,255,255,.2); }
+
+        .menu { list-style: none; padding: 0; margin: 0; }
+        .menu-item {
+            padding: 15px 20px;
+            display: flex; align-items: center; gap: 15px;
+            cursor: pointer; transition: all .3s;
+            border-left: 4px solid transparent;
+            text-decoration: none; color: inherit;
+        }
+        .menu-item:hover { background: rgba(255,255,255,.1); border-left-color: #3498db; }
+        .menu-item.active { background: rgba(255,255,255,.15); border-left-color: #e74c3c; }
+        .menu-item.logout { margin-top: 20px; border-top: 1px solid rgba(255,255,255,.1); padding-top: 20px; }
+        .menu-item.logout:hover { background: rgba(231,76,60,.2); border-left-color: #e74c3c; }
+        .menu-text { font-size: 16px; font-weight: 500; }
+
+        /* ── Overlay ── */
+        .overlay {
+            position: fixed; inset: 0;
+            background: rgba(0,0,0,.5);
+            z-index: 999;
+            opacity: 0; visibility: hidden;
+            transition: opacity .3s;
+        }
+        .overlay.open { opacity: 1; visibility: visible; }
+
+        /* ── Main content ── */
+        .main-content {
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 24px 16px 40px;
+        }
+
+        /* ── Page header ── */
         .page-header {
+            padding: 28px 24px 22px;
+            background: var(--header-bg);
+            color: white;
+            border-radius: 16px;
+            margin-bottom: 24px;
+        }
+        .header-content {
             display: flex;
             align-items: center;
             gap: 14px;
-            margin-bottom: 28px;
         }
         .menu-btn {
-            background: var(--card-bg, #fff);
-            border: 1px solid var(--border-color, #e0e0e0);
-            border-radius: 8px;
-            width: 40px; height: 40px;
-            cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 16px;
-            color: var(--text-secondary, #555);
-            flex-shrink: 0;
+            background: rgba(255,255,255,.2); border: none;
+            color: white; padding: 10px; border-radius: 10px;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; font-size: 18px;
+            width: 44px; height: 44px; flex-shrink: 0;
+            transition: background .2s;
         }
-        .page-header h1 { font-size: 22px; color: var(--text-primary, #1a1a2e); }
-        .page-header p  { font-size: 13px; color: var(--text-secondary, #888); margin-top: 2px; }
+        .menu-btn:hover { background: rgba(255,255,255,.3); }
+        .header-title {
+            font-size: 20px; font-weight: 700;
+            display: flex; align-items: center; gap: 10px;
+        }
+        .header-title i {
+            background: rgba(255,255,255,.2);
+            width: 40px; height: 40px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+        }
+        .header-subtitle { font-size: 13px; opacity: .85; margin-top: 4px; margin-left: 54px; }
 
-        /* ── Card ── */
+        /* ── Cards ── */
         .verif-card {
-            background: var(--card-bg, #fff);
-            border-radius: 14px;
-            box-shadow: 0 2px 16px rgba(0,0,0,.07);
-            padding: 28px 24px;
-            margin-bottom: 24px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: var(--card-shadow);
+            padding: 24px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
         }
         .verif-card h2 {
-            font-size: 16px;
-            color: var(--text-primary, #1a1a2e);
-            margin-bottom: 6px;
+            font-size: 16px; color: var(--text-primary);
+            margin-bottom: 6px; display: flex; align-items: center; gap: 8px;
         }
         .verif-card p.hint {
-            font-size: 13px;
-            color: var(--text-secondary, #888);
-            margin-bottom: 18px;
-            line-height: 1.55;
+            font-size: 13px; color: var(--text-secondary);
+            margin-bottom: 18px; line-height: 1.55;
         }
 
+        /* ── Textarea ── */
         textarea#numbersInput {
-            width: 100%; min-height: 160px;
+            width: 100%; min-height: 150px;
             padding: 14px;
-            border: 2px solid var(--border-color, #e0e0e0);
-            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
             font-size: 14px; font-family: monospace;
             resize: vertical; outline: none;
-            background: var(--input-bg, #fff);
-            color: var(--text-primary, #1a1a2e);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             transition: border-color .2s;
         }
-        textarea#numbersInput:focus { border-color: #6a11cb; }
+        textarea#numbersInput:focus { border-color: var(--accent-color); }
 
         #countDisplay {
-            font-size: 12px;
-            color: var(--text-secondary, #888);
-            margin-top: 6px;
+            font-size: 12px; color: var(--text-secondary); margin-top: 6px;
         }
 
+        /* ── Buttons ── */
         .verif-btn {
-            width: 100%; margin-top: 16px; padding: 14px;
-            background: linear-gradient(135deg, #6a11cb, #2575fc);
-            color: #fff; border: none; border-radius: 10px;
+            width: 100%; margin-top: 16px; padding: 15px;
+            background: var(--accent-gradient);
+            color: #fff; border: none; border-radius: 12px;
             font-size: 15px; font-weight: 700; cursor: pointer;
             transition: opacity .2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+            box-shadow: 0 4px 15px rgba(67,97,238,.3);
         }
         .verif-btn:disabled { opacity: .55; cursor: not-allowed; }
         .verif-btn:not(:disabled):hover { opacity: .9; }
 
-        /* ── Status message ── */
+        /* ── Status messages ── */
         .status-msg {
             margin-top: 14px; padding: 12px 16px;
-            border-radius: 8px; font-size: 14px; display: none;
+            border-radius: 10px; font-size: 14px; display: none;
+            line-height: 1.5;
         }
         .status-msg.success { background: #e8f5e9; color: #2e7d32; display: block; }
         .status-msg.error   { background: #fdecea; color: #c62828; display: block; }
         .status-msg.loading { background: #e3f2fd; color: #1565c0; display: block; }
+
+        [data-theme="dark"] .status-msg.success { background: #1b4332; color: #6ee7b7; }
+        [data-theme="dark"] .status-msg.error   { background: #3b1e1e; color: #fca5a5; }
+        [data-theme="dark"] .status-msg.loading { background: #1e3a5f; color: #93c5fd; }
+
         .spinner {
             display: inline-block; width: 14px; height: 14px;
             border: 2px solid currentColor; border-top-color: transparent;
@@ -104,42 +232,41 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── Results table ── */
-        .results-section { display: none; }
-        .results-section h3 {
-            font-size: 15px;
-            color: var(--text-primary, #1a1a2e);
-            margin-bottom: 12px;
-        }
+        /* ── Results ── */
         .results-summary {
-            display: flex; gap: 12px; flex-wrap: wrap;
-            margin-bottom: 16px;
+            display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px;
         }
         .summary-badge {
-            border-radius: 10px; padding: 8px 16px;
+            border-radius: 10px; padding: 8px 14px;
             font-size: 13px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
         }
+        .badge-total      { background: #e3f2fd; color: #1565c0; }
         .badge-verified   { background: #e8f5e9; color: #2e7d32; }
         .badge-unverified { background: #fef3c7; color: #92400e; }
-        .badge-total      { background: #e3f2fd; color: #1565c0; }
+
+        [data-theme="dark"] .badge-total      { background: #1e3a5f; color: #93c5fd; }
+        [data-theme="dark"] .badge-verified   { background: #1b4332; color: #6ee7b7; }
+        [data-theme="dark"] .badge-unverified { background: #3d2c00; color: #fcd34d; }
 
         .results-table {
             width: 100%; border-collapse: collapse; font-size: 14px;
         }
         .results-table th {
-            background: var(--table-header-bg, #f8f9ff);
-            color: var(--text-secondary, #555);
-            font-size: 12px; font-weight: 600;
-            text-transform: uppercase; letter-spacing: .5px;
+            background: var(--bg-primary);
+            color: var(--text-secondary);
+            font-size: 11px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: .6px;
             padding: 10px 14px; text-align: left;
-            border-bottom: 2px solid var(--border-color, #e5e7eb);
+            border-bottom: 2px solid var(--border-color);
         }
         .results-table td {
             padding: 11px 14px;
-            border-bottom: 1px solid var(--border-color, #f0f0f0);
-            color: var(--text-primary, #333);
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
         }
         .results-table tr:last-child td { border-bottom: none; }
+
         .pill {
             display: inline-flex; align-items: center; gap: 5px;
             border-radius: 20px; padding: 3px 10px;
@@ -148,134 +275,157 @@
         .pill-verified   { background: #dcfce7; color: #16a34a; }
         .pill-unverified { background: #fef3c7; color: #92400e; }
 
+        [data-theme="dark"] .pill-verified   { background: #1b4332; color: #6ee7b7; }
+        [data-theme="dark"] .pill-unverified { background: #3d2c00; color: #fcd34d; }
+
         .submit-unverified-btn {
-            margin-top: 18px; padding: 12px 24px;
+            margin-top: 18px; padding: 13px 24px;
             background: linear-gradient(135deg, #f59e0b, #d97706);
-            color: #fff; border: none; border-radius: 10px;
+            color: #fff; border: none; border-radius: 12px;
             font-size: 14px; font-weight: 700; cursor: pointer;
             transition: opacity .2s;
+            display: inline-flex; align-items: center; gap: 8px;
+            box-shadow: 0 4px 12px rgba(245,158,11,.3);
         }
         .submit-unverified-btn:disabled { opacity: .55; cursor: not-allowed; }
         .submit-unverified-btn:not(:disabled):hover { opacity: .9; }
-        .submit-unverified-btn:not(:disabled) { display: inline-flex; align-items: center; gap: 8px; }
+
+        /* ── Responsive ── */
+        @media (max-width: 600px) {
+            .main-content { padding: 16px 12px 40px; }
+            .verif-card { padding: 18px 14px; }
+            .header-subtitle { margin-left: 0; margin-top: 8px; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Sidebar — hardcoded, same as other dealer pages -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <button class="close-btn" id="closeBtn">
-                <i class="fas fa-times"></i>
-            </button>
-            <div class="sidebar-title" id="sidebarTitle">J.D Youngster Enterprise</div>
-            <div class="brand-logo" id="sidebarLogo">
-                <img src="../Orders/WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="J.D You Logo">
-            </div>
+<!-- Overlay -->
+<div class="overlay" id="overlay"></div>
+
+<!-- Sidebar — hardcoded, same branding as all dealer pages -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <button class="close-btn" id="closeBtn"><i class="fas fa-times"></i></button>
+        <div class="sidebar-title">J.D Youngster Enterprise</div>
+        <div class="brand-logo">
+            <img src="../Orders/WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="J.D You Logo">
         </div>
-        <ul class="menu">
-            <a href="../Orders/new_orders.html" class="menu-item">
-                <i class="fas fa-shopping-cart"></i>
-                <span class="menu-text">Orders</span>
-            </a>
-            <a href="../Transactions/transactions2.html" class="menu-item">
-                <i class="fas fa-exchange-alt"></i>
-                <span class="menu-text">Transactions</span>
-            </a>
-            <a href="../Referral%20Prices/dealers_referral_prices.html" class="menu-item">
-                <i class="fas fa-tags"></i>
-                <span class="menu-text">Referral Prices</span>
-            </a>
-            <a href="../Referral links/dealers_referral_program.html" class="menu-item">
-                <i class="fas fa-tags"></i>
-                <span class="menu-text">Referral Links</span>
-            </a>
-            <a href="../Withdrawals/withdrawal_page.html" class="menu-item">
-                <i class="fas fa-money-bill-wave"></i>
-                <span class="menu-text">Withdraw Earnings</span>
-            </a>
-            <a href="../MTN Verification/mtn-verification.html" class="menu-item active">
-                <i class="fas fa-shield-alt"></i>
-                <span class="menu-text">MTN Verification</span>
-            </a>
-            <li class="menu-item logout" id="logoutBtn">
-                <i class="fas fa-sign-out-alt"></i>
-                <span class="menu-text">Log Out</span>
-            </li>
-        </ul>
     </div>
+    <ul class="menu">
+        <a href="../Orders/new_orders.html" class="menu-item">
+            <i class="fas fa-shopping-cart"></i>
+            <span class="menu-text">Orders</span>
+        </a>
+        <a href="../Transactions/transactions2.html" class="menu-item">
+            <i class="fas fa-exchange-alt"></i>
+            <span class="menu-text">Transactions</span>
+        </a>
+        <a href="../Referral%20Prices/dealers_referral_prices.html" class="menu-item">
+            <i class="fas fa-tags"></i>
+            <span class="menu-text">Referral Prices</span>
+        </a>
+        <a href="../Referral links/dealers_referral_program.html" class="menu-item">
+            <i class="fas fa-tags"></i>
+            <span class="menu-text">Referral Links</span>
+        </a>
+        <a href="../Withdrawals/withdrawal_page.html" class="menu-item">
+            <i class="fas fa-money-bill-wave"></i>
+            <span class="menu-text">Withdraw Earnings</span>
+        </a>
+        <a href="../MTN Verification/mtn-verification.html" class="menu-item active">
+            <i class="fas fa-shield-alt"></i>
+            <span class="menu-text">MTN Verification</span>
+        </a>
+        <li class="menu-item logout" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span class="menu-text">Log Out</span>
+        </li>
+    </ul>
+</div>
 
-    <!-- Main Content -->
-    <div class="main-content">
+<!-- Page -->
+<div class="main-content">
 
-        <div class="page-header">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
             <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
             <div>
-                <h1><i class="fas fa-shield-alt" style="color:#6a11cb;margin-right:8px;font-size:20px;"></i>MTN Verification</h1>
-                <p>Verify MTN numbers — unverified ones will be submitted to admin automatically</p>
+                <div class="header-title">
+                    <i class="fas fa-shield-alt"></i>
+                    MTN Verification
+                </div>
+                <div class="header-subtitle">Verify MTN numbers — unverified ones are submitted to admin automatically</div>
             </div>
         </div>
+    </div>
 
-        <!-- Input card -->
-        <div class="verif-card">
-            <h2>Paste Numbers to Verify</h2>
-            <p class="hint">
-                Enter one MTN phone number per line. The system will check each number and show
-                which are verified and which are not. Unverified numbers will be submitted to
-                the admin for manual handling automatically.
-            </p>
-            <textarea id="numbersInput" placeholder="0241234567&#10;0551234567&#10;0201234567"></textarea>
-            <div id="countDisplay"></div>
-            <button class="verif-btn" id="verifyBtn" onclick="startVerification()">
-                <i class="fas fa-search"></i> Verify Numbers
+    <!-- Input card -->
+    <div class="verif-card">
+        <h2><i class="fas fa-mobile-alt" style="color:var(--accent-color);"></i> Paste Numbers to Verify</h2>
+        <p class="hint">
+            Enter one MTN phone number per line. The system will check each number
+            against our records. Verified numbers are confirmed; unverified ones will
+            be sent to the admin for manual handling automatically — no extra steps needed.
+        </p>
+        <textarea id="numbersInput" placeholder="0241234567&#10;0551234567&#10;0201234567"></textarea>
+        <div id="countDisplay"></div>
+        <button class="verif-btn" id="verifyBtn" onclick="startVerification()">
+            <i class="fas fa-search"></i> Verify Numbers
+        </button>
+        <div class="status-msg" id="statusMsg"></div>
+    </div>
+
+    <!-- Results card (hidden until verification runs) -->
+    <div class="verif-card" id="resultsSection" style="display:none;">
+        <h2><i class="fas fa-list-check" style="color:var(--accent-color);"></i> Verification Results</h2>
+
+        <div class="results-summary" id="resultsSummary"></div>
+
+        <div style="overflow-x:auto;">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Phone Number</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsTableBody"></tbody>
+            </table>
+        </div>
+
+        <div id="submitSection" style="display:none;">
+            <button class="submit-unverified-btn" id="submitUnverifiedBtn" onclick="submitUnverified()">
+                <i class="fas fa-paper-plane"></i>
+                <span id="submitBtnLabel">Submit Unverified Numbers to Admin</span>
             </button>
-            <div class="status-msg" id="statusMsg"></div>
+            <div class="status-msg" id="submitStatusMsg"></div>
         </div>
+    </div>
 
-        <!-- Results card -->
-        <div class="verif-card results-section" id="resultsSection">
-            <h3>Verification Results</h3>
-            <div class="results-summary" id="resultsSummary"></div>
-            <div style="overflow-x:auto;">
-                <table class="results-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Phone Number</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsTableBody"></tbody>
-                </table>
-            </div>
-            <div id="submitSection" style="display:none;">
-                <button class="submit-unverified-btn" id="submitUnverifiedBtn" onclick="submitUnverified()">
-                    <i class="fas fa-paper-plane"></i>
-                    <span id="submitBtnLabel">Submit Unverified Numbers to Admin</span>
-                </button>
-                <div class="status-msg" id="submitStatusMsg" style="margin-top:10px;"></div>
-            </div>
-        </div>
-
-    </div><!-- /main-content -->
+</div><!-- /main-content -->
 
 <script>
-    // ── Theme ──────────────────────────────────────────────────────────────────
-    const savedTheme = localStorage.getItem('theme') || 'light';
-    document.documentElement.setAttribute('data-theme', savedTheme);
+    // ── Theme (must run before paint) ──────────────────────────────────────────
+    (function() {
+        const t = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', t);
+    })();
 
     // ── Sidebar ────────────────────────────────────────────────────────────────
     const menuBtn  = document.getElementById('menuBtn');
     const closeBtn = document.getElementById('closeBtn');
     const sidebar  = document.getElementById('sidebar');
+    const overlay  = document.getElementById('overlay');
 
-    menuBtn.addEventListener('click',  () => sidebar.classList.add('open'));
-    closeBtn.addEventListener('click', () => sidebar.classList.remove('open'));
-    document.addEventListener('click', e => {
-        if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== menuBtn) {
-            sidebar.classList.remove('open');
-        }
-    });
+    function openSidebar()  { sidebar.classList.add('open');    overlay.classList.add('open'); }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('open'); }
+
+    menuBtn.addEventListener('click', openSidebar);
+    closeBtn.addEventListener('click', closeSidebar);
+    overlay.addEventListener('click', closeSidebar);
 
     document.getElementById('logoutBtn').addEventListener('click', () => {
         if (confirm('Are you sure you want to log out?')) {
@@ -288,8 +438,8 @@
     // ── Live count ─────────────────────────────────────────────────────────────
     document.getElementById('numbersInput').addEventListener('input', () => {
         const lines = getNumberLines();
-        const el = document.getElementById('countDisplay');
-        el.textContent = lines.length > 0 ? `${lines.length} number(s) detected` : '';
+        document.getElementById('countDisplay').textContent =
+            lines.length > 0 ? `${lines.length} number(s) detected` : '';
     });
 
     function getNumberLines() {
@@ -299,41 +449,37 @@
             .filter(l => l.length >= 9);
     }
 
-    // ── API config ─────────────────────────────────────────────────────────────
+    // ── API ────────────────────────────────────────────────────────────────────
     const API_BASE = 'https://youngster-backend.vercel.app/api';
-    const token    = localStorage.getItem('token');
-    const authHeaders = () => {
+    function authHeaders() {
         const h = { 'Content-Type': 'application/json' };
-        if (token) h['Authorization'] = `Bearer ${token}`;
+        const t = localStorage.getItem('token');
+        if (t) h['Authorization'] = `Bearer ${t}`;
         return h;
-    };
+    }
 
-    // ── Verification state ─────────────────────────────────────────────────────
+    // ── State ──────────────────────────────────────────────────────────────────
     let verificationResults = []; // [{ number, verified, message }]
 
     // ── Start verification ─────────────────────────────────────────────────────
     async function startVerification() {
         const numbers = getNumberLines();
         if (numbers.length === 0) {
-            showMsg('statusMsg', 'error', 'Please enter at least one phone number (min 9 digits).');
+            showMsg('statusMsg', 'error', 'Please enter at least one phone number (minimum 9 digits).');
             return;
         }
 
         const btn = document.getElementById('verifyBtn');
         btn.disabled = true;
-        showMsg('statusMsg', 'loading', `<span class="spinner"></span> Verifying ${numbers.length} number(s)…`);
-
-        // Hide previous results
         document.getElementById('resultsSection').style.display = 'none';
-        document.getElementById('submitSection').style.display = 'none';
         verificationResults = [];
 
-        // Verify each number sequentially against the backend
         for (let i = 0; i < numbers.length; i++) {
             const phone = numbers[i];
-            showMsg('statusMsg', 'loading', `<span class="spinner"></span> Verifying ${i + 1} of ${numbers.length}: ${phone}…`);
+            showMsg('statusMsg', 'loading',
+                `<span class="spinner"></span> Verifying ${i + 1} of ${numbers.length}: ${phone}…`);
             try {
-                const res = await fetch(`${API_BASE}/payment/verify-beneficiary`, {
+                const res  = await fetch(`${API_BASE}/payment/verify-beneficiary`, {
                     method: 'POST',
                     headers: authHeaders(),
                     body: JSON.stringify({ phone, is_ported_number: false }),
@@ -344,7 +490,7 @@
                     verified: res.ok && data.success === true,
                     message:  data.message || '',
                 });
-            } catch (err) {
+            } catch (_) {
                 verificationResults.push({ number: phone, verified: false, message: 'Network error' });
             }
         }
@@ -353,79 +499,75 @@
         renderResults();
     }
 
-    // ── Render results table ───────────────────────────────────────────────────
+    // ── Render results ─────────────────────────────────────────────────────────
     function renderResults() {
-        const section  = document.getElementById('resultsSection');
-        const tbody    = document.getElementById('resultsTableBody');
-        const summary  = document.getElementById('resultsSummary');
-        const submitSec = document.getElementById('submitSection');
+        const verified   = verificationResults.filter(r =>  r.verified);
+        const unverified = verificationResults.filter(r => !r.verified);
 
-        const verifiedList   = verificationResults.filter(r => r.verified);
-        const unverifiedList = verificationResults.filter(r => !r.verified);
-
-        // Summary badges
-        summary.innerHTML = `
+        // Summary
+        document.getElementById('resultsSummary').innerHTML = `
             <span class="summary-badge badge-total">
                 <i class="fas fa-list"></i> Total: ${verificationResults.length}
             </span>
             <span class="summary-badge badge-verified">
-                <i class="fas fa-check-circle"></i> Verified: ${verifiedList.length}
+                <i class="fas fa-check-circle"></i> Verified: ${verified.length}
             </span>
             <span class="summary-badge badge-unverified">
-                <i class="fas fa-exclamation-triangle"></i> Unverified: ${unverifiedList.length}
+                <i class="fas fa-exclamation-triangle"></i> Unverified: ${unverified.length}
             </span>`;
 
-        // Table rows
-        tbody.innerHTML = verificationResults.map((r, i) => `
-            <tr>
-                <td style="color:#888;font-size:12px;">${i + 1}</td>
-                <td style="font-family:monospace;">${r.number}</td>
-                <td>
-                    <span class="pill ${r.verified ? 'pill-verified' : 'pill-unverified'}">
-                        <i class="fas ${r.verified ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
-                        ${r.verified ? 'Verified' : 'Unverified'}
-                    </span>
-                </td>
-            </tr>`).join('');
+        // Table
+        document.getElementById('resultsTableBody').innerHTML =
+            verificationResults.map((r, i) => `
+                <tr>
+                    <td style="color:var(--text-secondary);font-size:12px;">${i + 1}</td>
+                    <td style="font-family:monospace;">${r.number}</td>
+                    <td>
+                        <span class="pill ${r.verified ? 'pill-verified' : 'pill-unverified'}">
+                            <i class="fas ${r.verified ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                            ${r.verified ? 'Verified' : 'Unverified'}
+                        </span>
+                    </td>
+                </tr>`).join('');
 
-        section.style.display = 'block';
+        document.getElementById('resultsSection').style.display = 'block';
 
-        // Show submit button only if there are unverified numbers
-        if (unverifiedList.length > 0) {
-            document.getElementById('submitBtnLabel').textContent =
-                `Submit ${unverifiedList.length} Unverified Number(s) to Admin`;
-            submitSec.style.display = 'block';
-            document.getElementById('submitUnverifiedBtn').disabled = false;
-            clearMsg('submitStatusMsg');
-        } else {
-            submitSec.style.display = 'none';
-        }
-
-        // Clear verification status message — results are shown below
-        if (verifiedList.length === verificationResults.length) {
-            showMsg('statusMsg', 'success', `✅ All ${verificationResults.length} number(s) are verified.`);
+        // Status message
+        if (unverified.length === 0) {
+            showMsg('statusMsg', 'success', `✅ All ${verificationResults.length} number(s) verified successfully.`);
+            document.getElementById('submitSection').style.display = 'none';
         } else {
             showMsg('statusMsg', 'success',
-                `✅ Verification complete — ${verifiedList.length} verified, ${unverifiedList.length} unverified.`);
+                `✅ Done — ${verified.length} verified, ${unverified.length} unverified.`);
+            document.getElementById('submitBtnLabel').textContent =
+                `Submit ${unverified.length} Unverified Number(s) to Admin`;
+            document.getElementById('submitUnverifiedBtn').disabled = false;
+            document.getElementById('submitUnverifiedBtn').style.display = 'inline-flex';
+            clearMsg('submitStatusMsg');
+            document.getElementById('submitSection').style.display = 'block';
         }
+
+        // Scroll results into view smoothly
+        document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // ── Submit unverified numbers ──────────────────────────────────────────────
+    // ── Submit unverified to admin ─────────────────────────────────────────────
     async function submitUnverified() {
         const unverified = verificationResults.filter(r => !r.verified).map(r => r.number);
         if (unverified.length === 0) return;
 
         const btn = document.getElementById('submitUnverifiedBtn');
         btn.disabled = true;
-        showMsg('submitStatusMsg', 'loading', `<span class="spinner"></span> Submitting ${unverified.length} unverified number(s)…`);
+        showMsg('submitStatusMsg', 'loading',
+            `<span class="spinner"></span> Submitting ${unverified.length} number(s)…`);
 
         try {
             const res  = await fetch(`${API_BASE}/mtn-verification`, {
                 method:  'POST',
                 headers: authHeaders(),
-                body:    JSON.stringify({
+                body: JSON.stringify({
                     numbers:   unverified,
-                    note:      'Auto-submitted: unverified numbers from verification check',
+                    note:      'Auto-submitted: failed verification check',
                     storeSlug: localStorage.getItem('storeSlug') || '',
                 }),
             });
@@ -433,14 +575,14 @@
 
             if (data.success) {
                 showMsg('submitStatusMsg', 'success',
-                    `✅ ${data.message} — the admin will handle these manually.`);
+                    `✅ ${data.message} The admin will handle these manually.`);
                 btn.style.display = 'none';
             } else {
                 showMsg('submitStatusMsg', 'error', data.message || 'Submission failed. Please try again.');
                 btn.disabled = false;
             }
-        } catch (err) {
-            showMsg('submitStatusMsg', 'error', 'Network error. Please try again.');
+        } catch (_) {
+            showMsg('submitStatusMsg', 'error', 'Network error. Please check your connection and try again.');
             btn.disabled = false;
         }
     }
