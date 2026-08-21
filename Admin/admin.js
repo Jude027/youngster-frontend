@@ -2239,6 +2239,11 @@ async function loadPaymentGatewayLogs(gatewayName) {
 
 let _mtnVerifData = [];
 
+// HTML-escape helper (scoped to this section — esc is defined inside loadOrders only)
+function escHtml(v) {
+    return String(v || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
 async function loadMtnVerifications() {
     const container = document.getElementById('mtnVerifList');
     const statsEl   = document.getElementById('mtnVerifStats');
@@ -2272,12 +2277,12 @@ async function loadMtnVerifications() {
             const date    = new Date(sub.submitted).toLocaleString();
             const nums    = (sub.numbers || []).join('\n');
             const dealer  = sub.username || sub.storeSlug || 'Unknown dealer';
-            const note    = sub.note ? `<div style="margin-top:6px;font-size:12px;color:#b45309;"><i class="fas fa-sticky-note"></i> ${esc(sub.note)}</div>` : '';
+            const note    = sub.note ? `<div style="margin-top:6px;font-size:12px;color:#b45309;"><i class="fas fa-sticky-note"></i> ${escHtml(sub.note)}</div>` : '';
             return `
             <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:16px 18px;">
                 <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;">
                     <div>
-                        <div style="font-size:13px;font-weight:700;color:#1a1a2e;">${esc(dealer)}</div>
+                        <div style="font-size:13px;font-weight:700;color:#1a1a2e;">${escHtml(dealer)}</div>
                         <div style="font-size:12px;color:#888;margin-top:2px;">${date}</div>
                         ${note}
                     </div>
