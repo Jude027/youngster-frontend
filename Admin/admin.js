@@ -1576,7 +1576,7 @@ window.viewAPILogDetails = (logId) => {
 // ========== LOGOUT ==========
 document.getElementById('logoutBtn').addEventListener('click', () => {
     localStorage.clear();
-    window.location.href = '../Registration%20form/login_and_signup.html';
+    window.location.href = '../Registration-form/login_and_signup.html';
 });
 
 // ========== SEARCH HANDLERS ==========
