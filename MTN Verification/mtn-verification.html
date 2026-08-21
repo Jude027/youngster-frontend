@@ -4,105 +4,91 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MTN Verification - J.D. Youngster Enterprise</title>
+
+    <!-- Same CSS stack as other dealer pages -->
+    <link rel="stylesheet" href="../Orders/form_style1.css" type="text/css">
+    <link rel="stylesheet" href="../Orders/navigator1.css" type="text/css">
+    <link rel="stylesheet" href="../Orders/login_page.css" type="text/css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f5f7fa;
-            color: #1a1a2e;
+        /* ── Page layout ── */
+        .main-content {
+            padding: 24px 20px;
+            max-width: 740px;
+            margin: 0 auto;
         }
-
-        /* ── Sidebar ── */
-        .sidebar {
-            position: fixed; top: 0; left: -280px; width: 280px; height: 100vh;
-            background: #fff; box-shadow: 4px 0 20px rgba(0,0,0,.12);
-            transition: left .3s ease; z-index: 1000; overflow-y: auto;
-        }
-        .sidebar.open { left: 0; }
-        .sidebar-header {
-            padding: 20px 16px 16px;
-            border-bottom: 1px solid #f0f0f0;
-            display: flex; flex-direction: column; gap: 8px;
-        }
-        .close-btn {
-            align-self: flex-end; background: none; border: none;
-            font-size: 18px; cursor: pointer; color: #666;
-        }
-        .sidebar-title { font-size: 16px; font-weight: 700; color: #1a1a2e; }
-        .brand-logo { width: 48px; height: 48px; border-radius: 8px; overflow: hidden; }
-        .brand-logo img { width: 100%; height: 100%; object-fit: contain; }
-        .menu { list-style: none; padding: 12px 0; }
-        .menu-item {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 20px; cursor: pointer; text-decoration: none;
-            color: #555; font-size: 14px; font-weight: 500;
-            transition: background .2s, color .2s;
-        }
-        .menu-item:hover, .menu-item.active {
-            background: #f3eeff; color: #6a11cb;
-        }
-        .menu-item.active { border-left: 3px solid #6a11cb; }
-        .menu-item.logout { color: #e74c3c; }
-        .menu-item.logout:hover { background: #fdecea; }
-        .menu-item i { width: 18px; text-align: center; }
-
-        .overlay {
-            display: none; position: fixed; inset: 0;
-            background: rgba(0,0,0,.4); z-index: 999;
-        }
-        .overlay.open { display: block; }
-
-        /* ── Main ── */
-        .main-content { padding: 24px 20px; max-width: 680px; margin: 0 auto; }
 
         .page-header {
-            display: flex; align-items: center; gap: 14px; margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 28px;
         }
         .menu-btn {
-            background: #fff; border: 1px solid #e0e0e0; border-radius: 8px;
-            width: 40px; height: 40px; cursor: pointer; display: flex;
-            align-items: center; justify-content: center; font-size: 16px;
-            color: #555; flex-shrink: 0;
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border-color, #e0e0e0);
+            border-radius: 8px;
+            width: 40px; height: 40px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+            color: var(--text-secondary, #555);
+            flex-shrink: 0;
         }
-        .page-header h1 { font-size: 22px; color: #1a1a2e; }
-        .page-header p { font-size: 13px; color: #888; margin-top: 2px; }
+        .page-header h1 { font-size: 22px; color: var(--text-primary, #1a1a2e); }
+        .page-header p  { font-size: 13px; color: var(--text-secondary, #888); margin-top: 2px; }
 
-        .card {
-            background: #fff; border-radius: 14px;
-            box-shadow: 0 2px 16px rgba(0,0,0,.07); padding: 28px 24px;
-            margin-bottom: 20px;
+        /* ── Card ── */
+        .verif-card {
+            background: var(--card-bg, #fff);
+            border-radius: 14px;
+            box-shadow: 0 2px 16px rgba(0,0,0,.07);
+            padding: 28px 24px;
+            margin-bottom: 24px;
         }
-        .card h2 { font-size: 16px; color: #1a1a2e; margin-bottom: 6px; }
-        .card p.hint { font-size: 13px; color: #888; margin-bottom: 16px; line-height: 1.5; }
-
-        textarea {
-            width: 100%; min-height: 180px; padding: 14px;
-            border: 2px solid #e0e0e0; border-radius: 10px;
-            font-size: 14px; font-family: monospace; resize: vertical;
-            outline: none; transition: border-color .2s;
+        .verif-card h2 {
+            font-size: 16px;
+            color: var(--text-primary, #1a1a2e);
+            margin-bottom: 6px;
         }
-        textarea:focus { border-color: #6a11cb; }
+        .verif-card p.hint {
+            font-size: 13px;
+            color: var(--text-secondary, #888);
+            margin-bottom: 18px;
+            line-height: 1.55;
+        }
 
-        .note-input {
-            width: 100%; padding: 11px 14px;
-            border: 2px solid #e0e0e0; border-radius: 10px;
-            font-size: 14px; outline: none; margin-top: 12px;
+        textarea#numbersInput {
+            width: 100%; min-height: 160px;
+            padding: 14px;
+            border: 2px solid var(--border-color, #e0e0e0);
+            border-radius: 10px;
+            font-size: 14px; font-family: monospace;
+            resize: vertical; outline: none;
+            background: var(--input-bg, #fff);
+            color: var(--text-primary, #1a1a2e);
             transition: border-color .2s;
         }
-        .note-input:focus { border-color: #6a11cb; }
+        textarea#numbersInput:focus { border-color: #6a11cb; }
 
-        .submit-btn {
+        #countDisplay {
+            font-size: 12px;
+            color: var(--text-secondary, #888);
+            margin-top: 6px;
+        }
+
+        .verif-btn {
             width: 100%; margin-top: 16px; padding: 14px;
             background: linear-gradient(135deg, #6a11cb, #2575fc);
             color: #fff; border: none; border-radius: 10px;
             font-size: 15px; font-weight: 700; cursor: pointer;
             transition: opacity .2s;
         }
-        .submit-btn:disabled { opacity: .6; cursor: not-allowed; }
-        .submit-btn:not(:disabled):hover { opacity: .92; }
+        .verif-btn:disabled { opacity: .55; cursor: not-allowed; }
+        .verif-btn:not(:disabled):hover { opacity: .9; }
 
+        /* ── Status message ── */
         .status-msg {
             margin-top: 14px; padding: 12px 16px;
             border-radius: 8px; font-size: 14px; display: none;
@@ -110,7 +96,6 @@
         .status-msg.success { background: #e8f5e9; color: #2e7d32; display: block; }
         .status-msg.error   { background: #fdecea; color: #c62828; display: block; }
         .status-msg.loading { background: #e3f2fd; color: #1565c0; display: block; }
-
         .spinner {
             display: inline-block; width: 14px; height: 14px;
             border: 2px solid currentColor; border-top-color: transparent;
@@ -119,190 +104,361 @@
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .prev-submissions h3 { font-size: 15px; color: #1a1a2e; margin-bottom: 12px; }
-        .submission-item {
-            background: #f8f9ff; border-radius: 8px;
-            padding: 12px 14px; margin-bottom: 10px; font-size: 13px;
+        /* ── Results table ── */
+        .results-section { display: none; }
+        .results-section h3 {
+            font-size: 15px;
+            color: var(--text-primary, #1a1a2e);
+            margin-bottom: 12px;
         }
-        .submission-item .meta { color: #888; margin-bottom: 6px; }
-        .submission-item .numbers { font-family: monospace; color: #333; line-height: 1.7; }
+        .results-summary {
+            display: flex; gap: 12px; flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+        .summary-badge {
+            border-radius: 10px; padding: 8px 16px;
+            font-size: 13px; font-weight: 600;
+        }
+        .badge-verified   { background: #e8f5e9; color: #2e7d32; }
+        .badge-unverified { background: #fef3c7; color: #92400e; }
+        .badge-total      { background: #e3f2fd; color: #1565c0; }
+
+        .results-table {
+            width: 100%; border-collapse: collapse; font-size: 14px;
+        }
+        .results-table th {
+            background: var(--table-header-bg, #f8f9ff);
+            color: var(--text-secondary, #555);
+            font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: .5px;
+            padding: 10px 14px; text-align: left;
+            border-bottom: 2px solid var(--border-color, #e5e7eb);
+        }
+        .results-table td {
+            padding: 11px 14px;
+            border-bottom: 1px solid var(--border-color, #f0f0f0);
+            color: var(--text-primary, #333);
+        }
+        .results-table tr:last-child td { border-bottom: none; }
+        .pill {
+            display: inline-flex; align-items: center; gap: 5px;
+            border-radius: 20px; padding: 3px 10px;
+            font-size: 12px; font-weight: 600;
+        }
+        .pill-verified   { background: #dcfce7; color: #16a34a; }
+        .pill-unverified { background: #fef3c7; color: #92400e; }
+
+        .submit-unverified-btn {
+            margin-top: 18px; padding: 12px 24px;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff; border: none; border-radius: 10px;
+            font-size: 14px; font-weight: 700; cursor: pointer;
+            transition: opacity .2s;
+        }
+        .submit-unverified-btn:disabled { opacity: .55; cursor: not-allowed; }
+        .submit-unverified-btn:not(:disabled):hover { opacity: .9; }
+        .submit-unverified-btn:not(:disabled) { display: inline-flex; align-items: center; gap: 8px; }
     </style>
 </head>
 <body>
 
-<!-- Sidebar -->
-<div class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-        <button class="close-btn" id="closeBtn"><i class="fas fa-times"></i></button>
-        <div class="sidebar-title" id="sidebarTitle">J.D Youngster Enterprise</div>
-        <div class="brand-logo" id="sidebarLogo">
-            <img src="../Orders/WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="Logo">
+    <!-- Sidebar — hardcoded, same as other dealer pages -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <button class="close-btn" id="closeBtn">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="sidebar-title" id="sidebarTitle">J.D Youngster Enterprise</div>
+            <div class="brand-logo" id="sidebarLogo">
+                <img src="../Orders/WhatsApp Image 2026-01-31 at 4.07.11 PM.jpeg" alt="J.D You Logo">
+            </div>
         </div>
+        <ul class="menu">
+            <a href="../Orders/new_orders.html" class="menu-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span class="menu-text">Orders</span>
+            </a>
+            <a href="../Transactions/transactions2.html" class="menu-item">
+                <i class="fas fa-exchange-alt"></i>
+                <span class="menu-text">Transactions</span>
+            </a>
+            <a href="../Referral%20Prices/dealers_referral_prices.html" class="menu-item">
+                <i class="fas fa-tags"></i>
+                <span class="menu-text">Referral Prices</span>
+            </a>
+            <a href="../Referral links/dealers_referral_program.html" class="menu-item">
+                <i class="fas fa-tags"></i>
+                <span class="menu-text">Referral Links</span>
+            </a>
+            <a href="../Withdrawals/withdrawal_page.html" class="menu-item">
+                <i class="fas fa-money-bill-wave"></i>
+                <span class="menu-text">Withdraw Earnings</span>
+            </a>
+            <a href="../MTN Verification/mtn-verification.html" class="menu-item active">
+                <i class="fas fa-shield-alt"></i>
+                <span class="menu-text">MTN Verification</span>
+            </a>
+            <li class="menu-item logout" id="logoutBtn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="menu-text">Log Out</span>
+            </li>
+        </ul>
     </div>
-    <ul class="menu">
-        <a href="../Orders/new_orders.html" class="menu-item">
-            <i class="fas fa-shopping-cart"></i>
-            <span class="menu-text">Orders</span>
-        </a>
-        <a href="../Transactions/transactions2.html" class="menu-item">
-            <i class="fas fa-exchange-alt"></i>
-            <span class="menu-text">Transactions</span>
-        </a>
-        <a href="../Referral Prices/dealers_referral_prices.html" class="menu-item">
-            <i class="fas fa-tags"></i>
-            <span class="menu-text">Referral Prices</span>
-        </a>
-        <a href="../Referral links/dealers_referral_program.html" class="menu-item">
-            <i class="fas fa-tags"></i>
-            <span class="menu-text">Referral Links</span>
-        </a>
-        <a href="../Withdrawals/withdrawal_page.html" class="menu-item">
-            <i class="fas fa-money-bill-wave"></i>
-            <span class="menu-text">Withdraw Earnings</span>
-        </a>
-        <a href="../MTN Verification/mtn-verification.html" class="menu-item active">
-            <i class="fas fa-shield-alt"></i>
-            <span class="menu-text">MTN Verification</span>
-        </a>
-        <li class="menu-item logout" id="logoutBtn">
-            <i class="fas fa-sign-out-alt"></i>
-            <span class="menu-text">Log Out</span>
-        </li>
-    </ul>
-</div>
-<div class="overlay" id="overlay"></div>
 
-<!-- Main -->
-<div class="main-content">
-    <div class="page-header">
-        <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
-        <div>
-            <h1>MTN Verification</h1>
-            <p>Submit MTN numbers that need to be verified</p>
+    <!-- Main Content -->
+    <div class="main-content">
+
+        <div class="page-header">
+            <button class="menu-btn" id="menuBtn"><i class="fas fa-bars"></i></button>
+            <div>
+                <h1><i class="fas fa-shield-alt" style="color:#6a11cb;margin-right:8px;font-size:20px;"></i>MTN Verification</h1>
+                <p>Verify MTN numbers — unverified ones will be submitted to admin automatically</p>
+            </div>
         </div>
-    </div>
 
-    <div class="card">
-        <h2><i class="fas fa-mobile-alt" style="color:#6a11cb;margin-right:8px;"></i>Submit Numbers for Verification</h2>
-        <p class="hint">
-            Paste the phone numbers below — one per line. Numbers will be sent to the admin for manual verification.
-            No payment required.
-        </p>
-        <textarea id="numbersInput" placeholder="0241234567&#10;0551234567&#10;0201234567"></textarea>
-        <input type="text" class="note-input" id="noteInput" placeholder="Optional note (e.g. customer name or reason)">
-        <div id="countDisplay" style="font-size:12px;color:#888;margin-top:8px;"></div>
-        <button class="submit-btn" id="submitBtn" onclick="submitNumbers()">
-            <i class="fas fa-paper-plane"></i> Submit Numbers
-        </button>
-        <div class="status-msg" id="statusMsg"></div>
-    </div>
+        <!-- Input card -->
+        <div class="verif-card">
+            <h2>Paste Numbers to Verify</h2>
+            <p class="hint">
+                Enter one MTN phone number per line. The system will check each number and show
+                which are verified and which are not. Unverified numbers will be submitted to
+                the admin for manual handling automatically.
+            </p>
+            <textarea id="numbersInput" placeholder="0241234567&#10;0551234567&#10;0201234567"></textarea>
+            <div id="countDisplay"></div>
+            <button class="verif-btn" id="verifyBtn" onclick="startVerification()">
+                <i class="fas fa-search"></i> Verify Numbers
+            </button>
+            <div class="status-msg" id="statusMsg"></div>
+        </div>
 
-    <div class="card prev-submissions" id="prevCard" style="display:none;">
-        <h3>Your Previous Submissions</h3>
-        <div id="prevList"></div>
-    </div>
-</div>
+        <!-- Results card -->
+        <div class="verif-card results-section" id="resultsSection">
+            <h3>Verification Results</h3>
+            <div class="results-summary" id="resultsSummary"></div>
+            <div style="overflow-x:auto;">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Phone Number</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody"></tbody>
+                </table>
+            </div>
+            <div id="submitSection" style="display:none;">
+                <button class="submit-unverified-btn" id="submitUnverifiedBtn" onclick="submitUnverified()">
+                    <i class="fas fa-paper-plane"></i>
+                    <span id="submitBtnLabel">Submit Unverified Numbers to Admin</span>
+                </button>
+                <div class="status-msg" id="submitStatusMsg" style="margin-top:10px;"></div>
+            </div>
+        </div>
+
+    </div><!-- /main-content -->
 
 <script>
-    const API_BASE = 'https://youngster-backend.vercel.app/api';
-    const token = localStorage.getItem('token');
-    const headers = { 'Content-Type': 'application/json' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+    // ── Theme ──────────────────────────────────────────────────────────────────
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
 
-    // Sidebar
+    // ── Sidebar ────────────────────────────────────────────────────────────────
     const menuBtn  = document.getElementById('menuBtn');
     const closeBtn = document.getElementById('closeBtn');
     const sidebar  = document.getElementById('sidebar');
-    const overlay  = document.getElementById('overlay');
-    const logoutBtn = document.getElementById('logoutBtn');
 
-    menuBtn.addEventListener('click',  () => { sidebar.classList.add('open');    overlay.classList.add('open'); });
-    closeBtn.addEventListener('click', () => { sidebar.classList.remove('open'); overlay.classList.remove('open'); });
-    overlay.addEventListener('click',  () => { sidebar.classList.remove('open'); overlay.classList.remove('open'); });
-
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-            if (confirm('Are you sure you want to log out?')) {
-                localStorage.removeItem('isLoggedIn');
-                localStorage.removeItem('username');
-                window.location.href = '../Registration form/login_and_signup.html';
-            }
-        });
-    }
-
-    // Live count
-    const textarea = document.getElementById('numbersInput');
-    const countDisplay = document.getElementById('countDisplay');
-    textarea.addEventListener('input', () => {
-        const lines = textarea.value.split('\n').map(l => l.trim()).filter(l => l.length >= 9);
-        countDisplay.textContent = lines.length > 0 ? `${lines.length} number(s) detected` : '';
+    menuBtn.addEventListener('click',  () => sidebar.classList.add('open'));
+    closeBtn.addEventListener('click', () => sidebar.classList.remove('open'));
+    document.addEventListener('click', e => {
+        if (sidebar.classList.contains('open') && !sidebar.contains(e.target) && e.target !== menuBtn) {
+            sidebar.classList.remove('open');
+        }
     });
 
-    async function submitNumbers() {
-        const raw = textarea.value.trim();
-        const note = document.getElementById('noteInput').value.trim();
-        const btn = document.getElementById('submitBtn');
-        const msg = document.getElementById('statusMsg');
-
-        if (!raw) {
-            showMsg('error', 'Please paste at least one phone number.');
-            return;
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+        if (confirm('Are you sure you want to log out?')) {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('username');
+            window.location.href = '../Registration form/login_and_signup.html';
         }
+    });
 
-        const numbers = raw.split('\n').map(l => l.trim()).filter(l => l.length >= 9);
+    // ── Live count ─────────────────────────────────────────────────────────────
+    document.getElementById('numbersInput').addEventListener('input', () => {
+        const lines = getNumberLines();
+        const el = document.getElementById('countDisplay');
+        el.textContent = lines.length > 0 ? `${lines.length} number(s) detected` : '';
+    });
+
+    function getNumberLines() {
+        return document.getElementById('numbersInput').value
+            .split('\n')
+            .map(l => l.replace(/[^0-9]/g, '').trim())
+            .filter(l => l.length >= 9);
+    }
+
+    // ── API config ─────────────────────────────────────────────────────────────
+    const API_BASE = 'https://youngster-backend.vercel.app/api';
+    const token    = localStorage.getItem('token');
+    const authHeaders = () => {
+        const h = { 'Content-Type': 'application/json' };
+        if (token) h['Authorization'] = `Bearer ${token}`;
+        return h;
+    };
+
+    // ── Verification state ─────────────────────────────────────────────────────
+    let verificationResults = []; // [{ number, verified, message }]
+
+    // ── Start verification ─────────────────────────────────────────────────────
+    async function startVerification() {
+        const numbers = getNumberLines();
         if (numbers.length === 0) {
-            showMsg('error', 'No valid numbers found. Each number should be at least 9 digits.');
+            showMsg('statusMsg', 'error', 'Please enter at least one phone number (min 9 digits).');
             return;
         }
 
+        const btn = document.getElementById('verifyBtn');
         btn.disabled = true;
-        showMsg('loading', '<span class="spinner"></span> Submitting...');
+        showMsg('statusMsg', 'loading', `<span class="spinner"></span> Verifying ${numbers.length} number(s)…`);
+
+        // Hide previous results
+        document.getElementById('resultsSection').style.display = 'none';
+        document.getElementById('submitSection').style.display = 'none';
+        verificationResults = [];
+
+        // Verify each number sequentially against the backend
+        for (let i = 0; i < numbers.length; i++) {
+            const phone = numbers[i];
+            showMsg('statusMsg', 'loading', `<span class="spinner"></span> Verifying ${i + 1} of ${numbers.length}: ${phone}…`);
+            try {
+                const res = await fetch(`${API_BASE}/payment/verify-beneficiary`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ phone, is_ported_number: false }),
+                });
+                const data = await res.json();
+                verificationResults.push({
+                    number:   phone,
+                    verified: res.ok && data.success === true,
+                    message:  data.message || '',
+                });
+            } catch (err) {
+                verificationResults.push({ number: phone, verified: false, message: 'Network error' });
+            }
+        }
+
+        btn.disabled = false;
+        renderResults();
+    }
+
+    // ── Render results table ───────────────────────────────────────────────────
+    function renderResults() {
+        const section  = document.getElementById('resultsSection');
+        const tbody    = document.getElementById('resultsTableBody');
+        const summary  = document.getElementById('resultsSummary');
+        const submitSec = document.getElementById('submitSection');
+
+        const verifiedList   = verificationResults.filter(r => r.verified);
+        const unverifiedList = verificationResults.filter(r => !r.verified);
+
+        // Summary badges
+        summary.innerHTML = `
+            <span class="summary-badge badge-total">
+                <i class="fas fa-list"></i> Total: ${verificationResults.length}
+            </span>
+            <span class="summary-badge badge-verified">
+                <i class="fas fa-check-circle"></i> Verified: ${verifiedList.length}
+            </span>
+            <span class="summary-badge badge-unverified">
+                <i class="fas fa-exclamation-triangle"></i> Unverified: ${unverifiedList.length}
+            </span>`;
+
+        // Table rows
+        tbody.innerHTML = verificationResults.map((r, i) => `
+            <tr>
+                <td style="color:#888;font-size:12px;">${i + 1}</td>
+                <td style="font-family:monospace;">${r.number}</td>
+                <td>
+                    <span class="pill ${r.verified ? 'pill-verified' : 'pill-unverified'}">
+                        <i class="fas ${r.verified ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                        ${r.verified ? 'Verified' : 'Unverified'}
+                    </span>
+                </td>
+            </tr>`).join('');
+
+        section.style.display = 'block';
+
+        // Show submit button only if there are unverified numbers
+        if (unverifiedList.length > 0) {
+            document.getElementById('submitBtnLabel').textContent =
+                `Submit ${unverifiedList.length} Unverified Number(s) to Admin`;
+            submitSec.style.display = 'block';
+            document.getElementById('submitUnverifiedBtn').disabled = false;
+            clearMsg('submitStatusMsg');
+        } else {
+            submitSec.style.display = 'none';
+        }
+
+        // Clear verification status message — results are shown below
+        if (verifiedList.length === verificationResults.length) {
+            showMsg('statusMsg', 'success', `✅ All ${verificationResults.length} number(s) are verified.`);
+        } else {
+            showMsg('statusMsg', 'success',
+                `✅ Verification complete — ${verifiedList.length} verified, ${unverifiedList.length} unverified.`);
+        }
+    }
+
+    // ── Submit unverified numbers ──────────────────────────────────────────────
+    async function submitUnverified() {
+        const unverified = verificationResults.filter(r => !r.verified).map(r => r.number);
+        if (unverified.length === 0) return;
+
+        const btn = document.getElementById('submitUnverifiedBtn');
+        btn.disabled = true;
+        showMsg('submitStatusMsg', 'loading', `<span class="spinner"></span> Submitting ${unverified.length} unverified number(s)…`);
 
         try {
-            const res = await fetch(`${API_BASE}/mtn-verification`, {
-                method: 'POST',
-                headers,
-                body: JSON.stringify({ numbers, note, storeSlug: localStorage.getItem('storeSlug') || '' }),
+            const res  = await fetch(`${API_BASE}/mtn-verification`, {
+                method:  'POST',
+                headers: authHeaders(),
+                body:    JSON.stringify({
+                    numbers:   unverified,
+                    note:      'Auto-submitted: unverified numbers from verification check',
+                    storeSlug: localStorage.getItem('storeSlug') || '',
+                }),
             });
             const data = await res.json();
 
             if (data.success) {
-                showMsg('success', `✅ ${data.message}`);
-                textarea.value = '';
-                document.getElementById('noteInput').value = '';
-                countDisplay.textContent = '';
+                showMsg('submitStatusMsg', 'success',
+                    `✅ ${data.message} — the admin will handle these manually.`);
+                btn.style.display = 'none';
             } else {
-                showMsg('error', data.message || 'Submission failed. Please try again.');
+                showMsg('submitStatusMsg', 'error', data.message || 'Submission failed. Please try again.');
+                btn.disabled = false;
             }
         } catch (err) {
-            showMsg('error', 'Network error. Please check your connection and try again.');
-        } finally {
+            showMsg('submitStatusMsg', 'error', 'Network error. Please try again.');
             btn.disabled = false;
         }
     }
 
-    function showMsg(type, html) {
-        const el = document.getElementById('statusMsg');
+    // ── Helpers ────────────────────────────────────────────────────────────────
+    function showMsg(id, type, html) {
+        const el = document.getElementById(id);
+        if (!el) return;
         el.className = `status-msg ${type}`;
         el.innerHTML = html;
     }
-
-    // Apply store branding
-    (async () => {
-        if (!token) return;
-        try {
-            const r = await fetch(`${API_BASE}/store-settings`, { headers });
-            if (!r.ok) return;
-            const store = await r.json();
-            if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
-            const title = document.getElementById('sidebarTitle');
-            if (title && store.storeName) title.textContent = store.storeName;
-            const logo = document.getElementById('sidebarLogo');
-            if (logo && store.storeLogo) {
-                logo.innerHTML = `<img src="${store.storeLogo}" alt="${store.storeName}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-            }
-        } catch (_) {}
-    })();
+    function clearMsg(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.className = 'status-msg';
+        el.innerHTML = '';
+        el.style.display = 'none';
+    }
 </script>
 </body>
 </html>
