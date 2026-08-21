@@ -55,6 +55,10 @@ function handlePackageCardClick(packageName) {
         targetFolder = 'MTN AFA';
         targetFile = 'mtn_afa.html';
         provider = 'MTN AFA';
+    } else if (nameKey.includes('special posting')) {
+        targetFolder = 'Special Posting';
+        targetFile = 'special_posting.html';
+        provider = 'Special Posting';
     }
 
     if (targetFolder) {
@@ -82,7 +86,7 @@ async function loadDynamicProviders() {
 
         // Results checkers is now a static card in the HTML — add it to the
         // hardcoded list so the dynamic loader never adds a duplicate.
-        const hardcodedProviders = ['MTN', 'MTN EXPRESS', 'Telecel', 'AT Ishare', 'AT Bigtime', 'MTN AFA', 'Results checkers', 'Results Checkers'];
+        const hardcodedProviders = ['MTN', 'MTN EXPRESS', 'Telecel', 'AT Ishare', 'AT Bigtime', 'MTN AFA', 'Results checkers', 'Results Checkers', 'Special Posting', 'special posting'];
         const hardcodedNormalised = hardcodedProviders.map(normalise);
 
         // ── Step 1: render from localStorage cache immediately ──────────────
