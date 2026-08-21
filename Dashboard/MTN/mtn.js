@@ -721,7 +721,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     // Verification failed — show "Proceed anyway" prompt
                     const proceed = confirm(
                         (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
-                        '\n\nThis phone number could not be verified. The order will be placed but fulfilled manually. Proceed anyway?'
+                        '\n\nThis phone number could not be verified. Delivery may delay, proceed if you can wait. Proceed anyway?'
                     );
                     orderBtn.disabled = false;
                     orderBtn.innerHTML = originalBtnHTML;
@@ -734,7 +734,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (err) {
                 // Network error during verification — show "Proceed anyway" prompt
                 const proceedOnError = confirm(
-                    'Could not verify this number right now (network error).\n\nThe order will be placed but fulfilled manually. Proceed anyway?'
+                    'Could not verify this number right now (network error).\n\nDelivery may delay, proceed if you can wait. Proceed anyway?'
                 );
                 orderBtn.disabled = false;
                 orderBtn.innerHTML = originalBtnHTML;
