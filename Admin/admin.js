@@ -1,9 +1,9 @@
 // Admin panel â€“ full management (including Role Price Mapping)
-const API_BASE = 'https://youngster-backend-production.up.railway.app/api';
+const API_BASE = 'https://youngster-backend.vercel.app/api';
 let token = localStorage.getItem('token');
 
 if (!token) {
-    window.location.href = '../Registration%20form/login_and_signup.html';
+    window.location.href = '../Registration-form/login_and_signup.html';
 }
 
 function authHeaders() {
@@ -64,7 +64,7 @@ async function checkAdmin() {
     } catch (err) {
         console.error(err);
         alert('Could not verify admin status. Please log in again.');
-        window.location.href = '../Registration%20form/login_and_signup.html';
+        window.location.href = '../Registration-form/login_and_signup.html';
     }
 }
 
@@ -120,7 +120,7 @@ function initializeTabSwitching() {
 // ========== DASHBOARD STATS ==========
 async function loadStats() {
     const grid = document.getElementById('statsGrid');
-    grid.innerHTML = '<p style="padding:20px;color:#aaa;">Loadingâ€¦</p>';
+    grid.innerHTML = '<p style="padding:20px;color:#aaa;">Loading...¦</p>';
     try {
         const res = await fetch(`${API_BASE}/admin/stats`, { headers: authHeaders() });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
