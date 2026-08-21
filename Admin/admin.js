@@ -58,7 +58,7 @@ async function checkAdmin() {
         const user = await res.json();
         if (user.role !== 'admin') {
             alert('Admin access required');
-            window.location.href = '../Registration%20form/login_and_signup.html';
+            window.location.href = '../Registration-form/login_and_signup.html';
         }
         document.getElementById('adminName').innerText = user.username;
     } catch (err) {
@@ -120,7 +120,7 @@ function initializeTabSwitching() {
 // ========== DASHBOARD STATS ==========
 async function loadStats() {
     const grid = document.getElementById('statsGrid');
-    grid.innerHTML = '<p style="padding:20px;color:#aaa;">Loading...¦</p>';
+    grid.innerHTML = '<p style="padding:20px;color:#aaa;">Loading...</p>';
     try {
         const res = await fetch(`${API_BASE}/admin/stats`, { headers: authHeaders() });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
