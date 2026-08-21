@@ -50,6 +50,9 @@
                 <button class="nav-btn" data-tab="stores">
                     <i class="fas fa-store"></i> Store Settings
                 </button>
+                <button class="nav-btn" data-tab="mtn-verifications">
+                    <i class="fas fa-shield-alt"></i> MTN Verifications
+                </button>
                 <button class="nav-btn logout-btn" id="logoutBtn">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -634,6 +637,25 @@
             </form>
         </div>
 
+    </div>
+
+    <!-- MTN Verifications Tab -->
+    <div id="mtn-verificationsTab" class="tab-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
+            <h2 style="font-size:18px;color:#1a1a2e;">MTN Verification Submissions</h2>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <button onclick="copyAllNumbers()" style="padding:8px 18px;background:linear-gradient(135deg,#6a11cb,#2575fc);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">
+                    <i class="fas fa-copy"></i> Copy All Numbers
+                </button>
+                <button onclick="loadMtnVerifications()" style="padding:8px 14px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-size:13px;cursor:pointer;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div id="mtnVerifStats" style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;"></div>
+        <div id="mtnVerifList" style="display:flex;flex-direction:column;gap:12px;">
+            <p style="color:#888;font-size:14px;">Loading submissions...</p>
+        </div>
     </div>
 
     <script src="admin.js"></script>
