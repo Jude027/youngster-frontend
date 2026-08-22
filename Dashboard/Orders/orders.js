@@ -205,10 +205,19 @@ function renderOrders(ordersList) {
                 if (!/special.?posting/i.test(order.package || '')) return '';
                 const report = order.report || '';
                 if (!report || !report.includes(' | ')) return '';
+                // Only accept known Special Posting field names — filters out any
+                // error messages that may have been appended to the report field
+                const KNOWN_KEYS = ['name', 'phone', 'nss number', 'place of posting', 'district', 'region'];
                 const fields = [];
                 report.split(' | ').forEach(part => {
                     const idx = part.indexOf(':');
-                    if (idx > -1) fields.push([part.slice(0, idx).trim(), part.slice(idx + 1).trim()]);
+                    if (idx > -1) {
+                        const key = part.slice(0, idx).trim();
+                        const val = part.slice(idx + 1).trim();
+                        if (KNOWN_KEYS.includes(key.toLowerCase())) {
+                            fields.push([key, val]);
+                        }
+                    }
                 });
                 if (fields.length === 0) return '';
                 const cells = fields.map(([k, v]) =>
