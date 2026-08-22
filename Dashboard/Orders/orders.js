@@ -201,7 +201,7 @@ function renderOrders(ordersList) {
                 <td data-label="REPORT">${waBtn}</td>
             </tr>
             ${(() => {
-                // For Special Posting orders, show a detail row with all submitted fields
+                // Special Posting — show submission detail row
                 if (!/special.?posting/i.test(order.package || '')) return '';
                 const report = order.report || '';
                 if (!report || !report.includes(' | ')) return '';
@@ -231,6 +231,41 @@ function renderOrders(ordersList) {
                         <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
                             <span style="font-size:11px;font-weight:700;color:#6a11cb;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
                                 <i class="fas fa-info-circle"></i> Submission Details
+                            </span>
+                            ${cells}
+                        </div>
+                    </td>
+                </tr>`;
+            })()}
+            ${(() => {
+                // MTN AFA — show registration detail row
+                if (!/mtn.?afa/i.test(order.package || '')) return '';
+                const report = order.report || '';
+                if (!report || !report.includes(' | ')) return '';
+                const KNOWN_KEYS = ['name', 'phone', 'ghana card', 'dob', 'location', 'region'];
+                const fields = [];
+                report.split(' | ').forEach(part => {
+                    const idx = part.indexOf(':');
+                    if (idx > -1) {
+                        const key = part.slice(0, idx).trim();
+                        const val = part.slice(idx + 1).trim();
+                        if (KNOWN_KEYS.includes(key.toLowerCase())) {
+                            fields.push([key, val]);
+                        }
+                    }
+                });
+                if (fields.length === 0) return '';
+                const cells = fields.map(([k, v]) =>
+                    `<span style="display:inline-block;margin:3px 8px 3px 0;font-size:12px;">
+                        <span style="color:var(--text-secondary);">${k}:</span>
+                        <strong style="color:var(--text-primary);margin-left:3px;">${v}</strong>
+                    </span>`
+                ).join('');
+                return `<tr style="background:var(--bg-secondary,#f8f9ff);">
+                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid var(--border-color,#e5e7eb);">
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+                            <span style="font-size:11px;font-weight:700;color:#f7971e;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
+                                <i class="fas fa-id-card"></i> AFA Registration
                             </span>
                             ${cells}
                         </div>
