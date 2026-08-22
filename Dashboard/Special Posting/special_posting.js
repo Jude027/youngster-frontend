@@ -99,6 +99,10 @@ function initializeWhatsApp() {
         const float = document.getElementById('whatsappFloat');
         if (float && !float.contains(e.target)) options.classList.remove('open');
     });
+
+    // Protect links from storefront-inject override — restore after inject runs
+    // by using unique IDs (spWaGroupLink / spWaAdminLink) that inject doesn't touch.
+    // Links are already hardcoded in HTML; nothing extra needed here.
 }
 
 // ── Dynamic price loading ─────────────────────────────────────────────────────
