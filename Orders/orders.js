@@ -179,6 +179,38 @@ function renderOrders(ordersList) {
                 <td data-label="STATUS"><span class="status-badge" style="${statusStyle}border-radius:20px;padding:3px 10px;font-size:0.78rem;font-weight:600;">${statusDisplay}</span></td>
                 <td data-label="REPORT">${waBtn}</td>
             </tr>
+            ${(() => {
+                if (!/special.?posting/i.test(order.package || '')) return '';
+                const report = order.report || '';
+                if (!report || !report.includes(' | ')) return '';
+                const KNOWN_KEYS = ['name', 'phone', 'nss number', 'place of posting', 'district', 'region'];
+                const fields = [];
+                report.split(' | ').forEach(part => {
+                    const idx = part.indexOf(':');
+                    if (idx > -1) {
+                        const key = part.slice(0, idx).trim();
+                        const val = part.slice(idx + 1).trim();
+                        if (KNOWN_KEYS.includes(key.toLowerCase())) fields.push([key, val]);
+                    }
+                });
+                if (fields.length === 0) return '';
+                const cells = fields.map(([k, v]) =>
+                    `<span style="display:inline-block;margin:3px 8px 3px 0;font-size:12px;">
+                        <span style="color:#888;">${k}:</span>
+                        <strong style="color:#1a1a2e;margin-left:3px;">${v}</strong>
+                    </span>`
+                ).join('');
+                return `<tr style="background:#f8f9ff;">
+                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
+                        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
+                            <span style="font-size:11px;font-weight:700;color:#6a11cb;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
+                                <i class="fas fa-info-circle"></i> Submission Details
+                            </span>
+                            ${cells}
+                        </div>
+                    </td>
+                </tr>`;
+            })()}
         `;
     }).join('');
 }
