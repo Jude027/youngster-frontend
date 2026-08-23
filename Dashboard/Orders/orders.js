@@ -222,12 +222,12 @@ function renderOrders(ordersList) {
                 if (fields.length === 0) return '';
                 const cells = fields.map(([k, v]) =>
                     `<span style="display:inline-block;margin:3px 8px 3px 0;font-size:12px;">
-                        <span style="color:var(--text-secondary);">${k}:</span>
-                        <strong style="color:var(--text-primary);margin-left:3px;">${v}</strong>
+                        <span style="color:#888;">${k}:</span>
+                        <strong style="color:#1a1a2e;margin-left:3px;">${v}</strong>
                     </span>`
                 ).join('');
-                return `<tr style="background:var(--bg-secondary,#f8f9ff);">
-                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid var(--border-color,#e5e7eb);">
+                return `<tr style="background:#f8f9ff;">
+                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
                         <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
                             <span style="font-size:11px;font-weight:700;color:#6a11cb;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
                                 <i class="fas fa-info-circle"></i> Submission Details
@@ -257,12 +257,12 @@ function renderOrders(ordersList) {
                 if (fields.length === 0) return '';
                 const cells = fields.map(([k, v]) =>
                     `<span style="display:inline-block;margin:3px 8px 3px 0;font-size:12px;">
-                        <span style="color:var(--text-secondary);">${k}:</span>
-                        <strong style="color:var(--text-primary);margin-left:3px;">${v}</strong>
+                        <span style="color:#888;">${k}:</span>
+                        <strong style="color:#1a1a2e;margin-left:3px;">${v}</strong>
                     </span>`
                 ).join('');
-                return `<tr style="background:var(--bg-secondary,#f8f9ff);">
-                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid var(--border-color,#e5e7eb);">
+                return `<tr style="background:#fff8e1;">
+                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
                         <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
                             <span style="font-size:11px;font-weight:700;color:#f7971e;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
                                 <i class="fas fa-id-card"></i> AFA Registration
