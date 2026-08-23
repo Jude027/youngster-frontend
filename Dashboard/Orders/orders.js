@@ -221,15 +221,15 @@ function renderOrders(ordersList) {
                 });
                 if (fields.length === 0) return '';
                 const cells = fields.map(([k, v]) =>
-                    `<span style="display:inline-block;margin:3px 8px 3px 0;font-size:12px;">
-                        <span style="color:#888;">${k}:</span>
-                        <strong style="color:#1a1a2e;margin-left:3px;">${v}</strong>
+                    `<span style="display:inline-flex;align-items:baseline;gap:3px;margin-right:12px;font-size:12px;white-space:nowrap;float:none !important;">
+                        <span style="color:#888;display:inline !important;">${k}:</span>
+                        <strong style="color:#1a1a2e;display:inline !important;">${v}</strong>
                     </span>`
                 ).join('');
                 return `<tr style="background:#f8f9ff;">
-                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
-                        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
-                            <span style="font-size:11px;font-weight:700;color:#6a11cb;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
+                    <td colspan="8" style="padding:8px 14px !important;border-bottom:1px solid #e5e7eb;display:table-cell !important;float:none !important;text-align:left !important;width:auto !important;">
+                        <div style="display:flex !important;flex-direction:row !important;flex-wrap:wrap !important;align-items:center;gap:2px 0;float:none !important;">
+                            <span style="font-size:11px;font-weight:700;color:#6a11cb;margin-right:10px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;display:inline !important;">
                                 <i class="fas fa-info-circle"></i> Submission Details
                             </span>
                             ${cells}
@@ -256,15 +256,15 @@ function renderOrders(ordersList) {
                 });
                 if (fields.length === 0) return '';
                 const cells = fields.map(([k, v]) =>
-                    `<span style="display:inline-block;margin:3px 8px 3px 0;font-size:12px;">
-                        <span style="color:#888;">${k}:</span>
-                        <strong style="color:#1a1a2e;margin-left:3px;">${v}</strong>
+                    `<span style="display:inline-flex;align-items:baseline;gap:3px;margin-right:12px;font-size:12px;white-space:nowrap;float:none !important;">
+                        <span style="color:#888;display:inline !important;">${k}:</span>
+                        <strong style="color:#1a1a2e;display:inline !important;">${v}</strong>
                     </span>`
                 ).join('');
                 return `<tr style="background:#fff8e1;">
-                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
-                        <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
-                            <span style="font-size:11px;font-weight:700;color:#f7971e;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
+                    <td colspan="8" style="padding:8px 14px !important;border-bottom:1px solid #e5e7eb;display:table-cell !important;float:none !important;text-align:left !important;width:auto !important;">
+                        <div style="display:flex !important;flex-direction:row !important;flex-wrap:wrap !important;align-items:center;gap:2px 0;float:none !important;">
+                            <span style="font-size:11px;font-weight:700;color:#f7971e;margin-right:10px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;display:inline !important;">
                                 <i class="fas fa-id-card"></i> AFA Registration
                             </span>
                             ${cells}
