@@ -195,7 +195,7 @@ function initializeWithdrawalForm() {
         const phoneNumber = phoneInput.value.trim();
         const accountName = accountNameInput.value.trim();
         
-        if (isNaN(amount) || amount < 50) return showNotification('Minimum GHS 50', 'error');
+        if (isNaN(amount) || amount < 50) return showNotification('Minimum GHS 30', 'error');
         if (amount > 5000) return showNotification('Maximum GHS 5,000', 'error');
         if (!phoneNumber || phoneNumber.length !== 10) return showNotification('Valid 10‑digit phone number required', 'error');
         if (!accountName) return showNotification('Name on account required', 'error');
