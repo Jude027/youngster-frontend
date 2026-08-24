@@ -8,7 +8,12 @@ let allOrders = [];
 
 function authHeaders() {
     const token = localStorage.getItem('token');
-    return { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+    };
 }
 
 // Theme initialization helper
