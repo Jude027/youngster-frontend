@@ -9,7 +9,12 @@ const API_BASE = (() => {
 
 function authHeaders() {
     const token = localStorage.getItem('token');
-    return { 'Authorization': `Bearer ${token}` };
+    return {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+    };
 }
 
 let allTransactions = [];
