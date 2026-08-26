@@ -625,7 +625,14 @@ async function applyUserStoreBranding() {
         const store = await response.json();
 
         // Cache slug so dashboard link navigates back with ?store= param
-        if (store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        // Only update storeSlug if there is no referral context in the URL or localStorage.
+        // Overwriting it would break storefront navigation for customers.
+        const _urlSlug = new URLSearchParams(window.location.search).get('store');
+        if (!_urlSlug) {
+            // Only cache storeSlug when no referral context is in the URL — preserves customer storefront navigation.
+        const _urlSlug = new URLSearchParams(window.location.search).get('store');
+        if (!_urlSlug && store.storeSlug) localStorage.setItem('storeSlug', store.storeSlug);
+        }
 
         // Apply store branding to sidebar
         const sidebarTitle = document.getElementById('sidebarTitle');
