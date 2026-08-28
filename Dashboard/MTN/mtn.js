@@ -704,8 +704,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // MTN EXPRESS accepts all numbers — skip verification entirely
             if (provider.toUpperCase() === 'MTN EXPRESS') {
                 orderBtn._isUnverified = false;
-                orderBtn.disabled = false;
-                orderBtn.innerHTML = originalBtnHTML;
                 showPaymentModal({
                     beneficiary:  phoneNumber,
                     package:      provider,
