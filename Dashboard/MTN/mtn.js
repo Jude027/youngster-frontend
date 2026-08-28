@@ -696,15 +696,37 @@ document.addEventListener('DOMContentLoaded', function() {
             const provider = params.get('provider') || 'MTN';
             const isPorted = portedNumberCheckbox ? portedNumberCheckbox.checked : false;
 
-            // Verify the beneficiary number with DataHub before opening the payment modal
-            const originalBtnHTML = orderBtn.innerHTML;
-            orderBtn.disabled = true;
-            orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying number...';
-
             const API_BASE = 'https://youngster-backend.vercel.app/api';
             const token = localStorage.getItem('token');
             const headers = { 'Content-Type': 'application/json' };
             if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            // MTN EXPRESS accepts all numbers — skip verification entirely
+            if (provider.toUpperCase() === 'MTN EXPRESS') {
+                orderBtn._isUnverified = false;
+                orderBtn.disabled = false;
+                orderBtn.innerHTML = originalBtnHTML;
+                showPaymentModal({
+                    beneficiary:  phoneNumber,
+                    package:      provider,
+                    bundle_size:  bundleName,
+                    amount:       amount,
+                    isPorted:     isPorted,
+                    isUnverified: false,
+                });
+                return;
+            }
+
+            // MTN (standard) — verify the beneficiary number with DataHub
+            const originalBtnHTML2 = orderBtn.innerHTML;
+            orderBtn.disabled = true;
+            orderBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying number...';
+
+            // Build MTN EXPRESS redirect URL (same store/client context)
+            const expressParams = new URLSearchParams(window.location.search);
+            expressParams.set('provider', 'MTN EXPRESS');
+            const expressUrl = window.location.pathname.replace('mtn.html', 'mtn.html') +
+                '?' + expressParams.toString();
 
             try {
                 const verifyRes = await fetch(`${API_BASE}/payment/verify-beneficiary`, {
@@ -718,32 +740,52 @@ document.addEventListener('DOMContentLoaded', function() {
                 const verifyResult = await verifyRes.json();
 
                 if (!verifyRes.ok || !verifyResult.success) {
-                    // Verification failed — show "Proceed anyway" prompt
-                    const proceed = confirm(
-                        (verifyResult.message || 'UNVERIFIED NUMBER DETECTED!') +
-                        '\n\nThere is another alternative but with that delivery may delay, you can continue if you can wait.'
-                    );
+                    // Verification failed — redirect to MTN EXPRESS which accepts all numbers
                     orderBtn.disabled = false;
-                    orderBtn.innerHTML = originalBtnHTML;
-                    if (!proceed) return;
-                    // Mark as unverified — backend will skip API handler
-                    orderBtn._isUnverified = true;
+                    orderBtn.innerHTML = originalBtnHTML2;
+                    const proceed = confirm(
+                        'This number is not on our standard portal.\n\n' +
+                        'There is another alternative (MTN EXPRESS) that accepts all numbers. ' +
+                        'Click OK to be redirected to complete your purchase there.'
+                    );
+                    if (proceed) {
+                        const slug = new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '';
+                        const client = new URLSearchParams(window.location.search).get('client') || localStorage.getItem('clientType') || '';
+                        let url = window.location.href.replace(/[?#].*$/, '')
+                            .replace('mtn.html', 'mtn.html');
+                        const newParams = new URLSearchParams();
+                        newParams.set('provider', 'MTN EXPRESS');
+                        if (slug) newParams.set('store', slug);
+                        if (client) newParams.set('client', client);
+                        window.location.href = window.location.pathname + '?' + newParams.toString();
+                    }
+                    return;
                 } else {
                     orderBtn._isUnverified = false;
                 }
             } catch (err) {
-                // Network error during verification — show "Proceed anyway" prompt
-                const proceedOnError = confirm(
-                    'Could not verify this number right now (network error).\n\nThere is another alternative but with that delivery may delay, you can continue if you can wait.'
-                );
+                // Network error — also offer MTN EXPRESS redirect
                 orderBtn.disabled = false;
-                orderBtn.innerHTML = originalBtnHTML;
-                if (!proceedOnError) return;
-                orderBtn._isUnverified = true;
+                orderBtn.innerHTML = originalBtnHTML2;
+                const proceedOnError = confirm(
+                    'Could not verify this number right now.\n\n' +
+                    'There is another alternative (MTN EXPRESS) that accepts all numbers. ' +
+                    'Click OK to be redirected to complete your purchase there.'
+                );
+                if (proceedOnError) {
+                    const slug = new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '';
+                    const client = new URLSearchParams(window.location.search).get('client') || localStorage.getItem('clientType') || '';
+                    const newParams = new URLSearchParams();
+                    newParams.set('provider', 'MTN EXPRESS');
+                    if (slug) newParams.set('store', slug);
+                    if (client) newParams.set('client', client);
+                    window.location.href = window.location.pathname + '?' + newParams.toString();
+                }
+                return;
             }
 
             orderBtn.disabled = false;
-            orderBtn.innerHTML = originalBtnHTML;
+            orderBtn.innerHTML = originalBtnHTML2;
 
             // Open Moolre payment modal â€” customer enters their MoMo number
             // and gets a USSD push prompt to approve the payment
