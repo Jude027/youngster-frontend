@@ -9,6 +9,26 @@
     <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
+    <!-- Hide disabled providers instantly from cache before page renders -->
+    <script>
+    (function() {
+        try {
+            const cache = localStorage.getItem('dynamicProvidersCache');
+            if (!cache) return;
+            const providers = JSON.parse(cache);
+            const activeNames = new Set(providers.map(p => String(p.name || '').toLowerCase().trim().replace(/\s+/g, ' ')));
+            const hardcoded = ['mtn', 'mtn express', 'telecel', 'at ishare', 'at bigtime', 'mtn afa', 'results checkers'];
+            // Inject a style tag to hide disabled cards before paint
+            const disabled = hardcoded.filter(n => !activeNames.has(n));
+            if (disabled.length === 0) return;
+            const style = document.createElement('style');
+            style.id = 'disabled-providers-style';
+            // We can't use text content to hide yet since DOM isn't built
+            // Store for DOMContentLoaded use
+            window.__disabledProviders = disabled;
+        } catch(_) {}
+    })();
+    </script>
     <!-- Sidebar Overlay -->
     <div class="overlay" id="overlay"></div>
     
