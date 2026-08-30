@@ -107,11 +107,13 @@ function initializeTabSwitching() {
             else if (tabId === 'prices') loadPrices();
             else if (tabId === 'master-prices') loadMasterPrices();
             else if (tabId === 'provider-api') loadProvidersForAPI();
-            else if (tabId === 'payment-gateways') loadPaymentGateways();
+            else if (tabId === 'providers') loadProviders();
             else if (tabId === 'base-prices') loadBasePrices();
+            else if (tabId === 'payment-gateways') loadPaymentGateways();
             else if (tabId === 'withdrawals') loadWithdrawals();
             else if (tabId === 'stores') loadStores();
             else if (tabId === 'role-price-mapping') loadRoleMappings();
+            else if (tabId === 'mtn-verifications') loadMtnVerifications();
         });
     });
     console.log('[DEBUG] initializeTabSwitching complete');
