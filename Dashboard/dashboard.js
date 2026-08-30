@@ -127,6 +127,23 @@ async function loadDynamicProviders() {
             providers.forEach(p => {
                 if (p.storefrontSection) sectionMap[normalise(p.name)] = p.storefrontSection;
             });
+
+            // Hide static cards for providers that are disabled
+            // storefront-providers already excludes disabled ones so any
+            // hardcoded card whose name is absent from the response is disabled
+            const activeNames = new Set(providers.map(p => normalise(p.name)));
+            document.querySelectorAll('.network-card').forEach(card => {
+                const nameEl = card.querySelector('.network-name');
+                if (!nameEl) return;
+                const cardName = normalise(nameEl.textContent);
+                // Only hide cards that are hardcoded (not dynamic) and absent from active list
+                const isHardcoded = hardcodedNormalised.includes(cardName);
+                if (isHardcoded && !activeNames.has(cardName)) {
+                    card.style.display = 'none';
+                } else if (isHardcoded && activeNames.has(cardName)) {
+                    card.style.display = ''; // re-show if re-enabled
+                }
+            });
         }
 
         // Enrich with section info and save to cache
