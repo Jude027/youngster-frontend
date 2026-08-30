@@ -959,7 +959,39 @@ async function loadProviders() {
         row.insertCell(0).innerHTML = `<img src="${prov.logoUrl || 'default-provider.png'}" style="width:40px; height:40px; object-fit:contain;">`;
         row.insertCell(1).innerHTML = `${prov.name} <button class="edit-provider-btn" data-id="${prov._id}" data-name="${prov.name}" data-logo="${prov.logoUrl || ''}" style="margin-left: 10px; padding: 4px 8px; cursor: pointer;" title="Edit"><i class="fas fa-edit"></i></button>`;
         row.insertCell(2).innerHTML = `<input type="text" id="logoUrl_${prov._id}" value="${prov.logoUrl || ''}" style="width:200px;"><button class="update-provider-logo" data-id="${prov._id}" data-name="${prov.name}">Update</button>`;
-        row.insertCell(3).innerHTML = `<button class="delete-provider" data-id="${prov._id}" data-name="${prov.name}">Delete</button>`;
+
+        // Toggle disable/enable button
+        const isDisabled = prov.disabled === true;
+        const toggleCell = row.insertCell(3);
+        toggleCell.innerHTML = `
+            <button class="toggle-provider-btn"
+                data-name="${prov.name}"
+                data-disabled="${isDisabled}"
+                style="padding:4px 10px;border:none;border-radius:5px;cursor:pointer;
+                background:${isDisabled ? '#27ae60' : '#e74c3c'};color:white;font-size:0.85rem;">
+                ${isDisabled ? '✅ Enable' : '🔴 Disable'}
+            </button>`;
+
+        row.insertCell(4).innerHTML = `<button class="delete-provider" data-id="${prov._id}" data-name="${prov.name}">Delete</button>`;
+    });
+
+    document.querySelectorAll('.toggle-provider-btn').forEach(btn => {
+        btn.onclick = async () => {
+            const name = btn.dataset.name;
+            const isDisabled = btn.dataset.disabled === 'true';
+            const action = isDisabled ? 'enable' : 'disable';
+            if (!confirm(`Are you sure you want to ${action} "${name}"? ${!isDisabled ? 'Customers will not be able to order from this provider.' : ''}`)) return;
+            const res = await fetch(`${API_BASE}/admin/providers/${encodeURIComponent(name)}/toggle`, {
+                method: 'PUT', headers: authHeaders()
+            });
+            if (res.ok) {
+                const data = await res.json();
+                showNotification(data.message, 'success');
+                loadProviders();
+            } else {
+                showNotification('Failed to toggle provider', 'error');
+            }
+        };
     });
 
     // Edit provider name
