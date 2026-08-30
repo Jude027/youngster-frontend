@@ -128,20 +128,17 @@ async function loadDynamicProviders() {
                 if (p.storefrontSection) sectionMap[normalise(p.name)] = p.storefrontSection;
             });
 
-            // Hide static cards for providers that are disabled
-            // storefront-providers already excludes disabled ones so any
-            // hardcoded card whose name is absent from the response is disabled
+            // Build set of active (non-disabled) provider names
             const activeNames = new Set(providers.map(p => normalise(p.name)));
+
+            // Hide static cards whose provider is not in the active list (disabled or removed)
+            // Also re-show cards that were previously hidden but are now re-enabled
             document.querySelectorAll('.network-card').forEach(card => {
                 const nameEl = card.querySelector('.network-name');
                 if (!nameEl) return;
                 const cardName = normalise(nameEl.textContent);
-                // Only hide cards that are hardcoded (not dynamic) and absent from active list
-                const isHardcoded = hardcodedNormalised.includes(cardName);
-                if (isHardcoded && !activeNames.has(cardName)) {
-                    card.style.display = 'none';
-                } else if (isHardcoded && activeNames.has(cardName)) {
-                    card.style.display = ''; // re-show if re-enabled
+                if (hardcodedNormalised.includes(cardName)) {
+                    card.style.display = activeNames.has(cardName) ? '' : 'none';
                 }
             });
         }
@@ -152,6 +149,7 @@ async function loadDynamicProviders() {
             logoUrl: p.logoUrl || '',
             storefrontSection: sectionMap[normalise(p.name)] || p.storefrontSection || 'data_bundle'
         }));
+        // Always refresh cache so disabled status is never served stale
         localStorage.setItem(CACHE_KEY, JSON.stringify(enriched));
 
         // Re-render with fresh data (dedup handles any cards already on page)
