@@ -988,6 +988,8 @@ async function loadProviders() {
             });
             if (res.ok) {
                 const data = await res.json();
+                // Clear storefront cache so guests see updated state immediately
+                localStorage.removeItem('dynamicProvidersCache');
                 showNotification(data.message, 'success');
                 loadProviders();
             } else {
