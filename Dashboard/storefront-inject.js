@@ -1,235 +1,382 @@
-// storefront-inject.js
-// Runs after dashboard.js on dashboard2.html.
-// When the page is visited via a referral link (/referral/<slug>),
-// fetches the dealer's StoreSettings from the public API and
-// injects their branding — store name, description, logo, WhatsApp links —
-// into the existing dashboard IDs.
-// When visited normally (no slug), does nothing — defaults remain.
+/**
+ * storefront-prices.js
+ * Fetches the dealer's saved referral prices for this customer's client type
+ * and populates/patches the bundle dropdown on package pages.
+ *
+ * Must be the LAST <script> tag in the page (after storefront-inject.js).
+ *
+ * How it works:
+ *   1. Reads ?provider= from URL — set by handlePackageCardClick in dashboard.js
+ *      (e.g. "MTN", "MTN EXPRESS", "Telecel", "AT Ishare", "AT Bigtime", "MTN AFA")
+ *   2. Reads store slug from ?store= (URL) or localStorage.storeSlug
+ *   3. Reads client type from ?client= (URL) or localStorage.clientType
+ *   4. Fetches matching prices from /api/storefront-prices
+ *   5. Builds dropdown options from those prices
+ *      — If the dropdown already has options, patches their data-price
+ *      — If empty (just a placeholder), builds options from scratch
+ *   6. Hides any bundle size that has no price set by the dealer
+ */
 
-const STOREFRONT_API = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
-    ? 'http://localhost:5000/api'
-    : 'https://youngster-backend.vercel.app/api';
+(function () {
 
-// ─── Detect slug ──────────────────────────────────────────────────────────────
-// Supports:
-//   /referral/kwame-data-hub          (Express serves dashboard2.html here)
-//   /dashboard2.html?store=kwame-data-hub  (fallback for static hosting)
-function detectStoreSlug() {
-    // 1. Query string: ?store=<slug> (works on all sub-pages)
-    const params = new URLSearchParams(window.location.search);
-    if (params.get('store')) return params.get('store');
-    // 2. Path: /referral/<slug>
-    const parts = window.location.pathname.split('/').filter(Boolean);
-    if (parts[parts.length - 2] === 'referral') return parts[parts.length - 1];
-    if (parts[0] === 'referral' && parts.length >= 2) return parts[1];
-    return null;
-}
+    const API = window.getYoungsterApiBase
+        ? window.getYoungsterApiBase()
+        : (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:5000/api'
+            : 'https://youngster-backend.vercel.app/api';
 
-// ─── Capture referral context ─────────────────────────────────────────────────
-// When a customer arrives via a referral link like:
-//   dashboard2.html?store=youngster-data-shop&client=Customers
-// we immediately persist both values to localStorage so every bundle page
-// (mtn.html, telecel.html, etc.) can read clientType without it ever
-// appearing in their URLs.
-(function captureReferralContext() {
-    const params     = new URLSearchParams(window.location.search);
-    const store      = params.get('store') || detectStoreSlug();
-    const clientType = params.get('client');
-    if (store)      localStorage.setItem('storeSlug',  store);
-    if (clientType) localStorage.setItem('clientType', clientType);
+    // Validity labels per provider — shown in the bundle details panel
+    const VALIDITY = {
+        'mtn':         '90 days',
+        'telecel':     '60 days',
+        'at ishare':   '60 days',
+        'at bigtime':  'Non Expiry',
+        'mtn afa':     'Lifetime',
+    };
 
-    // Generate a unique guest session ID on first visit and persist it.
-    // This lets each customer see only their own orders on the guest orders page.
-    // A different customer on a different device gets a completely different ID,
-    // even if they arrived via the same referral link.
-    if (!localStorage.getItem('guestSessionId')) {
-        const id = 'g-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 9);
-        localStorage.setItem('guestSessionId', id);
-    }
-})();
-
-// ─── Apply branding ───────────────────────────────────────────────────────────
-function applyStoreBranding(store) {
-    const {
-        storeName         = '',
-        storeDescription  = '',
-        storeLogo         = '',
-        whatsappGroupLink = '',
-        whatsappNumber    = ''
-    } = store;
-
-    if (storeName) {
-        document.title = storeName;
-        const el = document.getElementById('headerStoreName');
-        if (el) el.textContent = storeName;
-        const sb = document.getElementById('sidebarTitle');
-        if (sb) sb.textContent = storeName;
-        const ft = document.getElementById('footerStoreName');
-        if (ft) ft.textContent = storeName;
+    function getContext() {
+        const p = new URLSearchParams(window.location.search);
+        return {
+            store:      p.get('store')    || localStorage.getItem('storeSlug')  || '',
+            clientType: p.get('client')   || localStorage.getItem('clientType') || '',
+            provider:   p.get('provider') || localStorage.getItem('providerName') || '',   // e.g. "MTN", "MTN EXPRESS"
+        };
     }
 
-    if (storeDescription) {
-        const el = document.getElementById('headerStoreDesc');
-        if (el) el.textContent = storeDescription;
+    function getValidity(provider) {
+        return VALIDITY[provider.toLowerCase()] || '—';
     }
 
-    // Sidebar logo — image if available, else coloured initial
-    const logoEl = document.getElementById('sidebarLogo');
-    if (logoEl) {
-        if (storeLogo) {
-            logoEl.innerHTML = `<img src="${storeLogo}" alt="${storeName} Logo"
-                style="width:100%;height:100%;object-fit:contain;border-radius:6px;">`;
-        } else if (storeName) {
-            logoEl.innerHTML = `<span style="
-                font-size:18px;font-weight:700;color:#6a11cb;
-                width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
-                ${storeName.charAt(0).toUpperCase()}
-            </span>`;
-        }
+    // Normalize provider name: trim, lowercase, collapse spaces, treat underscores as spaces
+    function normalizeProviderName(name) {
+        return String(name || '').trim().toLowerCase().replace(/_/g, ' ').replace(/\s+/g, ' ');
     }
 
-    // WhatsApp group link
-    const waGroup = document.getElementById('waGroupLink');
-    if (waGroup) {
-        if (whatsappGroupLink) {
-            waGroup.href = whatsappGroupLink;
-            waGroup.style.display = '';   // ensure visible
-        } else if (waGroup.href && waGroup.href !== window.location.href) {
-            // Keep the hardcoded href from the HTML — just make sure it's visible
-            waGroup.style.display = '';
-        } else {
-            waGroup.style.display = 'none';
-        }
-    }
+    // Build GB→price map from API response filtered to the requested provider
+    function buildGbMap(allPrices, provider) {
+        const providerNorm = normalizeProviderName(provider);
+        
+        // 1. Exact match (normalised) — fastest, most accurate
+        let matching = allPrices.filter(p => 
+            normalizeProviderName(p.provider) === providerNorm
+        );
 
-    // WhatsApp admin / reseller number
-    const waNumber = whatsappNumber ? `https://wa.me/${whatsappNumber.replace(/\D/g, '')}` : null;
-    const waAdmin = document.getElementById('waAdminLink');
-    if (waAdmin) {
-        if (waNumber) {
-            waAdmin.href = waNumber;
-            waAdmin.style.display = '';   // ensure visible
-        } else {
-            waAdmin.style.display = 'none';
-        }
-    }
-    const resellerLink = document.getElementById('resellerLink');
-    if (resellerLink && waNumber) resellerLink.href = waNumber;
-
-    // Update dashboard menu link to preserve store slug across sub-pages.
-    // Skip if we're already ON the dashboard — the link should stay as href="#"
-    const dashboardLink = document.getElementById('dashboardMenuLink');
-    const onDashboard = window.location.pathname.includes('dashboard2') ||
-                        window.location.pathname.startsWith('/referral/');
-    if (dashboardLink && !onDashboard) {
-        const slugToUse = store.storeSlug || '';
-        if (slugToUse) {
-            const isStatic = window.location.pathname.endsWith('.html') || window.location.port === '8000';
-            dashboardLink.href = isStatic
-                ? `/Dashboard/dashboard2.html?store=${encodeURIComponent(slugToUse)}`
-                : `/referral/${encodeURIComponent(slugToUse)}`;
-        }
-
-    }
-}
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
-document.addEventListener('DOMContentLoaded', async () => {
-    const slug = detectStoreSlug();
-
-    // Apply cached branding immediately — before the network fetch — so the
-    // dashboard never shows default content while waiting for the API.
-    // Apply cached branding immediately ONLY if it belongs to the current store slug.
-    // This prevents showing a previously visited dealer's branding.
-    const cachedSlug = localStorage.getItem('storeBrandSlug');
-    if (slug && cachedSlug && cachedSlug.toLowerCase() === slug.toLowerCase()) {
-        const cachedName = localStorage.getItem('storeBrandName');
-        const cachedLogo = localStorage.getItem('storeBrandLogo');
-        if (cachedName || cachedLogo) {
-            applyStoreBranding({
-                storeName:        cachedName || '',
-                storeLogo:        cachedLogo || '',
-                whatsappGroupLink: localStorage.getItem('storeWhatsappGroup') || '',
-                whatsappNumber:   localStorage.getItem('storeWhatsapp') || '',
+        // 2. Singular/plural tolerance: "Results_checker" matches "Results_checkers"
+        //    Strip a trailing 's' from both sides and compare.
+        if (matching.length === 0) {
+            const providerStem = providerNorm.replace(/s$/, '');
+            matching = allPrices.filter(p => {
+                const dbStem = normalizeProviderName(p.provider).replace(/s$/, '');
+                return dbStem === providerStem;
             });
         }
+
+        // 3. Prefix match: DB entry is a shorter form of the requested provider.
+        //    e.g. DB stores "AT" but the page requests "AT Bigtime"
+        if (matching.length === 0) {
+            matching = allPrices.filter(p => {
+                const dbNorm = normalizeProviderName(p.provider);
+                return providerNorm.startsWith(dbNorm + ' ');
+            });
+        }
+
+        // 4. Specific-keyword fallback
+        if (matching.length === 0) {
+            const words = providerNorm.split(' ').filter(w => w.length > 2);
+            const specificWord = words.sort((a, b) => b.length - a.length)[0]
+                              || providerNorm.split(' ')[0];
+            matching = allPrices.filter(p => 
+                normalizeProviderName(p.provider).includes(specificWord)
+            );
+        }
+
+        const gbToPrice = {};
+        for (const entry of matching) {
+            const pkgName = String(entry.packageName || '').trim();
+            if (!pkgName) continue;
+
+            // Always use the full package name as the key so names like
+            // "1GB + FREE DATA BONUS" are preserved in full, not truncated to "1"
+            gbToPrice[pkgName] = parseFloat(entry.price);
+        }
+        return gbToPrice;
     }
 
-    if (!slug) {
-        return;
+    // Patch existing options (dropdown pre-populated with hardcoded options)
+    function patchExistingOptions(bundleSelect, gbToPrice, provider) {
+        for (const opt of bundleSelect.options) {
+            if (!opt.value) continue;
+            const val = opt.value;
+            // Match by exact key first, then by numeric prefix
+            let price;
+            if (gbToPrice[val] !== undefined) {
+                price = gbToPrice[val];
+            } else {
+                // Try matching by leading number (e.g. opt.value="1 GB" matches key "1GB")
+                const numKey = String(val).match(/^(\d+(?:\.\d+)?)/)?.[1];
+                if (numKey) {
+                    const match = Object.keys(gbToPrice).find(k =>
+                        String(k).match(/^(\d+(?:\.\d+)?)/)?.[1] === numKey
+                    );
+                    if (match !== undefined) price = gbToPrice[match];
+                }
+            }
+            if (price !== undefined) {
+                opt.setAttribute('data-price',    price.toFixed(2));
+                opt.setAttribute('data-validity',  getValidity(provider));
+                opt.setAttribute('data-network',   provider);
+                opt.textContent  = `${opt.value} - ${price.toFixed(2)} GHS`;
+                opt.style.display = '';
+                opt.disabled      = false;
+            } else {
+                opt.style.display = 'none';
+                opt.disabled      = true;
+            }
+        }
     }
 
-    try {
-        const apiUrl = `${STOREFRONT_API}/storefront/${encodeURIComponent(slug)}?t=${Date.now()}`;
+    // Build options from scratch (dropdown was empty — just placeholder)
+    function buildOptionsFromScratch(bundleSelect, gbToPrice, provider) {
+        while (bundleSelect.options.length > 1) bundleSelect.remove(1);
 
-        const res = await fetch(apiUrl);
+        const keys = Object.keys(gbToPrice).sort((a, b) => {
+            // Sort by leading numeric value; fall back to alphabetical
+            const na = parseFloat(String(a).match(/^(\d+(?:\.\d+)?)/)?.[1] ?? 'Infinity');
+            const nb = parseFloat(String(b).match(/^(\d+(?:\.\d+)?)/)?.[1] ?? 'Infinity');
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+        });
 
-        if (!res.ok) {
-            // Only clear branding cache if the slug explicitly doesn't exist
-            // (not when slug is missing — e.g. on the OTP page with no ?store=)
-            if (slug) {
-                localStorage.removeItem('storeBrandName');
-                localStorage.removeItem('storeBrandLogo');
-                localStorage.removeItem('storeWhatsappGroup');
-                localStorage.removeItem('storeWhatsapp');
-                localStorage.removeItem('storeBrandSlug');
+        if (keys.length === 0) {
+            const empty = document.createElement('option');
+            empty.value    = '';
+            empty.textContent = 'No bundles available';
+            empty.disabled = true;
+            bundleSelect.appendChild(empty);
+            return;
+        }
+
+        keys.forEach(key => {
+            const price = gbToPrice[key].toFixed(2);
+            // Use the full package name as-is (e.g. "1GB + FREE DATA BONUS")
+            const opt   = document.createElement('option');
+            opt.value   = key;
+            opt.setAttribute('data-price',    price);
+            opt.setAttribute('data-validity',  getValidity(provider));
+            opt.setAttribute('data-network',   provider);
+            opt.textContent = `${key} - GHS ${price}`;
+            bundleSelect.appendChild(opt);
+        });
+    }
+
+    // Refresh the bundle details panel to show the currently selected option's price
+    function refreshDetailsPanel(bundleSelect) {
+        const priceEl    = document.getElementById('bundlePrice');
+        const sizeEl     = document.getElementById('bundleSize');
+        const validityEl = document.getElementById('bundleValidity');
+        const networkEl  = document.getElementById('bundleNetwork');
+        if (!priceEl) return;
+
+        const sel = bundleSelect.options[bundleSelect.selectedIndex];
+        if (sel && sel.value) {
+            if (priceEl)    priceEl.textContent    = (sel.getAttribute('data-price')    || '—') + ' GHS';
+            if (sizeEl)     sizeEl.textContent     = sel.value; // value is already full label e.g. '1 GB'
+            if (validityEl) validityEl.textContent = sel.getAttribute('data-validity')  || '—';
+            if (networkEl)  networkEl.textContent  = sel.getAttribute('data-network')   || '—';
+        }
+    }
+
+    async function run() {
+        const { store, clientType, provider } = getContext();
+
+        // Nothing to do if no store context or no provider
+        if (!store || !provider) {
+            return;
+        }
+
+        // Read clientType from URL ?client= param first — set by the referral link.
+        // This ensures sub-agents, agents etc. only see prices set for their type.
+        // Fall back to localStorage then empty string (server returns nothing if no
+        // prices set for that type, which is the correct behaviour).
+        const resolvedClientType = clientType
+            || localStorage.getItem('clientType')
+            || '';
+
+        const bundleSelect = document.getElementById('bundle');
+        if (!bundleSelect) {
+            return;
+        }
+
+        // If no clientType is present the customer arrived without a typed referral
+        // link — show no prices rather than leaking another type's pricing.
+        if (!resolvedClientType) {
+            const placeholder = bundleSelect.options[0];
+            if (placeholder) {
+                placeholder.textContent = 'No bundles available';
+                placeholder.disabled = false;
+            }
+            while (bundleSelect.options.length > 1) bundleSelect.remove(1);
+            return;
+        }
+
+        // Fetch all prices for this store + client type
+        let allPrices = [];
+        try {
+            const res = await fetch(
+                `${API}/storefront-prices` +
+                `?store=${encodeURIComponent(store)}` +
+                `&clientType=${encodeURIComponent(resolvedClientType)}`
+            );
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            allPrices = await res.json();
+        } catch (err) {
+            return;
+        }
+
+        // Always rebuild from scratch — wipe any options added by price-loader.js
+        // or hardcoded in the HTML to prevent duplicates and inactive ghost entries.
+        // Remove all non-placeholder options first, then build fresh from API prices.
+        while (bundleSelect.options.length > 1) bundleSelect.remove(1);
+
+        const gbToPrice = buildGbMap(allPrices, provider);
+
+        if (Object.keys(gbToPrice).length === 0) {
+            const empty = document.createElement('option');
+            empty.value = '';
+            empty.textContent = 'No prices available — contact seller';
+            empty.disabled = true;
+            bundleSelect.appendChild(empty);
+            return;
+        }
+
+        buildOptionsFromScratch(bundleSelect, gbToPrice, provider);
+
+        // Refresh details panel if something is already selected
+        refreshDetailsPanel(bundleSelect);
+
+        // Apply displayConfig customizations (page title, colours, labels etc.)
+        // from the first price row that carries one — set by the admin display config modal.
+        const config = allPrices.find(p => p.displayConfig && p.provider &&
+            normalizeProviderName(p.provider) === normalizeProviderName(provider))?.displayConfig
+            || allPrices.find(p => p.displayConfig)?.displayConfig;
+
+        if (config) {
+            // Header colour
+            if (config.headerColor) {
+                document.documentElement.style.setProperty('--accent-color', config.headerColor);
+                document.documentElement.style.setProperty('--accent-gradient',
+                    `linear-gradient(135deg, ${config.headerColor} 0%, #2575fc 100%)`);
+                document.documentElement.style.setProperty('--header-bg',
+                    `linear-gradient(135deg, ${config.headerColor} 0%, #2575fc 100%)`);
+            }
+            // Page title & subtitle
+            const titleEl = document.getElementById('pageTitle');
+            if (titleEl && config.pageTitle) {
+                titleEl.textContent = config.pageTitle;
+                document.title = config.pageTitle;
+            }
+            const subtitleEl = document.getElementById('pageSubtitle');
+            if (subtitleEl && config.pageSubtitle) subtitleEl.textContent = config.pageSubtitle;
+
+            // Note box
+            const noteBox  = document.getElementById('noteBox');
+            const noteText = document.getElementById('noteText');
+            if (noteBox && noteText) {
+                if (config.noteText) { noteText.textContent = config.noteText; noteBox.style.display = 'block'; }
+                else noteBox.style.display = 'none';
+            }
+            // Ported checkbox visibility
+            const portedContainer = document.getElementById('portedContainer');
+            if (portedContainer) portedContainer.style.display = config.showPortedCheckbox === false ? 'none' : '';
+
+            // Valid prefixes hint
+            const prefixHint     = document.getElementById('prefixHint');
+            const validPrefixesEl = document.getElementById('validPrefixes');
+            if (prefixHint && validPrefixesEl) {
+                if (config.showPrefixes !== false && config.validPrefixes) {
+                    validPrefixesEl.textContent = config.validPrefixes;
+                    prefixHint.style.display = 'block';
+                } else {
+                    prefixHint.style.display = 'none';
+                }
+            }
+            // Label overrides
+            const bundleLabelEl = document.getElementById('bundleLabel');
+            if (bundleLabelEl && config.bundleLabel) bundleLabelEl.textContent = `Select ${config.bundleLabel}`;
+            const purchaseBtnText = document.getElementById('purchaseBtnText');
+            if (purchaseBtnText && config.purchaseLabel) purchaseBtnText.textContent = config.purchaseLabel;
+            const deliveryTextEl = document.getElementById('deliveryText');
+            if (deliveryTextEl && config.deliveryText) deliveryTextEl.textContent = config.deliveryText;
+
+            // Update validity on all options
+            if (config.validity) {
+                Array.from(bundleSelect.options).forEach(opt => {
+                    if (opt.value) opt.setAttribute('data-validity', config.validity);
+                });
+            }
+        }
+
+        // Keep details panel in sync on every change
+        bundleSelect.addEventListener('change', () => refreshDetailsPanel(bundleSelect));
+    }
+
+    // ── Bootstrap ─────────────────────────────────────────────────────────────
+    // Strategy: try immediately, then keep retrying every 250 ms until both
+    // `store` AND `provider` are available (max 15 attempts = ~3.75 s).
+    // Also react instantly when storefront-inject.js fires its context event.
+
+    let _attempts   = 0;
+    let _succeeded  = false;
+    const MAX_TRIES = 15;
+
+    async function tryRun() {
+        if (_succeeded) return;
+        _attempts++;
+
+        const { store, provider } = getContext();
+
+        if (!store || !provider) {
+            if (_attempts < MAX_TRIES) {
+                setTimeout(tryRun, 250);
+            } else {
+                // gave up — context never became available
             }
             return;
         }
-        const store = await res.json();
-        
-        const resolvedSlug = store.storeSlug || slug;
-        if (resolvedSlug) localStorage.setItem('storeBrandSlug', resolvedSlug);
-        if (store.storeName) localStorage.setItem('storeBrandName', store.storeName);
-        if (store.storeLogo)  localStorage.setItem('storeBrandLogo', store.storeLogo);
-        else                  localStorage.removeItem('storeBrandLogo');
-        if (store.whatsappNumber)    localStorage.setItem('storeWhatsapp', store.whatsappNumber);
-        if (store.whatsappGroupLink) localStorage.setItem('storeWhatsappGroup', store.whatsappGroupLink);
-        else                         localStorage.removeItem('storeWhatsappGroup');
 
-        if (store.storeSlug && store.storeSlug !== slug) {
-            if (window.location.pathname.includes('/referral/')) {
-                window.location.replace(`/referral/${store.storeSlug}${window.location.search}`);
-                return;
-            }
-        }
-        
-        applyStoreBranding(store);
-
-        document.querySelectorAll('a[href]').forEach(a => {
-            const href = a.getAttribute('href');
-            if (href && href.includes('.html') && !href.startsWith('http') && !href.includes('?store=')) {
-                const sep = href.includes('?') ? '&' : '?';
-                a.setAttribute('href', href + sep + 'store=' + encodeURIComponent(resolvedSlug));
-            }
-        });
-
-        // Signal other scripts (storefront-prices.js) that context is ready
-        document.dispatchEvent(new CustomEvent('storefront-context-ready', {
-            detail: { storeSlug: resolvedSlug, clientType: localStorage.getItem('clientType') || '' }
-        }));
-
-        // ── Hide disabled provider cards ──────────────────────────────────────
-        // Fetch active providers and hide any hardcoded static cards that are disabled.
-        try {
-            const provRes = await fetch(`${STOREFRONT_API.replace('/api', '')}/api/storefront-providers`);
-            if (provRes.ok) {
-                const activeProviders = await provRes.json();
-                const normalise = s => String(s || '').toLowerCase().trim().replace(/\s+/g, ' ');
-                const activeNames = new Set(activeProviders.map(p => normalise(p.name)));
-                const hardcoded = ['mtn', 'mtn express', 'telecel', 'at ishare', 'at bigtime', 'mtn afa', 'results checkers'];
-                document.querySelectorAll('.network-card').forEach(card => {
-                    const nameEl = card.querySelector('.network-name');
-                    if (!nameEl) return;
-                    const cardName = normalise(nameEl.textContent);
-                    if (hardcoded.includes(cardName)) {
-                        card.style.display = activeNames.has(cardName) ? '' : 'none';
-                    }
-                });
-            }
-        } catch (_) {}
-
-    } catch (err) {
-        // silent — branding is best-effort, cached values remain
+        await run();
+        _succeeded = true;
     }
-});
+
+    // Instant trigger when storefront-inject.js finishes
+    document.addEventListener('storefront-context-ready', () => {
+        if (!_succeeded) {
+            _attempts = 0;  // reset so tryRun uses fresh context
+            tryRun();
+        }
+    });
+
+    // Start polling as soon as DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', tryRun);
+    } else {
+        tryRun();
+    }
+
+    // Re-run on visibility change (e.g. user comes back after editing prices)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            _succeeded = false;
+            _attempts  = 0;
+            tryRun();
+        }
+    });
+
+    // Re-run when generic-package.js requests a refresh
+    document.addEventListener('storefront-prices-refresh', () => {
+        _succeeded = false;
+        _attempts  = 0;
+        tryRun();
+    });
+
+})();
