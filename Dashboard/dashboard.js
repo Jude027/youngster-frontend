@@ -125,15 +125,12 @@ async function loadDynamicProviders() {
             // Build set of active (non-disabled) provider names
             const activeNames = new Set(providers.map(p => normalise(p.name)));
 
-            // Hide static cards whose provider is not in the active list (disabled or removed)
-            // Also re-show cards that were previously hidden but are now re-enabled
-            document.querySelectorAll('.network-card').forEach(card => {
+            // Show active hardcoded cards, hide disabled ones
+            document.querySelectorAll('.network-card[data-hardcoded="true"]').forEach(card => {
                 const nameEl = card.querySelector('.network-name');
                 if (!nameEl) return;
                 const cardName = normalise(nameEl.textContent);
-                if (hardcodedNormalised.includes(cardName)) {
-                    card.style.display = activeNames.has(cardName) ? '' : 'none';
-                }
+                card.style.display = activeNames.has(cardName) ? '' : 'none';
             });
         }
 
