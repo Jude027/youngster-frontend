@@ -89,7 +89,9 @@ async function loadDynamicProviders() {
         const hardcodedProviders = ['MTN', 'MTN EXPRESS', 'Telecel', 'AT Ishare', 'AT Bigtime', 'MTN AFA', 'Results checkers', 'Results Checkers', 'Special Posting', 'special posting'];
         const hardcodedNormalised = hardcodedProviders.map(normalise);
 
-        // ── Step 1: render from localStorage cache immediately ──────────────
+    // ── Step 1: render dynamic cards from localStorage cache immediately ──────
+        // Only use cache for dynamic card rendering — NOT for disable/hide logic.
+        // Hide logic always uses a fresh API call to ensure disabled state is current.
         const CACHE_KEY = 'dynamicProvidersCache';
         const cachedRaw = localStorage.getItem(CACHE_KEY);
         if (cachedRaw) {
@@ -284,6 +286,27 @@ async function applyUserStoreBranding() {
 
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', function() {
+    // ── Instantly hide disabled providers from cache ──────────────────────────
+    // This runs before loadDynamicProviders() makes any network call,
+    // preventing disabled cards from being visible even briefly.
+    (function applyDisabledFromCache() {
+        try {
+            const cache = localStorage.getItem('dynamicProvidersCache');
+            if (!cache) return;
+            const providers = JSON.parse(cache);
+            const normalise = (s) => String(s || '').toLowerCase().trim().replace(/\s+/g, ' ');
+            const activeNames = new Set(providers.map(p => normalise(p.name)));
+            const hardcoded = ['mtn', 'mtn express', 'telecel', 'at ishare', 'at bigtime', 'mtn afa', 'results checkers'];
+            document.querySelectorAll('.network-card').forEach(card => {
+                const nameEl = card.querySelector('.network-name');
+                if (!nameEl) return;
+                const cardName = normalise(nameEl.textContent);
+                if (hardcoded.includes(cardName)) {
+                    card.style.display = activeNames.has(cardName) ? '' : 'none';
+                }
+            });
+        } catch(_) {}
+    })();
     initializeSidebar();
     initializeTheme();
     loadDynamicProviders(); // Load providers from API
