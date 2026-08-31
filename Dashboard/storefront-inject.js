@@ -209,6 +209,26 @@ document.addEventListener('DOMContentLoaded', async () => {
             detail: { storeSlug: resolvedSlug, clientType: localStorage.getItem('clientType') || '' }
         }));
 
+        // ── Hide disabled provider cards ──────────────────────────────────────
+        // Fetch active providers and hide any hardcoded static cards that are disabled.
+        try {
+            const provRes = await fetch(`${STOREFRONT_API.replace('/api', '')}/api/storefront-providers`);
+            if (provRes.ok) {
+                const activeProviders = await provRes.json();
+                const normalise = s => String(s || '').toLowerCase().trim().replace(/\s+/g, ' ');
+                const activeNames = new Set(activeProviders.map(p => normalise(p.name)));
+                const hardcoded = ['mtn', 'mtn express', 'telecel', 'at ishare', 'at bigtime', 'mtn afa', 'results checkers'];
+                document.querySelectorAll('.network-card').forEach(card => {
+                    const nameEl = card.querySelector('.network-name');
+                    if (!nameEl) return;
+                    const cardName = normalise(nameEl.textContent);
+                    if (hardcoded.includes(cardName)) {
+                        card.style.display = activeNames.has(cardName) ? '' : 'none';
+                    }
+                });
+            }
+        } catch (_) {}
+
     } catch (err) {
         // silent — branding is best-effort, cached values remain
     }
