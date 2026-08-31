@@ -84,16 +84,36 @@ async function loadDynamicProviders() {
         const API_URL = 'https://youngster-backend.vercel.app/api';
         const normalise = (s) => String(s || '').toLowerCase().trim().replace(/\s+/g, ' ');
 
-        // Results checkers is now a static card in the HTML — add it to the
-        // hardcoded list so the dynamic loader never adds a duplicate.
         const hardcodedProviders = ['MTN', 'MTN EXPRESS', 'Telecel', 'AT Ishare', 'AT Bigtime', 'MTN AFA', 'Results checkers', 'Results Checkers', 'Special Posting', 'special posting'];
         const hardcodedNormalised = hardcodedProviders.map(normalise);
 
-        // Always remove cache so disable state comes from live API, never stale cache
-        const CACHE_KEY = 'dynamicProvidersCache';
-        localStorage.removeItem(CACHE_KEY);
+        const CACHE_KEY      = 'dynamicProvidersCache';
+        const CACHE_TIME_KEY = 'dynamicProvidersCacheTime';
+        const CACHE_TTL      = 60 * 1000; // 1 minute — fast enough to pick up toggles
 
-        // ── Fetch fresh data ─────────────────────────────────────────────────
+        // ── Step 1: Apply cached state instantly (zero network delay) ─────────
+        const cachedRaw  = localStorage.getItem(CACHE_KEY);
+        const cacheAge   = Date.now() - (parseInt(localStorage.getItem(CACHE_TIME_KEY) || '0'));
+        if (cachedRaw) {
+            try {
+                const cached = JSON.parse(cachedRaw);
+                // Apply visibility immediately from cache
+                const activeNames = new Set(cached.map(p => normalise(p.name)));
+                document.querySelectorAll('.network-card[data-hardcoded="true"]').forEach(card => {
+                    const nameEl = card.querySelector('.network-name');
+                    if (!nameEl) return;
+                    card.style.display = activeNames.has(normalise(nameEl.textContent)) ? '' : 'none';
+                });
+                _renderDynamicCards(cached, hardcodedNormalised, normalise);
+            } catch (_) {
+                localStorage.removeItem(CACHE_KEY);
+            }
+
+            // Cache is fresh — skip API call
+            if (cacheAge < CACHE_TTL) return;
+        }
+
+        // ── Step 2: Fetch fresh data (background, doesn't block display) ──────
         let providers = [];
         let sectionMap = {};
 
@@ -122,28 +142,25 @@ async function loadDynamicProviders() {
                 if (p.storefrontSection) sectionMap[normalise(p.name)] = p.storefrontSection;
             });
 
-            // Build set of active (non-disabled) provider names
+            // Apply visibility from fresh API data
             const activeNames = new Set(providers.map(p => normalise(p.name)));
-
-            // Show active hardcoded cards, hide disabled ones
             document.querySelectorAll('.network-card[data-hardcoded="true"]').forEach(card => {
                 const nameEl = card.querySelector('.network-name');
                 if (!nameEl) return;
-                const cardName = normalise(nameEl.textContent);
-                card.style.display = activeNames.has(cardName) ? '' : 'none';
+                card.style.display = activeNames.has(normalise(nameEl.textContent)) ? '' : 'none';
             });
         }
 
-        // Enrich with section info and save to cache
+        // Enrich and save to cache with timestamp
         const enriched = providers.map(p => ({
             name: p.name,
             logoUrl: p.logoUrl || '',
             storefrontSection: sectionMap[normalise(p.name)] || p.storefrontSection || 'data_bundle'
         }));
-        // Always refresh cache so disabled status is never served stale
         localStorage.setItem(CACHE_KEY, JSON.stringify(enriched));
+        localStorage.setItem(CACHE_TIME_KEY, String(Date.now()));
 
-        // Re-render with fresh data (dedup handles any cards already on page)
+        // Re-render dynamic cards with fresh data
         _renderDynamicCards(enriched, hardcodedNormalised, normalise);
 
     } catch (err) {
