@@ -95,14 +95,9 @@
             const pkgName = String(entry.packageName || '').trim();
             if (!pkgName) continue;
 
-            // Try to extract a leading number (e.g. "1GB" → "1", "2 GB" → "2")
-            const m = pkgName.match(/^(\d+(?:\.\d+)?)/);
-            if (m) {
-                gbToPrice[m[1]] = parseFloat(entry.price);
-            } else {
-                // Non-numeric package name (e.g. "BECE RESULTS CHECKERS") — use full name as key
-                gbToPrice[pkgName] = parseFloat(entry.price);
-            }
+            // Always use the full package name as the key so names like
+            // "1GB + FREE DATA BONUS" are preserved in full, not truncated to "1"
+            gbToPrice[pkgName] = parseFloat(entry.price);
         }
         return gbToPrice;
     }
@@ -111,18 +106,26 @@
     function patchExistingOptions(bundleSelect, gbToPrice, provider) {
         for (const opt of bundleSelect.options) {
             if (!opt.value) continue;
-            const gb = opt.value; // "1", "2", "3" or possibly "1 GB"
-            // Match by numeric prefix so "1 GB" and "1" both hit the same map entry
-            const numKey = String(gb).match(/^(\d+(?:\.\d+)?)/)?.[1];
-            const price  = gbToPrice[gb] !== undefined ? gbToPrice[gb]
-                         : (numKey && gbToPrice[numKey] !== undefined ? gbToPrice[numKey] : undefined);
+            const val = opt.value;
+            // Match by exact key first, then by numeric prefix
+            let price;
+            if (gbToPrice[val] !== undefined) {
+                price = gbToPrice[val];
+            } else {
+                // Try matching by leading number (e.g. opt.value="1 GB" matches key "1GB")
+                const numKey = String(val).match(/^(\d+(?:\.\d+)?)/)?.[1];
+                if (numKey) {
+                    const match = Object.keys(gbToPrice).find(k =>
+                        String(k).match(/^(\d+(?:\.\d+)?)/)?.[1] === numKey
+                    );
+                    if (match !== undefined) price = gbToPrice[match];
+                }
+            }
             if (price !== undefined) {
-                const label = numKey ? `${numKey} GB` : gb; // normalise to "1 GB"
-                opt.value    = label; // full label — picked up by submitOrder as bundle_size
                 opt.setAttribute('data-price',    price.toFixed(2));
                 opt.setAttribute('data-validity',  getValidity(provider));
                 opt.setAttribute('data-network',   provider);
-                opt.textContent  = `${label} - ${price.toFixed(2)} GHS`;
+                opt.textContent  = `${opt.value} - ${price.toFixed(2)} GHS`;
                 opt.style.display = '';
                 opt.disabled      = false;
             } else {
@@ -137,7 +140,9 @@
         while (bundleSelect.options.length > 1) bundleSelect.remove(1);
 
         const keys = Object.keys(gbToPrice).sort((a, b) => {
-            const na = parseFloat(a), nb = parseFloat(b);
+            // Sort by leading numeric value; fall back to alphabetical
+            const na = parseFloat(String(a).match(/^(\d+(?:\.\d+)?)/)?.[1] ?? 'Infinity');
+            const nb = parseFloat(String(b).match(/^(\d+(?:\.\d+)?)/)?.[1] ?? 'Infinity');
             if (!isNaN(na) && !isNaN(nb)) return na - nb;
             return a.localeCompare(b);
         });
@@ -153,15 +158,13 @@
 
         keys.forEach(key => {
             const price = gbToPrice[key].toFixed(2);
-            // Numeric key → show as "X GB", text key → show as-is
-            const isNumeric = !isNaN(parseFloat(key)) && isFinite(key);
-            const label = isNumeric ? `${key} GB` : key;
+            // Use the full package name as-is (e.g. "1GB + FREE DATA BONUS")
             const opt   = document.createElement('option');
-            opt.value   = label;
+            opt.value   = key;
             opt.setAttribute('data-price',    price);
             opt.setAttribute('data-validity',  getValidity(provider));
             opt.setAttribute('data-network',   provider);
-            opt.textContent = `${label} - GHS ${price}`;
+            opt.textContent = `${key} - GHS ${price}`;
             bundleSelect.appendChild(opt);
         });
     }
