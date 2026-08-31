@@ -9,6 +9,23 @@
     <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
+    <script>
+    // Hide all hardcoded provider cards instantly before page renders.
+    // loadDynamicProviders() will show back only the enabled ones after API responds.
+    // This prevents any flash of disabled cards.
+    document.addEventListener('DOMContentLoaded', function() {
+        var hardcoded = ['mtn', 'mtn express', 'telecel', 'at ishare', 'at bigtime', 'mtn afa', 'results checkers'];
+        document.querySelectorAll('.network-card').forEach(function(card) {
+            var nameEl = card.querySelector('.network-name');
+            if (!nameEl) return;
+            var name = nameEl.textContent.toLowerCase().trim().replace(/\s+/g, ' ');
+            if (hardcoded.indexOf(name) !== -1) {
+                card.style.display = 'none';
+                card.setAttribute('data-hardcoded', 'true');
+            }
+        });
+    });
+    </script>
     <!-- Sidebar Overlay -->
     <div class="overlay" id="overlay"></div>
     
