@@ -1,4 +1,4 @@
-﻿// Admin panel â€“ full management (including Role Price Mapping)
+// Admin panel â€“ full management (including Role Price Mapping)
 const API_BASE = 'https://youngster-backend.vercel.app/api';
 let token = localStorage.getItem('token');
 
@@ -1287,6 +1287,69 @@ function refreshConfigSelect(selectIndex) {
     addOpt.value = 'new';
     addOpt.textContent = '+ Add new configurationâ€¦';
     sel.appendChild(addOpt);
+
+// INJECT THIS CODE INTO admin.js — adds delete buttons to each API config entry
+// Find the function refreshConfigSelect and add the block below right after:
+// sel.appendChild(addOpt);
+// ─────────────────────────────────────────────────────────────────────────────
+
+    // Build a visual list of saved configs with individual Delete buttons
+    var listEl = document.getElementById('apiConfigsList');
+    if (!listEl) {
+        listEl = document.createElement('div');
+        listEl.id = 'apiConfigsList';
+        listEl.style.cssText = 'margin:8px 0 12px;';
+        sel.parentNode.insertBefore(listEl, sel.nextSibling);
+    }
+    listEl.innerHTML = '';
+
+    if (loadedApiConfigs.length > 0) {
+        var h = document.createElement('p');
+        h.style.cssText = 'font-size:0.82rem;color:#888;margin:4px 0 4px;font-weight:600;';
+        h.textContent = 'Saved API Configurations:';
+        listEl.appendChild(h);
+
+        loadedApiConfigs.forEach(function(cfg, i) {
+            var row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:center;gap:8px;background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:8px 12px;margin-bottom:4px;';
+            var isXpres = (cfg.baseUrl || '').toLowerCase().indexOf('xpresportal') !== -1;
+            var isDH = (cfg.baseUrl || '').toLowerCase().indexOf('datahub') !== -1;
+            var badge = isXpres ? '🔵 XpresPortal' : isDH ? '🟡 DataHub' : '⚙';
+            var label = document.createElement('span');
+            label.style.flex = '1';
+            label.innerHTML = '<strong>[' + (i + 1) + '] ' + badge + ' — ' + (cfg.name || 'Config ' + (i + 1)) + '</strong>'
+                + '<br><small style="color:#888;">' + (cfg.baseUrl || 'No base URL') + '</small>';
+            var delBtn = document.createElement('button');
+            delBtn.textContent = '🗑 Delete';
+            delBtn.style.cssText = 'background:#e74c3c;color:#fff;border:none;border-radius:4px;padding:5px 10px;cursor:pointer;font-size:0.82rem;white-space:nowrap;';
+            delBtn.setAttribute('data-idx', i);
+            delBtn.onclick = function() {
+                var idx = parseInt(this.getAttribute('data-idx'), 10);
+                var cfgToDelete = loadedApiConfigs[idx];
+                var name = cfgToDelete && cfgToDelete.name ? cfgToDelete.name : 'Config ' + (idx + 1);
+                if (!confirm('Delete "' + name + '"? This cannot be undone.')) return;
+                fetch(API_BASE + '/admin/provider-api-configs/' + selectedProviderForAPI + '/' + idx, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                }).then(function(r) { return r.json(); }).then(function(result) {
+                    if (result.apiConfigs !== undefined) {
+                        loadedApiConfigs = result.apiConfigs;
+                        selectedConfigIndex = -1;
+                        refreshConfigSelect(-1);
+                        document.getElementById('apiConfigSelect').value = '-1';
+                        document.getElementById('apiConfigSelect').dispatchEvent(new Event('change'));
+                        alert('"' + name + '" deleted successfully.');
+                    } else {
+                        alert('Error: ' + (result.message || 'Delete failed'));
+                    }
+                });
+            };
+            row.appendChild(label);
+            row.appendChild(delBtn);
+            listEl.appendChild(row);
+        });
+    }
+
 
     sel.value = String(selectIndex);
 }
