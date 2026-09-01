@@ -10,20 +10,28 @@
 </head>
 <body>
     <script>
-    // Hide all hardcoded provider cards instantly before page renders.
-    // loadDynamicProviders() will show back only the enabled ones after API responds.
-    // This prevents any flash of disabled cards.
+    // Apply cached disabled state instantly before page renders.
+    // Cards that are enabled (or not in cache) stay visible — no hiding flash.
+    // Only hides cards the cache explicitly says are disabled.
     document.addEventListener('DOMContentLoaded', function() {
-        var hardcoded = ['mtn', 'mtn express', 'telecel', 'at ishare', 'at bigtime', 'mtn afa', 'results checkers'];
-        document.querySelectorAll('.network-card').forEach(function(card) {
-            var nameEl = card.querySelector('.network-name');
-            if (!nameEl) return;
-            var name = nameEl.textContent.toLowerCase().trim().replace(/\s+/g, ' ');
-            if (hardcoded.indexOf(name) !== -1) {
-                card.style.display = 'none';
-                card.setAttribute('data-hardcoded', 'true');
-            }
-        });
+        try {
+            var cacheRaw = localStorage.getItem('dynamicProvidersCache');
+            if (!cacheRaw) return; // no cache — show everything, loadDynamicProviders will sort it out
+            var cached = JSON.parse(cacheRaw);
+            var norm = function(s) { return String(s||'').toLowerCase().trim().replace(/\s+/g,' '); };
+            var activeNames = new Set(cached.map(function(p){ return norm(p.name); }));
+            var hardcoded = ['mtn','mtn express','telecel','at ishare','at bigtime','mtn afa','results checkers'];
+            document.querySelectorAll('.network-card').forEach(function(card) {
+                var nameEl = card.querySelector('.network-name');
+                if (!nameEl) return;
+                var n = norm(nameEl.textContent);
+                if (hardcoded.indexOf(n) !== -1) {
+                    card.setAttribute('data-hardcoded','true');
+                    // Only hide if cache explicitly excludes it (it's disabled)
+                    if (!activeNames.has(n)) card.style.display = 'none';
+                }
+            });
+        } catch(_) {}
     });
     </script>
     <!-- Sidebar Overlay -->
