@@ -501,7 +501,7 @@ body.sidebar-open {
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    z-index: 1000;
+    z-index: 3000;
     max-width: 400px;
     transform: translateX(400px);
     transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
