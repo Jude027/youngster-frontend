@@ -198,7 +198,7 @@ let currentUser = null;
 // guests to the correct frontend storefront page with branding applied.
 const BACKEND_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
     ? 'http://localhost:5000'
-    : 'https://youngster-backend.vercel.app';
+    : 'https://jdyoungsterent.com';
 
 const referralBaseUrl = BACKEND_BASE + '/referral/';
 
@@ -244,7 +244,7 @@ async function loadReferralBalance() {
  * falling back to the raw user ID only if no slug could be derived.
  */
 function buildReferralLink(storeSlugOrId, clientType) {
-    // e.g. https://youngster-backend-production.up.railway.app/referral/youngster-data-shop?client=Customers
+    // e.g. https://jdyoungsterent.com/referral/youngster-data-shop?client=Customers
     const base = referralBaseUrl + encodeURIComponent(storeSlugOrId || 'unknown');
     return clientType ? base + '?client=' + encodeURIComponent(clientType) : base;
 }
