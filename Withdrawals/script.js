@@ -66,14 +66,22 @@ function showNotification(message, type = 'success') {
     const toastMessage = document.getElementById('toastMessage');
     if (toast && toastMessage) {
         toastMessage.innerHTML = message;
+        toast.style.borderLeftColor = type === 'error' ? '#ef4444' : '#10b981';
+        const icon = toast.querySelector('.toast-icon');
+        if (icon) icon.style.background = type === 'error' ? '#ef4444' : '#10b981';
         toast.classList.remove('hidden');
-        setTimeout(() => toast.classList.add('hidden'), 6000);
+        requestAnimationFrame(() => toast.classList.add('show'));
+        clearTimeout(toast._hideTimer);
+        toast._hideTimer = setTimeout(() => hideNotification(), 6000);
     } else {
         alert(message);
     }
 }
 function hideNotification() {
-    document.getElementById('notificationToast')?.classList.add('hidden');
+    const toast = document.getElementById('notificationToast');
+    if (!toast) return;
+    toast.classList.remove('show');
+    setTimeout(() => toast.classList.add('hidden'), 400);
 }
 window.hideNotification = hideNotification;
 
@@ -184,7 +192,7 @@ function initializeWithdrawalForm() {
     if (amountInput) {
         amountInput.addEventListener('input', () => {
             const val = parseFloat(amountInput.value);
-            if (val < 50 || val > 5000) amountInput.style.borderColor = '#ef4444';
+            if (val < 30 || val > 5000) amountInput.style.borderColor = '#ef4444';
             else amountInput.style.borderColor = '#10b981';
         });
     }
@@ -195,7 +203,7 @@ function initializeWithdrawalForm() {
         const phoneNumber = phoneInput.value.trim();
         const accountName = accountNameInput.value.trim();
         
-        if (isNaN(amount) || amount < 50) return showNotification('Minimum GHS 30', 'error');
+        if (isNaN(amount) || amount < 30) return showNotification('Minimum GHS 30', 'error');
         if (amount > 5000) return showNotification('Maximum GHS 5,000', 'error');
         if (!phoneNumber || phoneNumber.length !== 10) return showNotification('Valid 10‑digit phone number required', 'error');
         if (!accountName) return showNotification('Name on account required', 'error');
