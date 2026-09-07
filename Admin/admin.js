@@ -2452,3 +2452,108 @@ if (!_origTabSwitch) {
         if (btn) setTimeout(loadMtnVerifications, 50);
     });
 }
+
+// ==================== BALANCE AUDIT ====================
+
+async function runBalanceAudit() {
+    const btn = document.getElementById('runAuditBtn');
+    const container = document.getElementById('auditResults');
+    if (!container) return;
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Scanning...'; }
+    container.innerHTML = '<p style="color:#888;">Running audit...</p>';
+
+    try {
+        const res  = await fetch(`${API_BASE}/admin/balance-audit`, { headers: authHeaders() });
+        const data = await res.json();
+
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-search"></i> Run Audit'; }
+
+        if (data.affected === 0) {
+            container.innerHTML = '<div style="background:#e8f5e9;border-radius:8px;padding:16px;color:#2e7d32;"><i class="fas fa-check-circle"></i> All ' + data.total + ' user balances look correct. No issues found.</div>';
+            return;
+        }
+
+        container.innerHTML = `
+            <div style="background:#fff3e0;border-radius:8px;padding:12px 16px;margin-bottom:16px;color:#e65100;">
+                <strong><i class="fas fa-exclamation-triangle"></i> ${data.affected} user(s) need attention</strong>
+                <span style="font-size:12px;color:#888;margin-left:8px;">(out of ${data.total} total)</span>
+            </div>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="background:#f5f5f5;">
+                        <th style="padding:8px 12px;text-align:left;border-bottom:2px solid #e0e0e0;">User</th>
+                        <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e0e0e0;">Stored</th>
+                        <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e0e0e0;">System Commissions</th>
+                        <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e0e0e0;">Withdrawn</th>
+                        <th style="padding:8px 12px;text-align:right;border-bottom:2px solid #e0e0e0;">Manual Credit</th>
+                        <th style="padding:8px 12px;text-align:center;border-bottom:2px solid #e0e0e0;">Status</th>
+                        <th style="padding:8px 12px;text-align:center;border-bottom:2px solid #e0e0e0;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${data.users.map(u => `
+                        <tr style="border-bottom:1px solid #f0f0f0;">
+                            <td style="padding:8px 12px;">
+                                <strong>${u.username}</strong>
+                                <div style="font-size:11px;color:#888;">${u.email || ''}</div>
+                            </td>
+                            <td style="padding:8px 12px;text-align:right;font-weight:600;">GHS ${u.storedBalance.toFixed(2)}</td>
+                            <td style="padding:8px 12px;text-align:right;color:#888;">GHS ${u.systemCommissions.toFixed(2)}</td>
+                            <td style="padding:8px 12px;text-align:right;color:#888;">GHS ${u.totalWithdrawn.toFixed(2)}</td>
+                            <td style="padding:8px 12px;text-align:right;color:${u.manualCredit > 0 ? '#f57c00' : '#888'};">
+                                ${u.manualCredit > 0 ? 'GHS ' + u.manualCredit.toFixed(2) : '—'}
+                            </td>
+                            <td style="padding:8px 12px;text-align:center;">
+                                <span style="border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;
+                                    background:${u.status === 'manual_credit' ? '#fff3e0' : '#fdecea'};
+                                    color:${u.status === 'manual_credit' ? '#e65100' : '#c62828'};">
+                                    ${u.status === 'manual_credit' ? 'Manual credit' : 'Shortfall'}
+                                </span>
+                            </td>
+                            <td style="padding:8px 12px;text-align:center;">
+                                <input type="number" id="repair_${u.userId}" value="${u.storedBalance.toFixed(2)}"
+                                    step="0.01" min="0"
+                                    style="width:90px;padding:4px 8px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px;text-align:right;margin-right:6px;">
+                                <button onclick="repairBalance('${u.userId}', '${u.username}')"
+                                    style="padding:5px 12px;background:#6a11cb;color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer;">
+                                    Set Balance
+                                </button>
+                            </td>
+                        </tr>`).join('')}
+                </tbody>
+            </table>`;
+    } catch (err) {
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-search"></i> Run Audit'; }
+        container.innerHTML = `<p style="color:#c62828;">Error: ${err.message}</p>`;
+    }
+}
+
+window.repairBalance = async function(userId, username) {
+    const input = document.getElementById('repair_' + userId);
+    const newBalance = parseFloat(input?.value);
+    if (isNaN(newBalance) || newBalance < 0) { alert('Enter a valid balance amount'); return; }
+    if (!confirm(`Set ${username}'s balance to GHS ${newBalance.toFixed(2)}?`)) return;
+
+    try {
+        const res = await fetch(`${API_BASE}/admin/balance-repair/${userId}`, {
+            method: 'POST', headers: authHeaders(),
+            body: JSON.stringify({ newBalance, reason: 'Manual repair via admin audit' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(`✅ ${username}'s balance updated to GHS ${newBalance.toFixed(2)}`);
+            runBalanceAudit(); // refresh
+        } else {
+            alert('Failed: ' + (data.message || 'Unknown error'));
+        }
+    } catch (err) {
+        alert('Error: ' + err.message);
+    }
+};
+
+// Hook into tab switching — load when Balance Audit tab is opened
+document.addEventListener('click', function(e) {
+    const btn = e.target.closest('.nav-btn[data-tab="balance-audit"]');
+    if (btn) setTimeout(runBalanceAudit, 50);
+});
