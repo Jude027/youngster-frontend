@@ -306,6 +306,8 @@ header {
     justify-content: space-between;
     margin-bottom: 15px;
     border: 1px solid var(--border-color);
+    overflow: hidden;       /* stop children breaking out */
+    min-width: 0;           /* allow flex children to shrink below content size */
 }
 
 /* CLIPBOARD LINK TEXT STYLES */
@@ -316,12 +318,14 @@ header {
     text-overflow: ellipsis;
     white-space: nowrap;
     flex: 1;
+    min-width: 0;           /* essential — without this flex item won't shrink */
     text-align: left;
     cursor: pointer;
     transition: all 0.3s ease;
     padding: 8px;
     border-radius: 4px;
     user-select: all;
+    max-width: 100%;
 }
 
 .link-text:hover {
