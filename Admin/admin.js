@@ -1104,6 +1104,12 @@ window.editStore = async (id) => {
         <div class="input-group"><label>Description</label><textarea id="description" rows="3">${store.storeDescription || ''}</textarea></div>
         <div class="input-group"><label>WhatsApp Number</label><input type="text" id="whatsappNumber" value="${store.whatsappNumber || ''}"></div>
         <div class="input-group"><label>WhatsApp Group Link</label><input type="text" id="groupLink" value="${store.whatsappGroupLink || ''}"></div>
+        <div class="input-group" style="display:flex;align-items:center;gap:10px;">
+            <label style="margin:0;">Short Referral Link</label>
+            <input type="checkbox" id="useShortLink" ${store.useShortLink ? 'checked' : ''}
+                style="width:18px;height:18px;cursor:pointer;accent-color:#6a11cb;">
+            <small style="color:#888;">Enable to give this dealer a TinyURL short link instead of the default URL</small>
+        </div>
     `, async () => {
         await fetch(`${API_BASE}/admin/store-settings/${id}`, {
             method: 'PUT', headers: authHeaders(),
@@ -1111,7 +1117,8 @@ window.editStore = async (id) => {
                 storeName: document.getElementById('storeName').value,
                 storeDescription: document.getElementById('description').value,
                 whatsappNumber: document.getElementById('whatsappNumber').value,
-                whatsappGroupLink: document.getElementById('groupLink').value
+                whatsappGroupLink: document.getElementById('groupLink').value,
+                useShortLink: document.getElementById('useShortLink').checked
             })
         });
         loadStores();
