@@ -422,11 +422,11 @@ function renderReferralLinkSections(permittedTypes, storeSlug, useShortLink = fa
         section.dataset.fullLink = fullLink;
 
         if (useShortLink) {
-            // Short link mode — show pretty slug on dealer platform, copy TinyURL
+            // Short link mode — show pretty slug, copy TinyURL
             section.innerHTML = `
                 <h3 class="referral-title">${escapeHtml(clientType)} Referral Link</h3>
                 <div class="referral-link">
-                    <span class="link-text" style="font-weight:700;font-size:1rem;letter-spacing:.5px;color:inherit;">
+                    <span class="link-text" style="font-family:monospace;font-size:0.9rem;word-break:break-word;">
                         ${escapeHtml(displaySlug)}${clientType ? '?client=' + escapeHtml(clientType) : ''}
                     </span>
                     <button class="copy-btn" data-full-link="${escapeHtml(fullLink)}" data-short-link="">
@@ -444,13 +444,15 @@ function renderReferralLinkSections(permittedTypes, storeSlug, useShortLink = fa
                 }
             });
         } else {
-            // Default mode — show full jdyoungsterent.com URL, copy it as-is
+            // Default mode — show full URL as a clickable link
             section.innerHTML = `
                 <h3 class="referral-title">${escapeHtml(clientType)} Referral Link</h3>
                 <div class="referral-link">
-                    <span class="link-text" style="font-size:0.85rem;color:inherit;">
+                    <a href="${escapeHtml(fullLink)}" target="_blank" rel="noopener noreferrer"
+                        class="link-text"
+                        style="font-size:0.85rem;color:var(--accent-color);text-decoration:underline;word-break:break-all;">
                         ${escapeHtml(fullLink)}
-                    </span>
+                    </a>
                     <button class="copy-btn" data-full-link="${escapeHtml(fullLink)}" data-short-link="${escapeHtml(fullLink)}">
                         <i class="fas fa-copy"></i> Copy
                     </button>
