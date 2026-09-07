@@ -289,23 +289,44 @@ async function copyReferralLink(linkTextEl, copyBtn) {
     }
 }
 
-// ─── Copy button wiring (called after DOM is built) ───────────────────────────
+// ─── URL shortener ────────────────────────────────────────────────────────────
+// Uses TinyURL's free API — no key required. Falls back to the full URL
+// silently if the request fails so the copy button always works.
+async function shortenLink(fullUrl) {
+    try {
+        const res = await fetch(
+            `https://tinyurl.com/api-create.php?url=${encodeURIComponent(fullUrl)}`,
+            { cache: 'no-store' }
+        );
+        if (!res.ok) throw new Error('TinyURL failed');
+        const short = (await res.text()).trim();
+        // Validate it looks like a real TinyURL
+        if (short.startsWith('https://tinyurl.com/') || short.startsWith('http://tinyurl.com/')) {
+            return short;
+        }
+        throw new Error('Unexpected response');
+    } catch (_) {
+        return fullUrl; // fallback: copy the full URL if shortener fails
+    }
+}
+
+// ─── Copy button wiring ───────────────────────────────────────────────────────
 function setupCopyButtons() {
     document.querySelectorAll('.copy-btn').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
-            const section  = btn.closest('.referral-section');
-            const linkText = section?.querySelector('.link-text') || document.querySelector('.link-text');
-            if (linkText) await copyReferralLink(linkText, btn);
-        });
-    });
-
-    document.querySelectorAll('.link-text').forEach(el => {
-        el.style.cursor = 'pointer';
-        el.addEventListener('click', async function () {
-            const section = this.closest('.referral-section');
-            const copyBtn = section?.querySelector('.copy-btn');
-            await copyReferralLink(this, copyBtn);
+            // Use short link if available, fall back to full link
+            const urlToCopy = btn.dataset.shortLink || btn.dataset.fullLink;
+            if (!urlToCopy) return;
+            const success = await copyToClipboard(urlToCopy);
+            if (success) {
+                showNotification('Referral link copied!', 'success');
+                const orig = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            } else {
+                showNotification('Failed to copy. Please try again.', 'error');
+            }
         });
     });
 }
@@ -325,12 +346,13 @@ async function loadPermittedClientTypes(retries = 3) {
                     await new Promise(r => setTimeout(r, 500 * attempt));
                     continue;
                 }
-                return { permittedClientTypes: [], storeSlug: '' };
+                return { permittedClientTypes: [], storeSlug: '', useShortLink: false };
             }
             const data = await res.json();
             return {
                 permittedClientTypes: Array.isArray(data.permittedClientTypes) ? data.permittedClientTypes : [],
-                storeSlug: data.storeSlug || ''
+                storeSlug: data.storeSlug || '',
+                useShortLink: data.useShortLink === true
             };
         } catch (err) {
             console.error(`Attempt ${attempt}/${retries} - Failed to load permitted client types:`, err);
@@ -372,7 +394,7 @@ function captionFor(clientType) {
  * HTML structure expected in dealers_referral_program.html:
  *   <div id="referralLinksContainer"></div>
  */
-function renderReferralLinkSections(permittedTypes, storeSlug) {
+function renderReferralLinkSections(permittedTypes, storeSlug, useShortLink = false) {
     const container = document.getElementById('referralLinksContainer');
     if (!container) return;
 
@@ -393,20 +415,49 @@ function renderReferralLinkSections(permittedTypes, storeSlug) {
     // which price column to load when the customer opens a bundle page.
     permittedTypes.forEach(clientType => {
         const fullLink = buildReferralLink(storeSlug, clientType);
+        const displaySlug = storeSlug || 'your-store';
         const section = document.createElement('div');
         section.className = 'referral-section';
         section.dataset.clientType = clientType;
-        section.innerHTML = `
-            <h3 class="referral-title">${escapeHtml(clientType)} Referral Link</h3>
-            <div class="referral-link">
-                <span class="link-text" data-copy-url="${escapeHtml(fullLink)}">
-                    <a href="${escapeHtml(fullLink)}" target="_blank" rel="noopener noreferrer"
-                        style="color:inherit;text-decoration:underline;word-break:break-all;"
-                    >${escapeHtml(fullLink)}</a>
-                </span>
-                <button class="copy-btn"><i class="fas fa-copy"></i> Copy</button>
-            </div>
-            <p>${escapeHtml(captionFor(clientType))}</p>`;
+        section.dataset.fullLink = fullLink;
+
+        if (useShortLink) {
+            // Short link mode — show pretty slug on dealer platform, copy TinyURL
+            section.innerHTML = `
+                <h3 class="referral-title">${escapeHtml(clientType)} Referral Link</h3>
+                <div class="referral-link">
+                    <span class="link-text" style="font-weight:700;font-size:1rem;letter-spacing:.5px;color:inherit;">
+                        ${escapeHtml(displaySlug)}${clientType ? '?client=' + escapeHtml(clientType) : ''}
+                    </span>
+                    <button class="copy-btn" data-full-link="${escapeHtml(fullLink)}" data-short-link="">
+                        <i class="fas fa-spinner fa-spin" style="font-size:12px;"></i> Generating...
+                    </button>
+                </div>
+                <p>${escapeHtml(captionFor(clientType))}</p>`;
+
+            // Shorten asynchronously — copy button gets TinyURL
+            shortenLink(fullLink).then(shortUrl => {
+                const btn = section.querySelector('.copy-btn');
+                if (btn) {
+                    btn.dataset.shortLink = shortUrl;
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy Link';
+                }
+            });
+        } else {
+            // Default mode — show full jdyoungsterent.com URL, copy it as-is
+            section.innerHTML = `
+                <h3 class="referral-title">${escapeHtml(clientType)} Referral Link</h3>
+                <div class="referral-link">
+                    <span class="link-text" style="font-size:0.88rem;word-break:break-all;color:inherit;">
+                        ${escapeHtml(fullLink)}
+                    </span>
+                    <button class="copy-btn" data-full-link="${escapeHtml(fullLink)}" data-short-link="${escapeHtml(fullLink)}">
+                        <i class="fas fa-copy"></i> Copy
+                    </button>
+                </div>
+                <p>${escapeHtml(captionFor(clientType))}</p>`;
+        }
+
         container.appendChild(section);
     });
 
@@ -466,7 +517,7 @@ async function initializeAndLoadLinks() {
 
     // ── Step 2: fetch fresh data in background ───────────────────────────────
     await loadCurrentUser();
-    const { permittedClientTypes, storeSlug } = await loadPermittedClientTypes();
+    const { permittedClientTypes, storeSlug, useShortLink } = await loadPermittedClientTypes();
 
     await Promise.all([
         loadReferralBalance(),
@@ -477,7 +528,7 @@ async function initializeAndLoadLinks() {
     const newHash = JSON.stringify({ permittedClientTypes, storeSlug });
     const oldHash = localStorage.getItem(LINKS_CACHE_KEY);
     // Always re-render to ensure freshness (links are cheap DOM operations)
-    renderReferralLinkSections(permittedClientTypes, storeSlug);
+    renderReferralLinkSections(permittedClientTypes, storeSlug, useShortLink);
     saveLinksToCache(permittedClientTypes, storeSlug);
 }
 
