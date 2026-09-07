@@ -302,12 +302,12 @@ header {
     border-radius: 10px;
     padding: 12px;
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 10px;
     margin-bottom: 15px;
     border: 1px solid var(--border-color);
-    overflow: hidden;       /* stop children breaking out */
-    min-width: 0;           /* allow flex children to shrink below content size */
+    overflow: hidden;
+    min-width: 0;
 }
 
 /* CLIPBOARD LINK TEXT STYLES */
@@ -315,10 +315,10 @@ header {
     color: var(--accent-color);
     font-weight: 500;
     overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    word-break: break-all;
+    white-space: normal;
     flex: 1;
-    min-width: 0;           /* essential — without this flex item won't shrink */
+    min-width: 0;
     text-align: left;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -352,9 +352,11 @@ header {
     font-weight: 600;
     transition: all 0.3s ease;
     white-space: nowrap;
-    margin-left: 10px;
+    margin-left: 0;
+    width: 100%;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
 }
 
