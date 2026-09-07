@@ -448,7 +448,7 @@ function renderReferralLinkSections(permittedTypes, storeSlug, useShortLink = fa
             section.innerHTML = `
                 <h3 class="referral-title">${escapeHtml(clientType)} Referral Link</h3>
                 <div class="referral-link">
-                    <span class="link-text" style="font-size:0.88rem;word-break:break-all;color:inherit;">
+                    <span class="link-text" style="font-size:0.85rem;color:inherit;">
                         ${escapeHtml(fullLink)}
                     </span>
                     <button class="copy-btn" data-full-link="${escapeHtml(fullLink)}" data-short-link="${escapeHtml(fullLink)}">
