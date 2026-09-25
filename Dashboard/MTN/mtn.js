@@ -1822,9 +1822,7 @@ document.addEventListener(
                              * proceed.
                              */
 
-                            if (
-                                result.valid !== true
-                            ) {
+                            if (result.valid !== true || result.known !== true) {
 
                                 orderBtn.disabled =
                                     false;
