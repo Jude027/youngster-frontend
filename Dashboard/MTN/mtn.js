@@ -349,40 +349,40 @@ function updateNumberType() {
 // Function to load and apply user's store branding
 async function applyUserStoreBranding() {
     try {
-        const token = localStorage.getItem('token');
+        const params =
+            new URLSearchParams(window.location.search);
 
-        if (!token) return;
+        const slug =
+            params.get('store') ||
+            localStorage.getItem('storeSlug');
+
+        if (!slug) return;
 
         const response = await fetch(
-            'https://youngster-backend.vercel.app/api/store-settings',
-            {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            }
+            `https://youngster-backend.vercel.app/api/storefront/${encodeURIComponent(slug)}`
         );
 
-        if (!response.ok) return;
+        if (!response.ok) {
+            console.warn(
+                'Could not load storefront branding:',
+                response.status
+            );
+            return;
+        }
 
         const store = await response.json();
 
-        // Cache slug so dashboard link navigates back
-        // with ?store= param
-        if (store.storeSlug) {
-            localStorage.setItem(
-                'storeSlug',
-                store.storeSlug
-            );
-        }
+        localStorage.setItem(
+            'storeSlug',
+            store.storeSlug || slug
+        );
 
-        // Apply store branding to sidebar
         const sidebarTitle =
             document.getElementById('sidebarTitle');
 
         if (sidebarTitle) {
             sidebarTitle.textContent =
-                store.storeName;
+                store.storeName || 'Data Shop';
         }
 
         const sidebarLogo =
@@ -395,7 +395,7 @@ async function applyUserStoreBranding() {
             sidebarLogo.innerHTML = `
                 <img
                     src="${store.storeLogo}"
-                    alt="${store.storeName} Logo"
+                    alt="${store.storeName || 'Store'} Logo"
                     style="
                         width:100%;
                         height:100%;
@@ -425,6 +425,7 @@ async function applyUserStoreBranding() {
                 </span>
             `;
         }
+
     } catch (err) {
         console.error(
             'Could not load store branding:',
@@ -1709,15 +1710,14 @@ document.addEventListener(
 
                         const precheckRes =
                             await fetch(
-                                'https://mamscoenterprise.com/api/orders/mtn/precheck',
+                                'https://youngster-backend.vercel.app/api/orders/mtn/precheck',
                                 {
                                     method: 'POST',
-
+                        
                                     headers: {
-                                        'Content-Type':
-                                            'application/json'
+                                        'Content-Type': 'application/json'
                                     },
-
+                        
                                     body: JSON.stringify({
                                         phoneNumbers: [
                                             phoneNumber
