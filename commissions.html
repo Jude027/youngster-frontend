@@ -7,17 +7,276 @@
 <title>My Commission History - Youngster Data Shop</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="../Dashboard/dashboard.css">
+
 <style>
-.commission-wrap{max-width:1200px;margin:0 auto;padding:22px}
-.commission-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.commission-note{color:#666;font-size:13px;line-height:1.5}
-.commission-table-wrap{overflow-x:auto;background:#fff;border-radius:10px;margin-top:18px}
-.commission-table{width:100%;min-width:1000px;border-collapse:collapse;font-size:13px}
-.commission-table th,.commission-table td{padding:11px 10px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}
-.commission-table th{background:#f5f5f5}
-.commission-status{display:inline-block;border-radius:20px;padding:4px 9px;background:#f3f4f6;color:#374151;font-size:11px}
-.commission-error{padding:14px;background:#fff7ed;color:#9a3412;border-radius:8px}
+/* Prevent dashboard elements from expanding beyond the viewport */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  overflow-x: clip;
+}
+
+.main-container {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-left: 0 !important;
+}
+
+.header {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-left,
+.header-title,
+.header-right {
+  min-width: 0;
+}
+
+.header-title {
+  overflow-wrap: anywhere;
+}
+
+.header-title h1 {
+  font-size: clamp(20px, 4vw, 30px);
+  overflow-wrap: anywhere;
+}
+
+.commission-wrap {
+  width: 100%;
+  max-width: 1200px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 22px;
+}
+
+.commission-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.commission-head h2 {
+  margin-top: 0;
+  overflow-wrap: anywhere;
+}
+
+.commission-note {
+  color: #666;
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+/* Responsive summary cards */
+#commissionSummary.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  margin-top: 18px;
+}
+
+#commissionSummary .stat-card {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
+#commissionSummary .stat-info {
+  min-width: 0;
+}
+
+#commissionSummary .stat-info h3 {
+  font-size: clamp(16px, 2vw, 24px);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Desktop table: scrolling is confined to this wrapper */
+.commission-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border-radius: 10px;
+  margin-top: 18px;
+}
+
+.commission-table {
+  width: 100%;
+  min-width: 1000px;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.commission-table th,
+.commission-table td {
+  padding: 11px 10px;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.commission-table th {
+  background: #f5f5f5;
+}
+
+.commission-status {
+  display: inline-block;
+  max-width: 100%;
+  border-radius: 20px;
+  padding: 4px 9px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.commission-error {
+  padding: 14px;
+  background: #fff7ed;
+  color: #9a3412;
+  border-radius: 8px;
+  overflow-wrap: anywhere;
+}
+
+/* Tablet */
+@media (max-width: 900px) {
+  .commission-wrap {
+    padding: 18px;
+  }
+
+  #commissionSummary.stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+/* Mobile: turn each table row into a readable card */
+@media (max-width: 600px) {
+  .commission-wrap {
+    padding: 12px;
+  }
+
+  .header {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .header-title {
+    flex: 1 1 100%;
+    order: 3;
+  }
+
+  .header-left {
+    flex: 1 1 auto;
+  }
+
+  .header-right {
+    flex: 0 0 auto;
+  }
+
+  #commissionSummary.stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  #commissionSummary .stat-card {
+    padding: 12px;
+  }
+
+  .commission-table-wrap {
+    overflow: visible;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  .commission-table {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    border-collapse: separate;
+  }
+
+  .commission-table thead {
+    display: none;
+  }
+
+  .commission-table tbody {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+    width: 100%;
+  }
+
+  .commission-table tr {
+    display: block;
+    min-width: 0;
+    width: 100%;
+    padding: 8px 14px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  }
+
+  .commission-table td {
+    display: grid;
+    grid-template-columns: minmax(100px, 0.85fr) minmax(0, 1.15fr);
+    align-items: start;
+    gap: 10px;
+    width: 100%;
+    min-width: 0;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .commission-table td:last-child {
+    border-bottom: 0;
+  }
+
+  .commission-table td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #555;
+    overflow-wrap: anywhere;
+  }
+
+  .commission-table td > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .commission-table td {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+}
 </style>
+
 </head>
 <body>
 <div class="main-container" style="margin-left:0;">
@@ -57,19 +316,58 @@ async function loadMyCommissions(){
   ].map(([label,value])=>`<div class="stat-card"><div class="stat-info"><h3>${esc(value)}</h3><p>${esc(label)}</p></div></div>`).join('');
   msg.textContent=`Showing ${rows.length} record(s), newest first. This page cannot edit commissions or balances.`;
   if(!rows.length){table.innerHTML='<div style="padding:18px;color:#666;">No commission records found for your account yet.</div>';return;}
-  table.innerHTML=`<table class="commission-table"><thead><tr>
-   <th>Date</th><th>Order ID</th><th>Payment ID</th><th>Provider / Package</th><th>Client type</th>
-   <th>Selling price</th><th>Original price used</th><th>Commission</th><th>Status</th>
-  </tr></thead><tbody>${rows.map(r=>`<tr>
-   <td>${esc(r.createdAt?new Date(r.createdAt).toLocaleString():'Unavailable')}</td>
-   <td>${esc(r.orderId||r.sourceId)}</td><td>${esc(r.paymentTransactionId||r.gatewayTransactionId)}</td>
-   <td>${esc([r.provider,r.packageName].filter(Boolean).join(' / ')||r.description)}</td>
-   <td>${esc(r.clientType)}</td><td>${esc(money(r.sellingPrice))}</td>
-   <td>${esc(money(r.originalPriceUsed))}</td><td>${esc(money(r.creditedAmount??r.amount))}</td>
-   <td><span class="commission-status">${esc(r.status)}</span></td>
-  </tr>`).join('')}</tbody></table>`;
- }catch(err){msg.innerHTML=`<div class="commission-error">Could not load commission history: ${esc(err.message)}</div>`;}
-}
+  
+table.innerHTML = `
+  <table class="commission-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Order ID</th>
+        <th>Payment ID</th>
+        <th>Provider / Package</th>
+        <th>Client type</th>
+        <th>Selling price</th>
+        <th>Original price used</th>
+        <th>Commission</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map(r => `
+        <tr>
+          <td data-label="Date">
+            ${esc(r.createdAt ? new Date(r.createdAt).toLocaleString() : 'Unavailable')}
+          </td>
+          <td data-label="Order ID">
+            ${esc(r.orderId || r.sourceId)}
+          </td>
+          <td data-label="Payment ID">
+            ${esc(r.paymentTransactionId || r.gatewayTransactionId)}
+          </td>
+          <td data-label="Provider / Package">
+            ${esc([r.provider, r.packageName].filter(Boolean).join(' / ') || r.description)}
+          </td>
+          <td data-label="Client type">
+            ${esc(r.clientType)}
+          </td>
+          <td data-label="Selling price">
+            ${esc(money(r.sellingPrice))}
+          </td>
+          <td data-label="Original price used">
+            ${esc(money(r.originalPriceUsed))}
+          </td>
+          <td data-label="Commission">
+            ${esc(money(r.creditedAmount ?? r.amount))}
+          </td>
+          <td data-label="Status">
+            <span class="commission-status">${esc(r.status)}</span>
+          </td>
+        </tr>
+      `).join('')}
+    </tbody>
+  </table>
+`;
+
 document.getElementById('refreshCommissions').addEventListener('click',loadMyCommissions);
 loadMyCommissions();
 </script>
