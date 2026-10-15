@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<base href="../Referral links/dealers_referral_program.html">
 <title>My Commission History - Youngster Data Shop</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="../Dashboard/dashboard.css">
@@ -294,81 +293,195 @@ body {
     <div id="commissionTable" class="commission-table-wrap"></div>
   </main>
 </div>
+
 <script>
 const COMMISSION_API = 'https://youngster-backend.vercel.app/api';
 const commissionToken = localStorage.getItem('token');
-const esc = v => String(v === undefined || v === null || v === '' ? 'Unavailable' : v)
- .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-const money = v => v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? 'Unavailable' : 'GHS ' + Number(v).toFixed(2);
-async function loadMyCommissions(){
- const msg=document.getElementById('commissionMessage'), table=document.getElementById('commissionTable');
- if(!commissionToken){msg.innerHTML='<div class="commission-error">Please log in to view your commission history.</div>';table.innerHTML='';return;}
- msg.textContent='Loading your commission history...';
- try{
-  const res=await fetch(`${COMMISSION_API}/commissions/my?limit=250`,{headers:{Authorization:`Bearer ${commissionToken}`}});
-  const data=await res.json(); if(!res.ok) throw new Error(data.message||`HTTP ${res.status}`);
-  const rows=data.commissions||[];
-  const available=rows.filter(r=>r.status==='available').reduce((s,r)=>s+Number(r.amount||0),0);
-  const pending=rows.filter(r=>r.status==='pending').reduce((s,r)=>s+Number(r.amount||0),0);
-  const withdrawn=rows.filter(r=>r.status==='withdrawn').reduce((s,r)=>s+Number(r.amount||0),0);
-  document.getElementById('commissionSummary').innerHTML=[
-   ['Records',rows.length],['Available',money(available)],['Pending',money(pending)],['Withdrawn',money(withdrawn)]
-  ].map(([label,value])=>`<div class="stat-card"><div class="stat-info"><h3>${esc(value)}</h3><p>${esc(label)}</p></div></div>`).join('');
-  msg.textContent=`Showing ${rows.length} record(s), newest first. This page cannot edit commissions or balances.`;
-  if(!rows.length){table.innerHTML='<div style="padding:18px;color:#666;">No commission records found for your account yet.</div>';return;}
-  
-table.innerHTML = `
-  <table class="commission-table">
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Order ID</th>
-        <th>Payment ID</th>
-        <th>Provider / Package</th>
-        <th>Client type</th>
-        <th>Selling price</th>
-        <th>Original price used</th>
-        <th>Commission</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rows.map(r => `
-        <tr>
-          <td data-label="Date">
-            ${esc(r.createdAt ? new Date(r.createdAt).toLocaleString() : 'Unavailable')}
-          </td>
-          <td data-label="Order ID">
-            ${esc(r.orderId || r.sourceId)}
-          </td>
-          <td data-label="Payment ID">
-            ${esc(r.paymentTransactionId || r.gatewayTransactionId)}
-          </td>
-          <td data-label="Provider / Package">
-            ${esc([r.provider, r.packageName].filter(Boolean).join(' / ') || r.description)}
-          </td>
-          <td data-label="Client type">
-            ${esc(r.clientType)}
-          </td>
-          <td data-label="Selling price">
-            ${esc(money(r.sellingPrice))}
-          </td>
-          <td data-label="Original price used">
-            ${esc(money(r.originalPriceUsed))}
-          </td>
-          <td data-label="Commission">
-            ${esc(money(r.creditedAmount ?? r.amount))}
-          </td>
-          <td data-label="Status">
-            <span class="commission-status">${esc(r.status)}</span>
-          </td>
-        </tr>
-      `).join('')}
-    </tbody>
-  </table>
-`;
 
-document.getElementById('refreshCommissions').addEventListener('click',loadMyCommissions);
+const esc = v =>
+  String(v === undefined || v === null || v === '' ? 'Unavailable' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+const money = v =>
+  v === undefined || v === null || v === '' ||
+  !Number.isFinite(Number(v))
+    ? 'Unavailable'
+    : 'GHS ' + Number(v).toFixed(2);
+
+async function loadMyCommissions() {
+  const msg = document.getElementById('commissionMessage');
+  const table = document.getElementById('commissionTable');
+  const summary = document.getElementById('commissionSummary');
+
+  if (!commissionToken) {
+    msg.innerHTML =
+      '<div class="commission-error">Please log in to view your commission history.</div>';
+    table.innerHTML = '';
+    summary.innerHTML = '';
+    return;
+  }
+
+  msg.textContent = 'Loading your commission history...';
+  table.innerHTML = '';
+
+  try {
+    const res = await fetch(
+      `${COMMISSION_API}/commissions/my?limit=250`,
+      {
+        headers: {
+          Authorization: `Bearer ${commissionToken}`,
+          Accept: 'application/json'
+        }
+      }
+    );
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || `HTTP ${res.status}`);
+    }
+
+    const rows = Array.isArray(data.commissions)
+      ? data.commissions
+      : [];
+
+    // Calculate totals
+    const available = rows
+      .filter(r => r.status === 'available')
+      .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+    const pending = rows
+      .filter(r => r.status === 'pending')
+      .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+    const withdrawn = rows
+      .filter(r => r.status === 'withdrawn')
+      .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+
+    // Render summary cards
+    summary.innerHTML = [
+      ['Records', rows.length],
+      ['Available', money(available)],
+      ['Pending', money(pending)],
+      ['Withdrawn', money(withdrawn)]
+    ].map(([label, value]) => `
+      <div class="stat-card">
+        <div class="stat-info">
+          <h3>${esc(value)}</h3>
+          <p>${esc(label)}</p>
+        </div>
+      </div>
+    `).join('');
+
+    msg.textContent =
+      `Showing ${rows.length} record(s), newest first. This page cannot edit commissions or balances.`;
+
+    // Empty state
+    if (rows.length === 0) {
+      table.innerHTML = `
+        <div style="padding:18px;color:#666;background:#fff;border-radius:10px;">
+          No commission records found for your account yet.
+        </div>
+      `;
+      return;
+    }
+
+    // Render commission table
+    table.innerHTML = `
+      <table class="commission-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Order ID</th>
+            <th>Payment ID</th>
+            <th>Provider / Package</th>
+            <th>Client type</th>
+            <th>Selling price</th>
+            <th>Original price used</th>
+            <th>Commission</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td data-label="Date">
+                ${esc(
+                  r.createdAt
+                    ? new Date(r.createdAt).toLocaleString()
+                    : 'Unavailable'
+                )}
+              </td>
+
+              <td data-label="Order ID">
+                ${esc(r.orderId || r.sourceId)}
+              </td>
+
+              <td data-label="Payment ID">
+                ${esc(
+                  r.paymentTransactionId || r.gatewayTransactionId
+                )}
+              </td>
+
+              <td data-label="Provider / Package">
+                ${esc(
+                  [r.provider, r.packageName]
+                    .filter(Boolean)
+                    .join(' / ') || r.description
+                )}
+              </td>
+
+              <td data-label="Client type">
+                ${esc(r.clientType)}
+              </td>
+
+              <td data-label="Selling price">
+                ${esc(money(r.sellingPrice))}
+              </td>
+
+              <td data-label="Original price used">
+                ${esc(money(r.originalPriceUsed))}
+              </td>
+
+              <td data-label="Commission">
+                ${esc(money(r.creditedAmount ?? r.amount))}
+              </td>
+
+              <td data-label="Status">
+                <span class="commission-status">
+                  ${esc(r.status)}
+                </span>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+  } catch (err) {
+    console.error('Commission history error:', err);
+
+    msg.innerHTML = `
+      <div class="commission-error">
+        Could not load commission history: ${esc(err.message)}
+      </div>
+    `;
+
+    table.innerHTML = '';
+  }
+}
+
+// Refresh button
+document
+  .getElementById('refreshCommissions')
+  .addEventListener('click', loadMyCommissions);
+
+// Load records when the page opens
 loadMyCommissions();
 </script>
 </body>
