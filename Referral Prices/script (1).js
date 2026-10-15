@@ -158,7 +158,11 @@ async function loadProviders() {
 // and returns [{ provider, packageName, originalPrice }].
 async function loadOriginalPrices() {
     try {
-        const res = await fetch(`${API_BASE}/my-original-prices`, { headers: authHeaders() });
+        // Prevent browser/CDN caches from keeping an old Base Price snapshot.
+        const res = await fetch(`${API_BASE}/my-original-prices?_=${Date.now()}`, {
+            headers: authHeaders(),
+            cache: 'no-store'
+        });
         if (res.ok) {
             originalPrices = await res.json();
         } else {
