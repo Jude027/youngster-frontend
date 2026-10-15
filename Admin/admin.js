@@ -104,6 +104,7 @@ function initializeTabSwitching() {
             else if (tabId === 'users') loadUsers();
             else if (tabId === 'orders') loadOrders();
             else if (tabId === 'transactions') loadTransactions();
+            else if (tabId === 'commissions') loadAdminCommissions();
             else if (tabId === 'prices') loadPrices();
             else if (tabId === 'master-prices') loadMasterPrices();
             else if (tabId === 'provider-api') loadProvidersForAPI();
@@ -2558,3 +2559,126 @@ document.addEventListener('click', function(e) {
     const btn = e.target.closest('.nav-btn[data-tab="balance-audit"]');
     if (btn) setTimeout(runBalanceAudit, 50);
 });
+
+
+// ========== COMMISSION LEDGER & READ-ONLY AUDIT ==========
+function commissionEscape(value) {
+    return String(value === undefined || value === null || value === '' ? 'Unavailable' : value)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function commissionMoney(value) {
+    return value === undefined || value === null || value === '' || !Number.isFinite(Number(value))
+        ? 'Unavailable' : 'GHS ' + Number(value).toFixed(2);
+}
+function commissionSummaryCard(label, value) {
+    return `<div style="background:#fff;border:1px solid #e8e8e8;border-radius:9px;padding:14px;">
+        <div style="font-size:12px;color:#777;margin-bottom:6px;">${commissionEscape(label)}</div>
+        <div style="font-size:19px;font-weight:700;color:#222;">${commissionEscape(value)}</div>
+    </div>`;
+}
+async function loadAdminCommissions() {
+    const container = document.getElementById('commissionLedgerResults');
+    if (!container) return;
+    container.innerHTML = '<p style="color:#888;">Loading commission records...</p>';
+    const search = document.getElementById('commissionSearch')?.value || '';
+    const status = document.getElementById('commissionStatusFilter')?.value || 'all';
+    try {
+        const params = new URLSearchParams({ search, status, limit: '1000' });
+        const res = await fetch(`${API_BASE}/admin/commissions?${params.toString()}`, { headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+        const summary = data.summary || {};
+        const cards = [
+            commissionSummaryCard('Recorded in results', commissionMoney(summary.totalRecorded || 0)),
+            commissionSummaryCard('Available', commissionMoney(summary.available || 0)),
+            commissionSummaryCard('Pending', commissionMoney(summary.pending || 0)),
+            commissionSummaryCard('Withdrawn', commissionMoney(summary.withdrawn || 0)),
+            commissionSummaryCard('Needs investigation', summary.needsInvestigation || 0)
+        ];
+        document.getElementById('commissionSummary').innerHTML = cards.join('');
+        const records = data.commissions || [];
+        if (!records.length) {
+            container.innerHTML = '<p style="padding:16px;color:#888;">No commission records match this search. A missing record can only be confirmed through Commission Audit.</p>';
+            return;
+        }
+        container.innerHTML = `<table style="width:100%;min-width:1350px;border-collapse:collapse;font-size:12px;background:#fff;">
+            <thead><tr style="background:#f5f5f5;text-align:left;">
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Date</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Agent</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Order / Source ID</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Payment ID</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Provider / Package</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Client type</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Selling price</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Original used</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Expected</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Credited</th>
+                <th style="padding:9px;border-bottom:2px solid #ddd;">Status</th>
+            </tr></thead><tbody>${records.map(r => {
+                const agent = r.userId?.username || r.userId?.email || 'Unavailable';
+                const orderId = r.orderId || r.sourceId;
+                const date = r.createdAt ? new Date(r.createdAt).toLocaleString() : 'Unavailable';
+                return `<tr>
+                    <td style="padding:9px;border-bottom:1px solid #eee;white-space:nowrap;">${commissionEscape(date)}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;">${commissionEscape(agent)}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;">${commissionEscape(orderId)}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;">${commissionEscape(r.paymentTransactionId || r.gatewayTransactionId)}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;">${commissionEscape([r.provider, r.packageName].filter(Boolean).join(' / ') || r.description)}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;">${commissionEscape(r.clientType)}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;white-space:nowrap;">${commissionEscape(commissionMoney(r.sellingPrice))}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;white-space:nowrap;">${commissionEscape(commissionMoney(r.originalPriceUsed))}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;white-space:nowrap;">${commissionEscape(commissionMoney(r.expectedAmount))}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;white-space:nowrap;">${commissionEscape(commissionMoney(r.creditedAmount ?? r.amount))}</td>
+                    <td style="padding:9px;border-bottom:1px solid #eee;">${commissionEscape(r.status)}${r.auditStatus === 'needs-investigation' ? ' ⚠' : ''}</td>
+                </tr>`;
+            }).join('')}</tbody></table>
+            <p style="color:#888;font-size:12px;margin-top:8px;">Showing ${records.length} record(s), newest first (up to 1,000). Historical details that were never stored are marked “Unavailable”.</p>`;
+    } catch (err) {
+        container.innerHTML = `<p style="color:#b91c1c;">Could not load commission ledger: ${commissionEscape(err.message)}</p>`;
+    }
+}
+
+async function runCommissionAudit() {
+    const container = document.getElementById('commissionAuditResults');
+    if (!container) return;
+    container.innerHTML = '<p style="color:#888;">Checking confirmed payments against the commission ledger...</p>';
+    try {
+        const res = await fetch(`${API_BASE}/admin/commission-audit`, { headers: authHeaders() });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+        const counts = data.counts || {};
+        const countRows = Object.entries(counts).map(([k,v]) =>
+            `<span style="display:inline-block;margin:4px;padding:7px 10px;border-radius:6px;background:#f4f4f5;"><b>${commissionEscape(k.replace(/_/g,' '))}</b>: ${Number(v)}</span>`
+        ).join('');
+        const findings = data.findings || [];
+        const issues = findings.filter(f => !['matched','zero_commission_expected'].includes(f.auditStatus));
+        container.innerHTML = `<div style="border:1px solid #ddd;border-radius:9px;padding:14px;background:#fff;">
+            <h3 style="margin:0 0 8px;">Commission Audit Results</h3>
+            <p style="font-size:13px;color:#666;">Scanned ${Number(data.scanned || 0)} payment/order records. This audit is read-only and does not create commissions or change balances.</p>
+            <div style="margin-bottom:12px;">${countRows || 'No audit findings returned.'}</div>
+            <div style="padding:10px;background:#fff7ed;border-radius:7px;color:#9a3412;font-size:13px;margin-bottom:12px;">
+                <b>Safety:</b> ${commissionEscape(data.safety || 'No historical commission will be automatically credited.')}
+                Historical estimates use current mapped prices when an order-time price snapshot is unavailable, so review before manually correcting anything.
+            </div>
+            ${issues.length ? `<div style="overflow-x:auto;"><table style="width:100%;min-width:1100px;border-collapse:collapse;font-size:12px;">
+                <thead><tr style="text-align:left;background:#f5f5f5;">${['Audit status','Agent','Order ID','Payment ID','Provider / Package','Client type','Selling price','Original used','Current original','Expected','Recorded','Notes'].map(x=>`<th style="padding:8px;border-bottom:2px solid #ddd;">${x}</th>`).join('')}</tr></thead>
+                <tbody>${issues.map(f=>`<tr>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(f.auditStatus)}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(f.username)}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(f.orderId)}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(f.paymentTransactionId)}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape([f.provider,f.packageName].filter(Boolean).join(' / '))}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(f.clientType)}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(commissionMoney(f.sellingPrice))}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(commissionMoney(f.originalPriceUsed))}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(commissionMoney(f.currentOriginalPrice))}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(commissionMoney(f.expectedCommission))}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;">${commissionEscape(commissionMoney(f.recordedCommission))}</td>
+                    <td style="padding:8px;border-bottom:1px solid #eee;max-width:260px;">${commissionEscape(f.note)}</td>
+                </tr>`).join('')}</tbody></table></div>` : '<p style="color:#15803d;">No discrepancies requiring investigation were detected in the scanned records.</p>'}
+        </div>`;
+    } catch (err) {
+        container.innerHTML = `<p style="color:#b91c1c;">Commission audit failed: ${commissionEscape(err.message)}</p>`;
+    }
+}
