@@ -478,6 +478,89 @@ body {
   }
 }
 
+
+/* Restore the original horizontal commission table */
+.commission-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto !important;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  margin-top: 18px;
+}
+
+.commission-table {
+  display: table !important;
+  width: max-content !important;
+  min-width: 1000px !important;
+  border-collapse: collapse !important;
+  font-size: 13px;
+}
+
+.commission-table thead {
+  display: table-header-group !important;
+}
+
+.commission-table tbody {
+  display: table-row-group !important;
+  width: auto !important;
+}
+
+.commission-table tr {
+  display: table-row !important;
+  width: auto !important;
+  min-width: 0 !important;
+  padding: 0 !important;
+  background: #fff;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.commission-table th,
+.commission-table td {
+  display: table-cell !important;
+  width: auto;
+  min-width: 0;
+  padding: 12px 14px !important;
+  border-bottom: 1px solid #eee !important;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap !important;
+}
+
+.commission-table th {
+  background: #f3f4f8 !important;
+  color: #344054;
+  font-weight: 700;
+}
+
+.commission-table td::before {
+  content: none !important;
+  display: none !important;
+}
+
+/* Keep the table inside the screen on mobile */
+@media (max-width: 600px) {
+  .commission-table-wrap {
+    overflow-x: auto !important;
+    border-radius: 8px;
+  }
+
+  .commission-table {
+    min-width: 1000px !important;
+  }
+
+  .commission-table th,
+  .commission-table td {
+    padding: 11px 12px !important;
+  }
+}
+
 </style>
 
 </head>
