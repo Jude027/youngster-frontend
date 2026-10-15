@@ -344,7 +344,8 @@ window.editTransaction = async (id) => {
 async function loadPrices() {
     const tbody = document.querySelector('#pricesTable tbody');
     tbody.innerHTML = '<tr><td colspan="7">Loading...</td></tr>';
-    const res = await fetch(`${API_BASE}/admin/referral-prices`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE}/admin/referral-prices?_=${Date.now()}`, { headers: authHeaders(), cache: 'no-store' });
+    if (!res.ok) throw new Error(`Could not load referral prices (${res.status})`);
     const prices = await res.json();
     tbody.innerHTML = '';
     prices.forEach(price => {
