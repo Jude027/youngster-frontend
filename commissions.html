@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<base href="/Dashboard/">
+<title>My Commission History - Youngster Data Shop</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="dashboard.css">
+<style>
+.commission-wrap{max-width:1200px;margin:0 auto;padding:22px}
+.commission-head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.commission-note{color:#666;font-size:13px;line-height:1.5}
+.commission-table-wrap{overflow-x:auto;background:#fff;border-radius:10px;margin-top:18px}
+.commission-table{width:100%;min-width:1000px;border-collapse:collapse;font-size:13px}
+.commission-table th,.commission-table td{padding:11px 10px;border-bottom:1px solid #eee;text-align:left;white-space:nowrap}
+.commission-table th{background:#f5f5f5}
+.commission-status{display:inline-block;border-radius:20px;padding:4px 9px;background:#f3f4f6;color:#374151;font-size:11px}
+.commission-error{padding:14px;background:#fff7ed;color:#9a3412;border-radius:8px}
+</style>
+</head>
+<body>
+<div class="main-container" style="margin-left:0;">
+  <div class="header">
+    <div class="header-left"><a href="./dashboard2.html" style="text-decoration:none;color:inherit;"><i class="fas fa-arrow-left"></i> Dashboard</a></div>
+    <div class="header-title"><h1>My Commission History</h1><p class="subtitle">Your private, read-only commission ledger</p></div>
+    <div class="header-right"><button id="refreshCommissions" class="theme-toggle" title="Refresh"><i class="fas fa-sync-alt"></i></button></div>
+  </div>
+  <main class="commission-wrap">
+    <div class="commission-head">
+      <div><h2>Commission records</h2><p class="commission-note">Only your own records are shown. Older entries may not contain all order-time details; unavailable values are not guessed.</p></div>
+    </div>
+    <div id="commissionSummary" class="stats-grid"></div>
+    <div id="commissionMessage" class="commission-note" style="margin-top:14px;">Loading your commission history...</div>
+    <div id="commissionTable" class="commission-table-wrap"></div>
+  </main>
+</div>
+<script>
+const COMMISSION_API = 'https://youngster-backend.vercel.app/api';
+const commissionToken = localStorage.getItem('token');
+const esc = v => String(v === undefined || v === null || v === '' ? 'Unavailable' : v)
+ .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+const money = v => v === undefined || v === null || v === '' || !Number.isFinite(Number(v)) ? 'Unavailable' : 'GHS ' + Number(v).toFixed(2);
+async function loadMyCommissions(){
+ const msg=document.getElementById('commissionMessage'), table=document.getElementById('commissionTable');
+ if(!commissionToken){msg.innerHTML='<div class="commission-error">Please log in to view your commission history.</div>';table.innerHTML='';return;}
+ msg.textContent='Loading your commission history...';
+ try{
+  const res=await fetch(`${COMMISSION_API}/commissions/my?limit=250`,{headers:{Authorization:`Bearer ${commissionToken}`}});
+  const data=await res.json(); if(!res.ok) throw new Error(data.message||`HTTP ${res.status}`);
+  const rows=data.commissions||[];
+  const available=rows.filter(r=>r.status==='available').reduce((s,r)=>s+Number(r.amount||0),0);
+  const pending=rows.filter(r=>r.status==='pending').reduce((s,r)=>s+Number(r.amount||0),0);
+  const withdrawn=rows.filter(r=>r.status==='withdrawn').reduce((s,r)=>s+Number(r.amount||0),0);
+  document.getElementById('commissionSummary').innerHTML=[
+   ['Records',rows.length],['Available',money(available)],['Pending',money(pending)],['Withdrawn',money(withdrawn)]
+  ].map(([label,value])=>`<div class="stat-card"><div class="stat-info"><h3>${esc(value)}</h3><p>${esc(label)}</p></div></div>`).join('');
+  msg.textContent=`Showing ${rows.length} record(s), newest first. This page cannot edit commissions or balances.`;
+  if(!rows.length){table.innerHTML='<div style="padding:18px;color:#666;">No commission records found for your account yet.</div>';return;}
+  table.innerHTML=`<table class="commission-table"><thead><tr>
+   <th>Date</th><th>Order ID</th><th>Payment ID</th><th>Provider / Package</th><th>Client type</th>
+   <th>Selling price</th><th>Original price used</th><th>Commission</th><th>Status</th>
+  </tr></thead><tbody>${rows.map(r=>`<tr>
+   <td>${esc(r.createdAt?new Date(r.createdAt).toLocaleString():'Unavailable')}</td>
+   <td>${esc(r.orderId||r.sourceId)}</td><td>${esc(r.paymentTransactionId||r.gatewayTransactionId)}</td>
+   <td>${esc([r.provider,r.packageName].filter(Boolean).join(' / ')||r.description)}</td>
+   <td>${esc(r.clientType)}</td><td>${esc(money(r.sellingPrice))}</td>
+   <td>${esc(money(r.originalPriceUsed))}</td><td>${esc(money(r.creditedAmount??r.amount))}</td>
+   <td><span class="commission-status">${esc(r.status)}</span></td>
+  </tr>`).join('')}</tbody></table>`;
+ }catch(err){msg.innerHTML=`<div class="commission-error">Could not load commission history: ${esc(err.message)}</div>`;}
+}
+document.getElementById('refreshCommissions').addEventListener('click',loadMyCommissions);
+loadMyCommissions();
+</script>
+</body>
+</html>
