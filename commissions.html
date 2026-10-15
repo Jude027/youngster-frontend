@@ -647,15 +647,39 @@ async function loadMyCommissions() {
       ? data.commissions
       : [];
     
+    
     const withdrawals = Array.isArray(withdrawalData)
       ? withdrawalData
       : Array.isArray(withdrawalData.withdrawals)
         ? withdrawalData.withdrawals
-        : [];
+        : Array.isArray(withdrawalData.data)
+          ? withdrawalData.data
+          : [];
     
+    console.log('Withdrawal API response:', withdrawalData);
+    console.log('Withdrawal records:', withdrawals);
+    
+    // Count withdrawals that the admin has approved.
+    // Normalize status so capitalization and surrounding spaces don't matter.
     const withdrawn = withdrawals
-      .filter(w => w.status === 'approved')
-      .reduce((sum, w) => sum + Number(w.amount || 0), 0);
+      .filter(w => {
+        const status = String(w.status || '')
+          .trim()
+          .toLowerCase();
+    
+        return ['approved', 'paid', 'completed'].includes(status);
+      })
+      .reduce((sum, w) => {
+        const amount = Number(w.amount ?? w.withdrawalAmount ?? 0);
+    
+        return sum + (
+          Number.isFinite(amount) && amount > 0
+            ? amount
+            : 0
+        );
+      }, 0);
+    
+    console.log('Calculated withdrawn total:', withdrawn);
 
 
     
