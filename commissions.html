@@ -616,25 +616,47 @@ async function loadMyCommissions() {
   table.innerHTML = '';
 
   try {
-    const res = await fetch(
-      `${COMMISSION_API}/commissions/my?limit=250`,
-      {
-        headers: {
-          Authorization: `Bearer ${commissionToken}`,
-          Accept: 'application/json'
-        }
-      }
-    );
-
+    
+    const headers = {
+      Authorization: `Bearer ${commissionToken}`,
+      Accept: 'application/json'
+    };
+    
+    const [res, withdrawalRes] = await Promise.all([
+      fetch(`${COMMISSION_API}/commissions/my?limit=250`, {
+        headers
+      }),
+      fetch(`${COMMISSION_API}/withdrawals`, {
+        headers
+      })
+    ]);
+    
     const data = await res.json();
-
+    
     if (!res.ok) {
       throw new Error(data.message || `HTTP ${res.status}`);
     }
-
+    
+    if (!withdrawalRes.ok) {
+      throw new Error('Could not load your withdrawal history.');
+    }
+    
+    const withdrawalData = await withdrawalRes.json();
+    
     const rows = Array.isArray(data.commissions)
       ? data.commissions
       : [];
+    
+    const withdrawals = Array.isArray(withdrawalData)
+      ? withdrawalData
+      : Array.isArray(withdrawalData.withdrawals)
+        ? withdrawalData.withdrawals
+        : [];
+    
+    const withdrawn = withdrawals
+      .filter(w => w.status === 'approved')
+      .reduce((sum, w) => sum + Number(w.amount || 0), 0);
+
 
     // Calculate totals
     const available = rows
