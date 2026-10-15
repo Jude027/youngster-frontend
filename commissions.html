@@ -658,7 +658,8 @@ async function loadMyCommissions() {
       .reduce((sum, w) => sum + Number(w.amount || 0), 0);
 
 
-    // Calculate totals
+    
+    // Calculate commission totals
     const available = rows
       .filter(r => r.status === 'available')
       .reduce((sum, r) => sum + Number(r.amount || 0), 0);
@@ -667,9 +668,8 @@ async function loadMyCommissions() {
       .filter(r => r.status === 'pending')
       .reduce((sum, r) => sum + Number(r.amount || 0), 0);
 
-    const withdrawn = rows
-      .filter(r => r.status === 'withdrawn')
-      .reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    // Withdrawn is calculated from approved withdrawal requests above.
+    // Do not redeclare `withdrawn` here.
 
     // Render summary cards
     summary.innerHTML = [
