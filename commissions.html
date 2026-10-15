@@ -181,8 +181,10 @@ body {
   }
 
   .header-title {
-    flex: 1 1 100%;
-    order: 3;
+    flex: 1 1 auto;
+    order: 0;
+    min-width: 0;
+    text-align: center;
   }
 
   .header-left {
@@ -274,6 +276,208 @@ body {
     gap: 5px;
   }
 }
+
+
+/* ===== Commission page visual polish ===== */
+
+body {
+  background: #f4f6fb;
+  color: #202938;
+}
+
+.commission-wrap {
+  padding-top: 20px;
+  padding-bottom: 32px;
+}
+
+.commission-head {
+  margin-bottom: 18px;
+}
+
+.commission-head h2 {
+  margin-bottom: 8px;
+  color: #182230;
+  font-size: clamp(22px, 4vw, 28px);
+  font-weight: 750;
+  letter-spacing: -0.4px;
+}
+
+.commission-note {
+  color: #687386;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* Summary cards */
+#commissionSummary.stats-grid {
+  gap: 12px;
+  margin-top: 20px;
+}
+
+#commissionSummary .stat-card {
+  display: flex;
+  align-items: center;
+  min-height: 94px;
+  padding: 17px;
+  background: #fff;
+  border: 1px solid #e7eaf1;
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(25, 40, 70, 0.045);
+  transition: box-shadow 0.2s ease;
+}
+
+#commissionSummary .stat-info h3 {
+  margin: 0 0 6px;
+  color: #243b75;
+  font-weight: 750;
+  letter-spacing: -0.3px;
+}
+
+#commissionSummary .stat-info p {
+  margin: 0;
+  color: #687386;
+  font-size: 13px;
+}
+
+/* Make the record area feel like a dashboard panel */
+#commissionMessage {
+  margin-top: 22px !important;
+  margin-bottom: 14px;
+}
+
+.commission-table-wrap {
+  background: transparent;
+  border-radius: 14px;
+  margin-top: 14px;
+}
+
+/* Vertical commission records */
+.commission-table tr {
+  background: #fff;
+  border: 1px solid #e5e9f2;
+  border-radius: 15px;
+  box-shadow: 0 5px 18px rgba(25, 40, 70, 0.055);
+  transition: box-shadow 0.2s ease;
+}
+
+.commission-table td {
+  color: #344054;
+  line-height: 1.5;
+}
+
+.commission-table td::before {
+  color: #586579;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.commission-table td[data-label="Commission"] {
+  color: #176b45;
+  font-weight: 750;
+}
+
+.commission-status {
+  width: fit-content;
+  background: #e9f7ef;
+  color: #176b45;
+  font-weight: 650;
+  padding: 5px 11px;
+}
+
+/* Keep long IDs and descriptions from stretching the page */
+.commission-table td {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.commission-table td[data-label="Order ID"],
+.commission-table td[data-label="Payment ID"] {
+  word-break: break-word;
+}
+
+/* Reduce the height of the header without moving the title
+   onto an unnecessarily low row */
+.header {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  row-gap: 6px;
+}
+
+.header-title {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.header-title h1 {
+  margin-top: 0;
+  margin-bottom: 4px;
+}
+
+.header-title .subtitle {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Mobile refinements */
+@media (max-width: 600px) {
+  .commission-wrap {
+    padding: 14px 12px 26px;
+  }
+
+  .commission-head h2 {
+    margin-bottom: 5px;
+  }
+
+  #commissionSummary.stats-grid {
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  #commissionSummary .stat-card {
+    min-height: 82px;
+    padding: 13px 12px;
+    border-radius: 12px;
+  }
+
+  #commissionSummary .stat-info h3 {
+    font-size: clamp(15px, 4vw, 20px);
+  }
+
+  #commissionSummary .stat-info p {
+    font-size: 12px;
+  }
+
+  .commission-table tbody {
+    gap: 12px;
+  }
+
+  .commission-table tr {
+    padding: 7px 13px;
+    border-radius: 14px;
+  }
+
+  .commission-table td {
+    padding: 11px 0;
+    font-size: 13px;
+  }
+
+  .header {
+    padding-top: 8px;
+    padding-bottom: 10px;
+    row-gap: 4px;
+  }
+
+  .header-title h1 {
+    font-size: 23px;
+    line-height: 1.2;
+  }
+
+  .header-title .subtitle {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+}
+
 </style>
 
 </head>
