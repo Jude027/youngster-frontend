@@ -600,6 +600,7 @@ const money = v =>
     : 'GHS ' + Number(v).toFixed(2);
 
 async function loadMyCommissions() {
+  console.log('Commission history script started');
   const msg = document.getElementById('commissionMessage');
   const table = document.getElementById('commissionTable');
   const summary = document.getElementById('commissionSummary');
@@ -623,6 +624,7 @@ async function loadMyCommissions() {
     };
     
     const [res, withdrawalRes] = await Promise.all([
+      console.log('About to fetch commission and withdrawal records');
       fetch(`${COMMISSION_API}/commissions/my?limit=250`, {
         headers
       }),
