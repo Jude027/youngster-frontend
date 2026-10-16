@@ -623,65 +623,70 @@ async function loadMyCommissions() {
       Accept: 'application/json'
     };
     
-    const [res, withdrawalRes] = await Promise.all([
-      console.log('About to fetch commission and withdrawal records');
-      fetch(`${COMMISSION_API}/commissions/my?limit=250`, {
-        headers
-      }),
-      fetch(`${COMMISSION_API}/withdrawals`, {
-        headers
-      })
-    ]);
     
-    const data = await res.json();
-    
+    // Load commission records independently of withdrawals.
+    const res = await fetch(
+      `${COMMISSION_API}/commissions/my?limit=250`,
+      { headers }
+    );
+
+    const data = await res.json().catch(() => ({}));
+
     if (!res.ok) {
-      throw new Error(data.message || `HTTP ${res.status}`);
+      throw new Error(
+        data.message || `Commission request failed: HTTP ${res.status}`
+      );
     }
-    
-    if (!withdrawalRes.ok) {
-      throw new Error('Could not load your withdrawal history.');
-    }
-    
-    const withdrawalData = await withdrawalRes.json();
-    
+
     const rows = Array.isArray(data.commissions)
       ? data.commissions
       : [];
-    
-    
-    const withdrawals = Array.isArray(withdrawalData)
-      ? withdrawalData
-      : Array.isArray(withdrawalData.withdrawals)
-        ? withdrawalData.withdrawals
-        : Array.isArray(withdrawalData.data)
-          ? withdrawalData.data
-          : [];
-    
-    console.log('Withdrawal API response:', withdrawalData);
-    console.log('Withdrawal records:', withdrawals);
-    
-    // Count withdrawals that the admin has approved.
-    // Normalize status so capitalization and surrounding spaces don't matter.
+
+    // Withdrawal failures must not prevent commission history from loading.
+    let withdrawals = [];
+
+    try {
+      const withdrawalRes = await fetch(
+        `${COMMISSION_API}/withdrawals`,
+        { headers }
+      );
+
+      const withdrawalData = await withdrawalRes.json();
+
+      if (!withdrawalRes.ok) {
+        throw new Error(
+          withdrawalData.message ||
+          `Withdrawal request failed: HTTP ${withdrawalRes.status}`
+        );
+      }
+
+      withdrawals = Array.isArray(withdrawalData)
+        ? withdrawalData
+        : Array.isArray(withdrawalData.withdrawals)
+          ? withdrawalData.withdrawals
+          : Array.isArray(withdrawalData.data)
+            ? withdrawalData.data
+            : [];
+
+    } catch (withdrawalError) {
+      console.error(
+        'Could not load agent withdrawals:',
+        withdrawalError
+      );
+    }
+
+    // Only count this agent's approved withdrawal records.
     const withdrawn = withdrawals
-      .filter(w => {
-        const status = String(w.status || '')
-          .trim()
-          .toLowerCase();
-    
-        return ['approved', 'paid', 'completed'].includes(status);
-      })
+      .filter(w =>
+        String(w.status || '').trim().toLowerCase() === 'approved'
+      )
       .reduce((sum, w) => {
-        const amount = Number(w.amount ?? w.withdrawalAmount ?? 0);
-    
+        const amount = Number(w.amount ?? 0);
+
         return sum + (
-          Number.isFinite(amount) && amount > 0
-            ? amount
-            : 0
+          Number.isFinite(amount) && amount > 0 ? amount : 0
         );
       }, 0);
-    
-    console.log('Calculated withdrawn total:', withdrawn);
 
 
     
