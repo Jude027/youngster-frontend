@@ -1,6 +1,7 @@
 // Admin panel â€“ full management (including Role Price Mapping)
 const API_BASE = 'https://youngster-backend.vercel.app/api';
 let token = localStorage.getItem('token');
+let orderView = 'current'; // current orders after the 17 Oct 2026 clean-start cutoff, or historical orders
 
 if (!token) {
     window.location.href = '../Registration-form/login_and_signup.html';
@@ -229,9 +230,36 @@ window.deleteUser = async (id) => {
 async function loadOrders() {
     const tbody = document.querySelector('#ordersTable tbody');
     tbody.innerHTML = '<tr><td colspan="10">Loading...</td></tr>';
-    const res = await fetch(`${API_BASE}/admin/orders`, { headers: authHeaders() });
+    const res = await fetch(`${API_BASE}/admin/orders?view=${encodeURIComponent(orderView)}`, { headers: authHeaders() });
+    if (!res.ok) {
+        tbody.innerHTML = '<tr><td colspan="10">Failed to load orders. Please refresh.</td></tr>';
+        return;
+    }
     const orders = await res.json();
     tbody.innerHTML = '';
+
+    const viewLabel = document.getElementById('orderViewLabel');
+    const toggleButton = document.getElementById('toggleHistoricalOrders');
+    if (viewLabel) {
+        viewLabel.textContent = orderView === 'history'
+            ? 'Showing historical orders before 17 Oct 2026'
+            : 'Showing orders from 17 Oct 2026 onward';
+    }
+    if (toggleButton) {
+        toggleButton.textContent = orderView === 'history'
+            ? 'View New Orders'
+            : 'View Historical Orders';
+    }
+
+    if (!Array.isArray(orders) || orders.length === 0) {
+        const row = tbody.insertRow();
+        const cell = row.insertCell(0);
+        cell.colSpan = 10;
+        cell.innerText = orderView === 'history'
+            ? 'No historical orders found.'
+            : 'No new orders found since 17 Oct 2026.';
+        return;
+    }
 
     const fmtDT = v => {
         if (!v) return '-';
@@ -1704,6 +1732,10 @@ function setupSearch(tableId, inputId) {
 // ========== REFRESH BUTTONS ==========
 document.getElementById('refreshUsers')?.addEventListener('click', loadUsers);
 document.getElementById('refreshOrders')?.addEventListener('click', loadOrders);
+document.getElementById('toggleHistoricalOrders')?.addEventListener('click', () => {
+    orderView = orderView === 'current' ? 'history' : 'current';
+    loadOrders();
+});
 document.getElementById('refreshTxns')?.addEventListener('click', loadTransactions);
 document.getElementById('refreshPrices')?.addEventListener('click', loadPrices);
 document.getElementById('refreshWd')?.addEventListener('click', loadWithdrawals);
