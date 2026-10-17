@@ -491,7 +491,7 @@
                 const data = await res.json();
                 verificationResults.push({
                     number:   phone,
-                    verified: res.ok && data.success === true,
+                    verified: res.ok && data.success === true && data.verified === true,
                     message:  data.message || '',
                 });
             } catch (_) {
