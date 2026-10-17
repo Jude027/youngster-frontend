@@ -65,13 +65,12 @@ function handlePackageCardClick(packageName) {
         // Build URL with provider name
         let urlPath = `./${targetFolder}/${targetFile}?provider=${encodeURIComponent(provider)}`;
 
-        // Carry ?store= and ?client= from the current page so bundle pages
-        // know which dealer's prices to load and for which client type
+        // Carry the store and opaque referral token across bundle pages.
         const currentParams = new URLSearchParams(window.location.search);
-        const store      = currentParams.get('store')  || localStorage.getItem('storeSlug');
-        const clientType = currentParams.get('client') || localStorage.getItem('clientType');
-        if (store)      urlPath += `&store=${encodeURIComponent(store)}`;
-        if (clientType) urlPath += `&client=${encodeURIComponent(clientType)}`;
+        const store = currentParams.get('store') || localStorage.getItem('storeSlug');
+        const referralToken = currentParams.get('ref') || localStorage.getItem('referralToken');
+        if (store) urlPath += `&store=${encodeURIComponent(store)}`;
+        if (referralToken) urlPath += `&ref=${encodeURIComponent(referralToken)}`;
 
         window.location.href = urlPath;
     }
