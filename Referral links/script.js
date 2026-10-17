@@ -105,23 +105,15 @@ function showNotification(message, type = 'success') {
 
 // ─── Referral links + stats cache ─────────────────────────────────────────────
 // Keys stored in localStorage so the page renders instantly on repeat visits.
-const LINKS_CACHE_KEY   = 'referralLinksCache';    // { permittedTypes, storeSlug }
+const LINKS_CACHE_KEY   = 'referralLinksCache_v2';    // { permittedTypes, storeSlug }
 const METRICS_CACHE_KEY = 'referralMetricsCache';  // { totalReferrals, activeReferrals, … }
 const BALANCE_CACHE_KEY = 'referralBalanceCache';  // "GHS 12.50"
 
-function loadLinksFromCache() {
-    try {
-        const raw = localStorage.getItem(LINKS_CACHE_KEY);
-        if (!raw) return false;
-        const { permittedClientTypes, storeSlug } = JSON.parse(raw);
-        if (!Array.isArray(permittedClientTypes)) return false;
-        renderReferralLinkSections(permittedClientTypes, storeSlug);
-        return true;
-    } catch { return false; }
+function loadLinksFromCache() { return false; // old clientType links are intentionally not reused
 }
 
-function saveLinksToCache(permittedClientTypes, storeSlug) {
-    try { localStorage.setItem(LINKS_CACHE_KEY, JSON.stringify({ permittedClientTypes, storeSlug })); } catch {}
+function saveLinksToCache(permittedClientTypes, storeSlug, referralLinks = {}) {
+    try { localStorage.setItem(LINKS_CACHE_KEY, JSON.stringify({ permittedClientTypes, storeSlug, referralLinks })); } catch {}
 }
 
 function loadMetricsFromCache() {
@@ -349,9 +341,15 @@ async function loadPermittedClientTypes(retries = 3) {
                 return { permittedClientTypes: [], storeSlug: '', useShortLink: false };
             }
             const data = await res.json();
+            const linkRes = await authFetch(`${API_BASE}/referral-links/generate`, {
+                method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' }, body: '{}', cache: 'no-store'
+            });
+            if (!linkRes || !linkRes.ok) throw new Error('Could not create secure referral links');
+            const linkData = await linkRes.json();
             return {
                 permittedClientTypes: Array.isArray(data.permittedClientTypes) ? data.permittedClientTypes : [],
-                storeSlug: data.storeSlug || '',
+                storeSlug: data.storeSlug || linkData.storeSlug || '',
+                referralLinks: linkData.links || {},
                 useShortLink: data.useShortLink === true
             };
         } catch (err) {
@@ -394,7 +392,7 @@ function captionFor(clientType) {
  * HTML structure expected in dealers_referral_program.html:
  *   <div id="referralLinksContainer"></div>
  */
-function renderReferralLinkSections(permittedTypes, storeSlug, useShortLink = false) {
+function renderReferralLinkSections(permittedTypes, storeSlug, useShortLink = false, referralLinks = {}) {
     const container = document.getElementById('referralLinksContainer');
     if (!container) return;
 
@@ -414,7 +412,8 @@ function renderReferralLinkSections(permittedTypes, storeSlug, useShortLink = fa
     // Each link gets its own &client= param so storefront-prices.js knows
     // which price column to load when the customer opens a bundle page.
     permittedTypes.forEach(clientType => {
-        const fullLink = buildReferralLink(storeSlug, clientType);
+        const fullLink = referralLinks[clientType] || '';
+        if (!fullLink) return;
         const displaySlug = storeSlug || 'your-store';
         const section = document.createElement('div');
         section.className = 'referral-section';
@@ -427,7 +426,7 @@ function renderReferralLinkSections(permittedTypes, storeSlug, useShortLink = fa
                 <h3 class="referral-title">${escapeHtml(clientType)} Referral Link</h3>
                 <div class="referral-link">
                     <span class="link-text" style="font-family:monospace;font-size:0.9rem;word-break:break-word;">
-                        ${escapeHtml(displaySlug)}${clientType ? '?client=' + escapeHtml(clientType) : ''}
+                        ${escapeHtml(displaySlug)}
                     </span>
                     <button class="copy-btn" data-full-link="${escapeHtml(fullLink)}" data-short-link="">
                         <i class="fas fa-spinner fa-spin" style="font-size:12px;"></i> Generating...
@@ -519,7 +518,7 @@ async function initializeAndLoadLinks() {
 
     // ── Step 2: fetch fresh data in background ───────────────────────────────
     await loadCurrentUser();
-    const { permittedClientTypes, storeSlug, useShortLink } = await loadPermittedClientTypes();
+    const { permittedClientTypes, storeSlug, useShortLink, referralLinks } = await loadPermittedClientTypes();
 
     await Promise.all([
         loadReferralBalance(),
@@ -530,8 +529,8 @@ async function initializeAndLoadLinks() {
     const newHash = JSON.stringify({ permittedClientTypes, storeSlug });
     const oldHash = localStorage.getItem(LINKS_CACHE_KEY);
     // Always re-render to ensure freshness (links are cheap DOM operations)
-    renderReferralLinkSections(permittedClientTypes, storeSlug, useShortLink);
-    saveLinksToCache(permittedClientTypes, storeSlug);
+    renderReferralLinkSections(permittedClientTypes, storeSlug, useShortLink, referralLinks || {});
+    saveLinksToCache(permittedClientTypes, storeSlug, referralLinks || {});
 }
 
 function addRefreshButton() {
