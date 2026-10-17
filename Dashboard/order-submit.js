@@ -29,7 +29,8 @@ function getOrderContext() {
     const p = new URLSearchParams(window.location.search);
     return {
         storeSlug:  p.get('store')    || localStorage.getItem('storeSlug')  || '',
-        clientType: p.get('client')   || localStorage.getItem('clientType') || 'Customers',
+        clientType: 'Customers',
+        referralToken: p.get('ref') || localStorage.getItem('referralToken') || '',
         provider:   p.get('provider') || '',
     };
 }
@@ -49,7 +50,7 @@ function getOrderContext() {
  * @returns {Promise<{success, transactionId, message}>}
  */
 async function submitOrder(orderData) {
-    const { storeSlug, clientType } = getOrderContext();
+    const { storeSlug, clientType, referralToken } = getOrderContext();
 
     // ── Step 1: Initiate Moolre payment ──────────────────────────────────────
     // This triggers a USSD push to the customer's phone asking them to
@@ -75,6 +76,7 @@ async function submitOrder(orderData) {
                 bundle_size: orderData.bundle_size,
                 storeSlug:       storeSlug  || null,
                 clientType:      clientType || 'Customers',
+                referralToken:   referralToken || null,
                 guestSessionId:  localStorage.getItem('guestSessionId') || null,
             }),
         });
@@ -109,6 +111,7 @@ async function submitOrder(orderData) {
                 transactionId:   transactionId,
                 storeSlug:       storeSlug  || null,
                 clientType:      clientType || 'Customers',
+                referralToken:   referralToken || null,
                 guestSessionId:  localStorage.getItem('guestSessionId') || null,
                 created:         new Date().toISOString(),
             }),
