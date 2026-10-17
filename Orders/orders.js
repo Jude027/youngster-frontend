@@ -122,6 +122,15 @@ function formatDateTime(val) {
     return `${date}, ${time}`;
 }
 
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function normalizeStatusDisplay(status) {
     const raw = String(status || 'Pending').trim();
     if (!raw) return 'Pending';
@@ -134,7 +143,7 @@ function renderOrders(ordersList) {
     if (!tbody) return;
 
     if (!ordersList || ordersList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center !important; padding: 40px 20px; white-space:normal;"><div style="display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--text-secondary);"><i class="fas fa-box-open" style="font-size: 2rem;"></i><p>No matching orders found.</p></div></td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center !important; padding: 40px 20px; white-space:normal;"><div style="display:flex;flex-direction:column;align-items:center;gap:10px;color:var(--text-secondary);"><i class="fas fa-box-open" style="font-size: 2rem;"></i><p>No matching orders found.</p></div></td></tr>`;
         return;
     }
 
@@ -176,6 +185,7 @@ function renderOrders(ordersList) {
         return `
             <tr>
                 <td data-label="BENEFICIARY">${order.beneficiary || '-'}</td>
+                <td data-label="CLIENT TYPE">${escapeHtml(String(order.clientType || 'Unknown'))}</td>
                 <td data-label="PACKAGE">${order.package || '-'}</td>
                 <td data-label="AMOUNT">${parseFloat(order.amount || 0).toFixed(2)} GHS</td>
                 <td data-label="BUNDLE SIZE">${bundleSize}</td>
@@ -206,7 +216,7 @@ function renderOrders(ordersList) {
                     </span>`
                 ).join('');
                 return `<tr style="background:#f8f9ff;">
-                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
+                    <td colspan="9" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
                         <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
                             <span style="font-size:11px;font-weight:700;color:#6a11cb;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
                                 <i class="fas fa-info-circle"></i> Submission Details
@@ -238,7 +248,7 @@ function renderOrders(ordersList) {
                     </span>`
                 ).join('');
                 return `<tr style="background:#fff8e1;">
-                    <td colspan="8" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
+                    <td colspan="9" style="padding:8px 14px;border-bottom:1px solid #e5e7eb;">
                         <div style="display:flex;flex-wrap:wrap;gap:4px;align-items:center;">
                             <span style="font-size:11px;font-weight:700;color:#f7971e;margin-right:6px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap;">
                                 <i class="fas fa-id-card"></i> AFA Registration
