@@ -34,9 +34,15 @@ function detectStoreSlug() {
 (function captureReferralContext() {
     const params     = new URLSearchParams(window.location.search);
     const store      = params.get('store') || detectStoreSlug();
-    const clientType = params.get('client');
-    if (store)      localStorage.setItem('storeSlug',  store);
-    if (clientType) localStorage.setItem('clientType', clientType);
+    const referralToken = params.get('ref');
+    if (store) localStorage.setItem('storeSlug', store);
+    if (referralToken) localStorage.setItem('referralToken', referralToken);
+    // Never trust a clientType query parameter as pricing authority. It is kept
+    // only for old display code; the backend derives actual pricing from ref token.
+    if (!referralToken && store) {
+        localStorage.removeItem('clientType');
+        localStorage.removeItem('referralToken');
+    }
 
     // Generate a unique guest session ID on first visit and persist it.
     // This lets each customer see only their own orders on the guest orders page.
