@@ -285,6 +285,7 @@ function showPaymentModal(orderDetails) {
                     bundle_size:    orderDetails.bundle_size,
                     storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
                     clientType:     localStorage.getItem('clientType') || 'Customers',
+                    referralToken: localStorage.getItem('referralToken') || new URLSearchParams(window.location.search).get('ref') || null,
                 }),
             });
             const data = await res.json();
