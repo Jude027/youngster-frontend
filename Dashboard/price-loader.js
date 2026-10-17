@@ -35,14 +35,11 @@ async function loadPricesForProvider(provider, clientType = null) {
             // agents etc. see only the prices the dealer set for their specific type.
             // Fall back to 'Customers' only when no client param is present.
             const params = new URLSearchParams(window.location.search);
-            const resolvedClientType = params.get('client')
-                || localStorage.getItem('clientType')
-                || clientType
-                || '';
+            const referralToken = params.get('ref') || localStorage.getItem('referralToken') || '';
 
             const url = new URL(`${API_BASE}/storefront-prices`, window.location.origin);
             url.searchParams.set('store', storeSlug);
-            url.searchParams.set('clientType', resolvedClientType);
+            if (referralToken) url.searchParams.set('ref', referralToken);
             
             const res = await fetch(url.toString());
             if (!res.ok) {
