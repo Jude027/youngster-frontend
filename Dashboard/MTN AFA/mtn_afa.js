@@ -1,42 +1,48 @@
 // Auto-detect theme from dashboard
 function initializeTheme() {
+    // Check for saved theme preference or default to light
     const currentTheme = localStorage.getItem('theme') || 'light';
     document.documentElement.setAttribute('data-theme', currentTheme);
 }
 
 // Sidebar functionality
 function initializeSidebar() {
+    // Get DOM elements
     const menuBtn = document.getElementById('menuBtn');
     const closeBtn = document.getElementById('closeBtn');
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('overlay');
     const ordersMenu = document.getElementById('ordersMenu');
     const ordersSubMenu = document.getElementById('ordersSubMenu');
+    const logoutBtn = document.getElementById('logoutBtn');
     
-    if (!menuBtn || !sidebar || !overlay) {
-        return;
-    }
+    // Check if essential elements exist
+    if (!menuBtn || !sidebar) return;
     
+    // Toggle sidebar
     menuBtn.addEventListener('click', () => {
         sidebar.classList.add('open');
-        overlay.classList.add('open');
+        if (overlay) overlay.classList.add('open');
         document.body.classList.add('sidebar-open');
     });
     
+    // Close sidebar
     function closeSidebar() {
         sidebar.classList.remove('open');
-        overlay.classList.remove('open');
+        if (overlay) overlay.classList.remove('open');
         document.body.classList.remove('sidebar-open');
     }
     
-    closeBtn.addEventListener('click', closeSidebar);
-    overlay.addEventListener('click', closeSidebar);
+    if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+    if (overlay) overlay.addEventListener('click', closeSidebar);
     
+    // Toggle orders sub-menu
     if (ordersMenu && ordersSubMenu) {
         ordersMenu.addEventListener('click', (e) => {
             e.stopPropagation();
             ordersSubMenu.classList.toggle('open');
             
+            // Rotate chevron icon
             const chevron = ordersMenu.querySelector('.fa-chevron-down');
             if (chevron) {
                 chevron.style.transform = ordersSubMenu.classList.contains('open') ? 'rotate(180deg)' : 'rotate(0)';
@@ -44,6 +50,29 @@ function initializeSidebar() {
         });
     }
     
+    // Logout functionality - UPDATED TO SHOW NOTIFICATION
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent any default behavior
+            e.stopPropagation(); // Stop event bubbling
+            
+            if (confirm('Are you sure you want to log out?')) {
+                // Clear login state
+                localStorage.removeItem('isLoggedIn');
+                localStorage.removeItem('username');
+                
+                // Show logout notification
+                showLogoutNotification();
+                
+                // Redirect to login page after notification delay
+                setTimeout(() => {
+                    window.location.href = '../index.html';
+                }, 1500); // Redirect after 1.5 seconds (notification shows for 3 seconds)
+            }
+        });
+    }
+    
+    // Close sidebar when clicking on a menu item (except orders with submenu)
     document.querySelectorAll('.menu-item:not(#ordersMenu)').forEach(item => {
         item.addEventListener('click', () => {
             closeSidebar();
@@ -56,7 +85,7 @@ function initializeSidebar() {
         dashboardLink.addEventListener('click', (e) => {
             e.preventDefault();
             closeSidebar();
-            const slug = localStorage.getItem('storeSlug') || new URLSearchParams(window.location.search).get('store') || '';
+            const slug = new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '';
             const client = localStorage.getItem('clientType') || new URLSearchParams(window.location.search).get('client') || '';
             let url = '../dashboard2.html';
             if (slug) url += '?store=' + encodeURIComponent(slug);
@@ -66,60 +95,19 @@ function initializeSidebar() {
     }
 }
 
-// Logout functionality - UPDATED TO USE DASHBOARD LOGIC
-function initializeLogout() {
-    const logoutBtn = document.getElementById('logoutBtn');
-    
-    
-    if (logoutBtn) {
-        
-        // Remove any existing event listeners first
-        const newLogoutBtn = logoutBtn.cloneNode(true);
-        logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
-        
-        // Add new event listener
-        newLogoutBtn.addEventListener('click', handleLogout);
-        
-        // Also add event listener to original logout button (in case clone didn't work)
-        document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-        
-    } else {
-    }
-}
-
-// Separate logout handler function - UPDATED
-function handleLogout(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    
-    // Use the same confirmation as dashboard
-    if (confirm('Are you sure you want to log out?')) {
-        
-        // Clear login state (same as dashboard)
-        localStorage.removeItem('isLoggedIn');
-        localStorage.removeItem('username');
-        
-        // Optional: Clear other user-specific data
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userData');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('session');
-        
-        // Show logout message
-        showLogoutNotification();
-        
-        // Redirect to dashboard login page
-        setTimeout(() => {
-            window.location.href = '../index.html'; // Updated path
-        }, 1500);
-    }
-}
-
 // Simple logout notification
 function showLogoutNotification() {
+    // Remove any existing notifications first
+    const existingNotifications = document.querySelectorAll('.logout-notification');
+    existingNotifications.forEach(notification => {
+        if (notification.parentNode) {
+            document.body.removeChild(notification);
+        }
+    });
+    
     // Create notification element
     const notification = document.createElement('div');
+    notification.className = 'logout-notification';
     notification.innerHTML = `
         <div style="
             position: fixed;
@@ -172,438 +160,189 @@ function showLogoutNotification() {
 }
 
 // Check authentication on page load
-function checkAuthentication() {
-    const isReferralVisit = window.location.pathname.includes('/referral/') ||
-                        new URLSearchParams(window.location.search).get('store');
-    if (isReferralVisit) return true;
-
+function checkUserSession() {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const username = localStorage.getItem('username');
     
     if (isLoggedIn !== 'true' || !username) {
-        // Redirect to dashboard login page
+        
+        // Show logout notification before redirecting
+        showLogoutNotification();
+        
+        // Redirect to login page after delay
         setTimeout(() => {
             window.location.href = '../index.html';
-        }, 100);
+        }, 1500);
         return false;
     }
     
     return true;
 }
 
-// Notification functionality
-function showNotificationToast(title, message, type = 'info') {
-    const notification = document.getElementById('notificationToast');
-    
-    if (!notification) {
-        return;
-    }
-    
-    // Update content
-    const toastTitle = document.getElementById('toastTitle');
-    const toastMessage = document.getElementById('toastMessage');
-    
-    if (toastTitle) toastTitle.textContent = title;
-    if (toastMessage) toastMessage.innerHTML = message;
-    
-    // Style based on type
-    if (type === 'success') {
-        notification.style.background = '#4CAF50';
-    } else if (type === 'error') {
-        notification.style.background = '#f44336';
-    } else if (type === 'warning') {
-        notification.style.background = '#ff9800';
-    } else if (type === 'info') {
-        notification.style.background = '#2196F3';
-    }
-    
-    // Show notification
-    notification.style.opacity = '1';
-    notification.style.transform = 'translateX(0)';
-    
-    // Auto-hide after 6 seconds
-    setTimeout(hideNotificationToast, 6000);
-}
+// Check authentication on page load
+function checkAuthentication() {
+    const isReferralVisit = window.location.pathname.includes('/referral/') ||
+        new URLSearchParams(window.location.search).get('store');
+    if (isReferralVisit) return true;
 
-function hideNotificationToast() {
-    const notification = document.getElementById('notificationToast');
-    if (notification) {
-        notification.style.opacity = '0';
-        notification.style.transform = 'translateX(100%)';
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    const username = localStorage.getItem('username');
+    
+    if (isLoggedIn !== 'true' || !username) {
+        setTimeout(() => {
+            window.location.href = '../index.html';
+        }, 100);
+        return false;
     }
-}
-
-// Create error element for a field
-function createErrorElement(fieldId) {
-    const errorElement = document.createElement('div');
-    errorElement.className = 'field-error';
-    errorElement.id = `${fieldId}Error`;
-    errorElement.style.color = '#ef4444';
-    errorElement.style.fontSize = '0.875rem';
-    errorElement.style.marginTop = '0.25rem';
-    errorElement.style.display = 'none';
-    
-    return errorElement;
-}
-
-// Show error for a specific field
-function showFieldError(fieldId, message) {
-    const field = document.getElementById(fieldId);
-    if (!field) return false;
-    
-    // Create or get error element
-    let errorElement = document.getElementById(`${fieldId}Error`);
-    if (!errorElement) {
-        errorElement = createErrorElement(fieldId);
-        // Insert error after the input group
-        const inputGroup = field.closest('.input-group') || field.parentNode;
-        inputGroup.parentNode.insertBefore(errorElement, inputGroup.nextSibling);
-    }
-    
-    // Show error
-    errorElement.textContent = message;
-    errorElement.style.display = 'block';
-    field.style.borderColor = '#ef4444';
-    
     return true;
 }
 
-// Clear error for a specific field
-function clearFieldError(fieldId) {
-    const field = document.getElementById(fieldId);
-    if (field) {
-        field.style.borderColor = '';
+// Notification functionality
+function initializeNotification() {
+    const notification = document.getElementById('notification');
+    const notificationClose = document.getElementById('notificationClose');
+    
+    if (!notification) return { showNotification: () => {}, hideNotification: () => {} };
+    
+    // Function to show notification
+    function showNotification() {
+        notification.classList.add('show');
+        
+        // Auto hide after 5 seconds
+        setTimeout(() => {
+            hideNotification();
+        }, 5000);
     }
     
-    const errorElement = document.getElementById(`${fieldId}Error`);
-    if (errorElement) {
-        errorElement.style.display = 'none';
+    // Function to hide notification
+    function hideNotification() {
+        notification.classList.remove('show');
     }
-}
-
-// Clear all field errors
-function clearAllFieldErrors() {
-    const fieldIds = ['fullname', 'phone', 'location', 'region', 'ghanaCard', 'dob'];
-    fieldIds.forEach(fieldId => clearFieldError(fieldId));
-}
-
-// Validation rules for each field
-function validateField(fieldId, value) {
-    value = value.trim();
     
-    switch(fieldId) {
-        case 'fullname':
-            if (!value) return 'Full name is required';
-            const nameParts = value.split(' ').filter(part => part.length > 0);
-            if (nameParts.length < 2) return 'Full name not complete (enter first and last name)';
-            if (value.length < 3) return 'Name is too short';
-            return '';
-            
-        case 'phone':
-            if (!value) return 'Phone number is required';
-            
-            // Check if ported number checkbox is checked
-            const isPorted = document.getElementById('portedNumber')?.checked;
-            
-            // Clean the phone number (remove spaces, dashes, etc.)
-            const cleanPhone = value.replace(/[\s\-()]/g, '');
-            
-            if (!/^0\d{9}$/.test(cleanPhone)) {
-                return 'Enter valid 10-digit Ghanaian number starting with 0';
-            }
-            
-            // If NOT ported, check for MTN format
-            if (!isPorted) {
-                const mtnPrefixes = ['024', '054', '055', '059', '025', '053'];
-                const prefix = cleanPhone.substring(0, 3);
-                
-                if (!mtnPrefixes.includes(prefix)) {
-                    return 'Please enter a valid MTN number (starts with 024, 054, 055, 059, 025, 053)';
-                }
-            } else {
-                // If ported, accept any valid Ghanaian number
-                const ghanaPrefixes = ['020', '025', '023', '050', '024', '027', '026', '053', '054', '055', '056', '057', '059'];
-                const phonePrefix = cleanPhone.substring(0, 3);
-                
-                if (!ghanaPrefixes.includes(phonePrefix)) {
-                    return 'Please enter a valid Ghanaian mobile number';
-                }
-            }
-            
-            return '';
-            
-        case 'location':
-            if (!value) return 'Location is required';
-            if (value.length < 2) return 'Location is too short';
-            return '';
-            
-        case 'region':
-            if (!value) return 'Please select a region';
-            return '';
-            
-        case 'ghanaCard':
-            if (!value) return 'Ghana Card number is required';
-            value = value.toUpperCase();
-            
-            if (!value.startsWith('GHA')) {
-                return 'Ghana Card must start with "GHA"';
-            }
-            
-            if (value.length !== 15) {
-                return 'Ghana Card must be 13 characters long (format: GHA-123456789-0)';
-            }
-            
-            if (!/^GHA-\d{9}-\d$/.test(value)) {
-                return 'Invalid format. Use: GHA-123456789-0';
-            }
-            
-            return '';
-            
-        case 'dob':
-            if (!value) return 'Date of birth is required';
-            const dob = new Date(value);
-            const today = new Date();
-            
-            if (dob > today) return 'Date cannot be in the future';
-            
-        default:
-            return '';
+    // Close notification when close button is clicked
+    if (notificationClose) {
+        notificationClose.addEventListener('click', hideNotification);
     }
+    
+    return { showNotification, hideNotification };
 }
 
-// Validate entire form
-function validateForm() {
-    let isValid = true;
-    const fieldIds = ['fullname', 'phone', 'location', 'region', 'ghanaCard', 'dob'];
+// Excel template download functionality
+function initializeExcelTemplateDownload() {
+    const downloadExcelTemplate = document.getElementById('downloadExcelTemplate');
     
-    // Clear all previous errors
-    clearAllFieldErrors();
+    if (!downloadExcelTemplate) return;
     
-    // Validate each field
-    fieldIds.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (!field) return;
+    downloadExcelTemplate.addEventListener('click', function(e) {
+        e.preventDefault();
         
-        const value = field.value;
-        const error = validateField(fieldId, value);
+        // Create a simple Excel file content for AT
+        const templateData = [
+            ['Recipient', 'Volume'],
+            ['0261234567', '1'],
+            ['0569876543', '2'],
+            ['0275551234', '3'],
+            ['', ''],
+            ['NOTE:'],
+            ['1. Phone numbers must be 10 digits (026, 056, 027, 057, 023)'],
+            ['2. Volume should be numbers only (1, 2, 3, 4, or 5)'],
+            ['3. Save file as .xlsx or .csv format'],
+            ['4. Remove any empty rows before uploading'],
+            ['5. For ported numbers, tick the ported checkbox above']
+        ];
         
-        if (error) {
-            showFieldError(fieldId, error);
-            isValid = false;
+        // Convert to CSV format
+        let csvContent = "data:text/csv;charset=utf-8,";
+        templateData.forEach(row => {
+            csvContent += row.map(cell => `"${cell}"`).join(",") + "\r\n";
+        });
+        
+        // Create download link
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "at-bulk-template.csv");
+        document.body.appendChild(link);
+        
+        // Trigger download
+        link.click();
+        document.body.removeChild(link);
+        
+        // Show custom notification for template download
+        const notification = document.getElementById('notification');
+        if (notification) {
+            const notificationIcon = notification.querySelector('.notification-icon');
+            const notificationTitle = notification.querySelector('.notification-title');
+            const notificationMessage = notification.querySelector('.notification-message');
             
-            // Focus on first invalid field
-            if (isValid === false) {
-                field.focus();
-                isValid = null; // Set to null so only first field gets focused
+            if (notificationIcon) {
+                notificationIcon.innerHTML = '<i class="fas fa-file-download"></i>';
+                notificationIcon.style.background = '#3498db';
             }
+            if (notificationTitle) notificationTitle.textContent = 'Template Downloaded!';
+            if (notificationMessage) notificationMessage.textContent = 'AT Excel template downloaded successfully. Fill in your data and upload.';
+            
+            // Show the notification
+            notification.classList.add('show');
+            
+            // Auto hide after 5 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
         }
-    });
-    
-    return isValid === true;
-}
-
-// Phone formatting function
-function formatPhoneInput() {
-    const phoneInput = document.getElementById('phone');
-    if (!phoneInput) return;
-    
-    phoneInput.addEventListener('input', function(e) {
-        let value = e.target.value.replace(/\D/g, '');
-        
-        // Ensure it starts with 0
-        if (value.length > 0 && value[0] !== '0') {
-            value = '0' + value;
-        }
-        
-        // Limit to 10 digits
-        if (value.length > 10) {
-            value = value.substring(0, 10);
-        }
-        
-        // Add spacing for readability
-        if (value.length > 3) {
-            value = value.substring(0, 3) + ' ' + value.substring(3);
-        }
-        if (value.length > 7) {
-            value = value.substring(0, 7) + ' ' + value.substring(7);
-        }
-        
-        e.target.value = value;
-        clearFieldError('phone');
     });
 }
 
-// Setup checkbox functionality
-function setupCheckboxFunctionality() {
-    const portedCheckbox = document.getElementById('portedNumber');
-    const portedContainer = document.getElementById('portedCheckboxContainer');
-    const portedHint = document.getElementById('portedNumberHint');
-    const phoneInput = document.getElementById('phone');
-    
-    if (!portedCheckbox || !portedContainer || !portedHint) {
-        return;
-    }
-    
-    // Update container class when checkbox changes
-    portedCheckbox.addEventListener('change', function() {
-        if (this.checked) {
-            portedContainer.classList.add('checked');
-            portedHint.textContent = "Accepting all Ghanaian numbers (MTN, Telecel, AirtelTigo)";
-            if (phoneInput) phoneInput.placeholder = "Any Ghanaian number (024, 020, 027, etc.)";
-        } else {
-            portedContainer.classList.remove('checked');
-            portedHint.textContent = "Check if your number was originally from another network";
-            if (phoneInput) phoneInput.placeholder = "0241234567 (MTN only)";
-        }
-        
-        // Re-validate phone number when checkbox changes
-        if (phoneInput && phoneInput.value.trim()) {
-            clearFieldError('phone');
-            const error = validateField('phone', phoneInput.value);
-            
-            if (!error && phoneInput.value.trim()) {
-                phoneInput.style.borderColor = '#10b981';
-            } else if (error) {
-                showFieldError('phone', error);
-            } else {
-                phoneInput.style.borderColor = '';
-            }
-        }
-    });
-    
-    // Initial state
-    if (portedCheckbox.checked) {
-        portedContainer.classList.add('checked');
-        if (portedHint) {
-            portedHint.textContent = "Accepting all Ghanaian numbers (MTN, Telecel, AirtelTigo)";
-        }
-    }
-}
+// Valid AT prefixes
+const validATPrefixes = ['026', '056', '027', '057', '023'];
 
-// Network detection display
-function setupNetworkDetection() {
-    const phoneInput = document.getElementById('phone');
-    const portedCheckbox = document.getElementById('portedNumber');
+// Function to validate phone number based on ported checkbox status
+function validatePhoneNumber(phoneNumber, isPorted = false) {
+    // Remove any non-numeric characters
+    const cleanNumber = phoneNumber.replace(/[^0-9]/g, '');
     
-    if (!phoneInput || !portedCheckbox) return;
-    
-    // Create network display element if it doesn't exist
-    let networkDisplay = document.getElementById('networkDisplay');
-    if (!networkDisplay) {
-        networkDisplay = document.createElement('div');
-        networkDisplay.id = 'networkDisplay';
-        networkDisplay.className = 'network-hint';
-        networkDisplay.style.fontSize = '0.85rem';
-        networkDisplay.style.color = '#666';
-        networkDisplay.style.marginTop = '6px';
-        networkDisplay.style.minHeight = '16px';
-        
-        // Insert after the checkbox container
-        const checkboxContainer = document.getElementById('portedCheckboxContainer');
-        if (checkboxContainer) {
-            checkboxContainer.parentNode.insertBefore(networkDisplay, checkboxContainer.nextSibling);
-        }
-    }
-    
-    phoneInput.addEventListener('input', function() {
-        const cleanValue = this.value.replace(/\D/g, '');
-        updateNetworkDetection(cleanValue);
-    });
-    
-    // Update when checkbox changes
-    portedCheckbox.addEventListener('change', function() {
-        if (phoneInput.value.trim()) {
-            updateNetworkDetection(phoneInput.value.replace(/\D/g, ''));
-        }
-    });
-    
-    function updateNetworkDetection(phoneNumber) {
-        const isPorted = portedCheckbox.checked;
-        
-        if (!networkDisplay || phoneNumber.length < 10) {
-            if (networkDisplay) networkDisplay.style.display = 'none';
-            return;
-        }
-        
-        const prefix = phoneNumber.substring(0, 3);
-        let network = '';
-        let color = '#666';
-        
-        // Network detection
-        const networkMap = {
-            '020': 'Telecel', '050': 'Telecel',
-            '024': 'MTN', '054': 'MTN', '055': 'MTN', '059': 'MTN', '053': 'MTN', '025': 'MTN',
-            '027': 'AirtelTigo', '057': 'AirtelTigo',
-            '026': 'AirtelTigo', '056': 'AirtelTigo', '023': 'AirtelTigo',       
+    // Check if it's a valid Ghanaian number (10 digits starting with 0)
+    if (!/^0\d{9}$/.test(cleanNumber)) {
+        return {
+            isValid: false,
+            error: 'Invalid Ghanaian number. Must be 10 digits starting with 0'
         };
-        
-        if (networkMap[prefix]) {
-            network = networkMap[prefix];
-            
-            if (isPorted) {
-                color = '#28a745'; // Green for any Ghanaian network when ported
-            } else if (['024', '054', '055', '059', '025', '053'].includes(prefix)) {
-                color = '#28a745'; // Green for MTN when not ported
-            } else {
-                color = '#dc3545'; // Red for non-MTN when not ported
-                network += ' - Check "ported number" option';
-            }
-        } else {
-            network = 'Unknown network';
-            color = '#dc3545';
-        }
-        
-        networkDisplay.textContent = `Detected: ${network}`;
-        networkDisplay.style.color = color;
-        networkDisplay.style.display = 'block';
     }
+    
+    // If ported network is checked, accept all number formats
+    if (isPorted) {
+        return {
+            isValid: true,
+            error: null
+        };
+    }
+    
+    // Check if number starts with valid AT prefix
+    const prefix = cleanNumber.substring(0, 3);
+    if (!validATPrefixes.includes(prefix)) {
+        return {
+            isValid: false,
+            error: `Invalid AT Phone Number Format. Must start with: ${validATPrefixes.join(', ')} or if the number is ported then please tick the 'Ported' option.`
+        };
+    }
+    
+    return {
+        isValid: true,
+        error: null
+    };
 }
 
-// Setup real-time validation
-function setupRealTimeValidation() {
-    const fields = ['fullname', 'phone', 'location', 'ghanaCard'];
+// Function to update the number type in bundle details
+function updateNumberType() {
+    const portedCheckbox = document.getElementById('portedNetwork');
+    const numberTypeElement = document.getElementById('numberType');
     
-    fields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (!field) return;
-        
-        field.addEventListener('input', function() {
-            clearFieldError(fieldId);
-            
-            // Optional formatting for Ghana Card
-            if (fieldId === 'ghanaCard') {
-                this.value = this.value.toUpperCase();
-            }
-            
-            // Show validation feedback
-            const error = validateField(fieldId, this.value);
-            if (!error && this.value.trim()) {
-                this.style.borderColor = '#10b981';
-            } else {
-                this.style.borderColor = '';
-            }
-        });
-    });
-    
-    // For select and date fields
-    const regionField = document.getElementById('region');
-    if (regionField) {
-        regionField.addEventListener('change', function() {
-            clearFieldError('region');
-            if (this.value && this.value !== '') {
-                this.style.borderColor = '#10b981';
-            }
-        });
-    }
-    
-    const dobField = document.getElementById('dob');
-    if (dobField) {
-        dobField.addEventListener('change', function() {
-            clearFieldError('dob');
-            if (this.value) {
-                this.style.borderColor = '#10b981';
-            }
-        });
+    if (portedCheckbox && numberTypeElement) {
+        if (portedCheckbox.checked) {
+            numberTypeElement.textContent = 'Ported';
+        } else {
+            numberTypeElement.textContent = 'Normal';
+        }
     }
 }
 
@@ -648,35 +387,66 @@ async function applyUserStoreBranding() {
     }
 }
 
+
+// ── Moolre Payment Link helper ────────────────────────────────────────────────
+// Fetches the current POS link from the gateway config so the admin can update
+// it without changing code. Falls back to the hardcoded link if API fails.
+async function getMoolrePaymentLink() {
+    try {
+        const h = window.location.hostname;
+        const api = (h === 'localhost' || h === '127.0.0.1') ? 'https://youngster-backend.vercel.app/api' : `http://${h}:5000/api`;
+        const res = await fetch(`${api}/payment-gateways`);
+        if (res.ok) {
+            const gateways = await res.json();
+            const moolre = gateways.find(g => /moolre/i.test(g.name));
+            if (moolre?.posLink) return moolre.posLink;
+        }
+    } catch {}
+    return 'https://pos.moolre.com/OBsl0jRg95WiLfytc7Tu33434';
+}
+
 // ── Moolre Payment Modal ──────────────────────────────────────────────────────
+// Shows a modal asking for the customer's MoMo number, initiates the
+// Moolre USSD push via the backend, then polls for confirmation.
+
 function showPaymentModal(orderDetails) {
+    // Remove any existing modal
     const existing = document.getElementById('moolrePayModal');
     if (existing) existing.remove();
 
     const modal = document.createElement('div');
     modal.id = 'moolrePayModal';
     modal.innerHTML = `
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.6);
-            display:flex;align-items:center;justify-content:center;z-index:99999;padding:16px;">
-            <div style="background:#fff;border-radius:16px;padding:28px 24px;
-                max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.3);font-family:inherit;">
+        <div style="
+            position:fixed; inset:0; background:rgba(0,0,0,0.6);
+            display:flex; align-items:center; justify-content:center;
+            z-index:99999; padding:16px;">
+            <div style="
+                background:#fff; border-radius:16px; padding:28px 24px;
+                max-width:380px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.3);
+                font-family:inherit;">
 
-                <div style="text-align:center;margin-bottom:20px;">
+                <!-- Header -->
+                <div style="text-align:center; margin-bottom:20px;">
                     <div style="width:56px;height:56px;background:linear-gradient(135deg,#6a11cb,#2575fc);
-                        border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                        border-radius:50%;display:flex;align-items:center;justify-content:center;
+                        margin:0 auto 12px;">
                         <i class="fas fa-mobile-alt" style="color:#fff;font-size:22px;"></i>
                     </div>
                     <h2 style="margin:0;font-size:18px;color:#1a1a2e;">Mobile Money Payment</h2>
-                    <p style="margin:6px 0 0;color:#666;font-size:13px;">Enter the MoMo number to charge</p>
+                    <p style="margin:6px 0 0;color:#666;font-size:13px;">
+                        Enter the MoMo number to charge
+                    </p>
                 </div>
 
+                <!-- Order summary -->
                 <div style="background:#f8f9ff;border-radius:10px;padding:12px 16px;margin-bottom:18px;">
                     <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                        <span style="color:#666;font-size:13px;">Service</span>
+                        <span style="color:#666;font-size:13px;">Bundle</span>
                         <span style="font-weight:600;font-size:13px;">${orderDetails.bundle_size}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
-                        <span style="color:#666;font-size:13px;">Phone</span>
+                        <span style="color:#666;font-size:13px;">Recipient</span>
                         <span style="font-weight:600;font-size:13px;">${orderDetails.beneficiary}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between;border-top:1px solid #e0e0e0;padding-top:8px;margin-top:4px;">
@@ -685,42 +455,70 @@ function showPaymentModal(orderDetails) {
                     </div>
                 </div>
 
+                <!-- MoMo phone input -->
                 <div id="payModalStep1">
-                    <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">MoMo Phone Number</label>
-                    <input type="tel" id="momoPhone" placeholder="0XX XXX XXXX" inputmode="numeric" maxlength="10"
-                        style="width:100%;box-sizing:border-box;padding:12px 14px;border:2px solid #e0e0e0;
-                        border-radius:8px;font-size:15px;outline:none;margin-bottom:12px;">
-                    <label style="display:block;font-size:13px;font-weight:600;color:#333;margin-bottom:6px;">Network</label>
-                    <select id="momoNetwork" style="width:100%;box-sizing:border-box;padding:12px;
-                        border:2px solid #e0e0e0;border-radius:8px;font-size:14px;background:#fff;margin-bottom:16px;">
-                        <option value="MTN">MTN</option>
-                        <option value="Telecel">Telecel</option>
-                        <option value="AirtelTigo">AirtelTigo</option>
-                    </select>
-                    <button id="momoPayBtn" style="width:100%;padding:14px;background:linear-gradient(135deg,#6a11cb,#2575fc);
-                        color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;">
+                    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:12px;">
+                        <div>
+                            <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Your MoMo Payment Network</label>
+                            <select id="momoNetwork" style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;border-radius:8px;font-size:15px;background:#fff;outline:none;">
+                                <option value="MTN">MTN</option>
+                                <option value="Telecel">Telecel</option>
+                                <option value="AirtelTigo">AirtelTigo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display:block;font-size:12px;color:#666;margin-bottom:4px;">Your MoMo Phone Number</label>
+                            <input type="tel" id="momoPhone" placeholder="0XX XXX XXXX"
+                                inputmode="numeric" maxlength="10"
+                                style="width:100%;padding:12px 14px;border:2px solid #e0e0e0;
+                                border-radius:8px;font-size:15px;outline:none;">
+                        </div>
+                    </div>
+                    <p style="font-size:12px;color:#888;margin:0 0 16px;">
+                        A payment prompt will be sent to this number. Enter your MoMo PIN to confirm.
+                    </p>
+                    <button id="momoPayBtn" style="
+                        width:100%;padding:14px;background:linear-gradient(135deg,#6a11cb,#2575fc);
+                        color:#fff;border:none;border-radius:10px;font-size:15px;
+                        font-weight:600;cursor:pointer;letter-spacing:0.3px;">
                         <i class="fas fa-paper-plane"></i> Send Payment Prompt
                     </button>
-                    <button id="momoCancel" style="width:100%;padding:10px;background:transparent;color:#888;
-                        border:none;font-size:13px;cursor:pointer;margin-top:8px;">Cancel</button>
+                    <button id="momoCancel" style="
+                        width:100%;padding:10px;background:transparent;color:#888;
+                        border:none;font-size:13px;cursor:pointer;margin-top:8px;">
+                        Cancel
+                    </button>
                 </div>
 
+                <!-- Waiting screen (hidden initially) -->
                 <div id="payModalStep2" style="display:none;text-align:center;">
-                    <i class="fas fa-spinner fa-spin" style="font-size:36px;color:#6a11cb;margin-bottom:16px;"></i>
+                    <div style="margin-bottom:16px;">
+                        <i class="fas fa-spinner fa-spin" style="font-size:36px;color:#6a11cb;"></i>
+                    </div>
                     <h3 style="margin:0 0 8px;color:#1a1a2e;">Waiting for payment...</h3>
                     <p id="payModalMsg" style="color:#666;font-size:13px;margin:0 0 16px;">
-                        Check your phone and approve the MoMo prompt.</p>
-                    <button id="momoCancelWait" style="padding:10px 24px;background:transparent;color:#e74c3c;
-                        border:1px solid #e74c3c;border-radius:8px;font-size:13px;cursor:pointer;">Cancel</button>
+                        Check your phone and enter your MoMo PIN to approve the payment.
+                    </p>
+                    <button id="momoCancelWait" style="
+                        padding:10px 24px;background:transparent;color:#e74c3c;
+                        border:1px solid #e74c3c;border-radius:8px;font-size:13px;cursor:pointer;">
+                        Cancel
+                    </button>
                 </div>
 
+                <!-- Result screen (hidden initially) -->
                 <div id="payModalStep3" style="display:none;text-align:center;">
                     <div id="payResultIcon" style="font-size:48px;margin-bottom:12px;"></div>
                     <h3 id="payResultTitle" style="margin:0 0 8px;"></h3>
                     <p id="payResultMsg" style="color:#666;font-size:13px;margin:0 0 20px;"></p>
-                    <button id="payResultClose" style="padding:12px 32px;background:linear-gradient(135deg,#6a11cb,#2575fc);
-                        color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;">Done</button>
+                    <button id="payResultClose" style="
+                        padding:12px 32px;background:linear-gradient(135deg,#6a11cb,#2575fc);
+                        color:#fff;border:none;border-radius:10px;font-size:14px;
+                        font-weight:600;cursor:pointer;">
+                        Done
+                    </button>
                 </div>
+
             </div>
         </div>`;
 
@@ -730,17 +528,25 @@ function showPaymentModal(orderDetails) {
     const step2 = document.getElementById('payModalStep2');
     const step3 = document.getElementById('payModalStep3');
     const momoPhone = document.getElementById('momoPhone');
+    const momoNetwork = document.getElementById('momoNetwork');
 
+    // Leave blank — customer enters their own MoMo payment number
     momoPhone.value = '';
-    momoPhone.addEventListener('input', () => { momoPhone.value = momoPhone.value.replace(/[^0-9]/g, ''); });
 
+    // Numeric only
+    momoPhone.addEventListener('input', () => {
+        momoPhone.value = momoPhone.value.replace(/[^0-9]/g, '');
+    });
+
+    // Cancel
     document.getElementById('momoCancel').addEventListener('click', () => modal.remove());
     document.getElementById('momoCancelWait').addEventListener('click', () => modal.remove());
     document.getElementById('payResultClose').addEventListener('click', () => modal.remove());
 
+    // Send payment prompt
     document.getElementById('momoPayBtn').addEventListener('click', async () => {
-        const phone   = momoPhone.value.trim();
-        const network = document.getElementById('momoNetwork').value;
+        const phone = momoPhone.value.trim();
+        const network = momoNetwork.value;
 
         if (!phone || phone.length !== 10) {
             momoPhone.style.border = '2px solid #e74c3c';
@@ -748,51 +554,61 @@ function showPaymentModal(orderDetails) {
             return;
         }
         momoPhone.style.border = '2px solid #e0e0e0';
+
+        // Show waiting screen
         step1.style.display = 'none';
         step2.style.display = 'block';
 
         const API_BASE = 'https://youngster-backend.vercel.app/api';
-        const token  = localStorage.getItem('token');
+
+        const token = localStorage.getItem('token');
         const headers = { 'Content-Type': 'application/json' };
         if (token) headers['Authorization'] = `Bearer ${token}`;
 
+        let transactionId = null;
+        let pollTimer = null;
+
         try {
             const res = await fetch(`${API_BASE}/payment/initiate`, {
-                method: 'POST', headers,
+                method: 'POST',
+                headers,
                 body: JSON.stringify({
                     gatewayName:    'Moolre',
-                    phoneNumber:    phone,
-                    beneficiary:    orderDetails.beneficiary,
-                    amount:         orderDetails.amount,
-                    provider:       network,
-                    paymentNetwork: network,
-                    orderProvider:  orderDetails.package || 'MTN AFA',
-                    packageProvider: orderDetails.package || 'MTN AFA',
-                    description:    `${orderDetails.package} ${orderDetails.bundle_size}`,
+                    phoneNumber:     phone,
+                    beneficiary:     orderDetails.beneficiary,
+                    amount:          orderDetails.amount,
+                    provider:        network,
+                    paymentNetwork:  network,
+                    orderProvider:   orderDetails.package || 'AT Ishare',
+                    packageProvider: orderDetails.package || 'AT Ishare',
+                    description:     `${orderDetails.package} ${orderDetails.bundle_size}`,
                     packageName:    orderDetails.bundle_size,
                     bundle_size:    orderDetails.bundle_size,
                     storeSlug:      new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '',
                     clientType:     localStorage.getItem('clientType') || 'Customers',
+                    referralToken: localStorage.getItem('referralToken') || new URLSearchParams(window.location.search).get('ref') || null,
                     guestSessionId: localStorage.getItem('guestSessionId') || '',
-                    extra:          orderDetails.extra || {},
                 }),
             });
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.message || 'Payment initiation failed');
 
-            const transactionId = data.transactionId;
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                throw new Error(data.message || 'Payment initiation failed');
+            }
+
+            transactionId = data.transactionId;
 
             if (data.requiresOtp) {
                 const returnUrl = window.location.pathname + window.location.search;
                 localStorage.setItem('otpTransactionId', transactionId);
-                localStorage.setItem('otpPhoneNumber',   phone);
-                localStorage.setItem('otpReturnUrl',     returnUrl);
+                localStorage.setItem('otpPhoneNumber', phone);
+                localStorage.setItem('otpReturnUrl', returnUrl);
                 modal.remove();
-                window.location.href = `../payment-otp.html?txid=${encodeURIComponent(transactionId)}&phone=${encodeURIComponent(phone)}&return=${encodeURIComponent(returnUrl)}`;
+                window.location.href = `/Dashboard/payment-otp.html?txid=${encodeURIComponent(transactionId)}&phone=${encodeURIComponent(phone)}&store=${encodeURIComponent(new URLSearchParams(window.location.search).get('store') || localStorage.getItem('storeSlug') || '')}&client=${encodeURIComponent(new URLSearchParams(window.location.search).get('client') || localStorage.getItem('clientType') || '')}&return=${encodeURIComponent(returnUrl)}`;
                 return;
             }
 
-            // Poll for status
             const deadline = Date.now() + 180000;
             const poll = async () => {
                 try {
@@ -800,26 +616,14 @@ function showPaymentModal(orderDetails) {
                     const d = await r.json();
                     const status = (d.status || d.transaction?.status || 'pending').toLowerCase();
                     document.getElementById('payModalMsg').textContent =
-                        status === 'pending' ? 'Waiting for MoMo PIN approval...' :
-                        status === 'processing' ? 'Processing...' : 'Checking...';
+                        status === 'pending' ? 'A USSD prompt has been sent. Enter your MoMo PIN to approve.' :
+                        status === 'processing' ? 'Processing your payment…' : 'Checking payment…';
                     if (status === 'success') {
-                        step2.style.display = 'none'; step3.style.display = 'block';
-                        document.getElementById('payResultIcon').textContent = '✅';
-                        document.getElementById('payResultTitle').textContent = 'Payment Successful!';
-                        document.getElementById('payResultTitle').style.color = '#27ae60';
-                        document.getElementById('payResultMsg').textContent = 'Registration submitted successfully.';
+                        showResult(true, '✅', 'Payment Successful!', `Your ${orderDetails.bundle_size} bundle for ${orderDetails.beneficiary} is being processed.`);
                     } else if (status === 'failed' || status === 'cancelled') {
-                        step2.style.display = 'none'; step3.style.display = 'block';
-                        document.getElementById('payResultIcon').textContent = '❌';
-                        document.getElementById('payResultTitle').textContent = 'Payment Failed';
-                        document.getElementById('payResultTitle').style.color = '#e74c3c';
-                        document.getElementById('payResultMsg').textContent = 'Payment not completed. Please try again.';
+                        showResult(false, '❌', 'Payment Failed', 'The payment was not completed. Please try again.');
                     } else if (Date.now() >= deadline) {
-                        step2.style.display = 'none'; step3.style.display = 'block';
-                        document.getElementById('payResultIcon').textContent = '⏱️';
-                        document.getElementById('payResultTitle').textContent = 'Timed Out';
-                        document.getElementById('payResultTitle').style.color = '#e74c3c';
-                        document.getElementById('payResultMsg').textContent = 'No response. Contact support if you approved the payment.';
+                        showResult(false, '⏱️', 'Payment Timed Out', 'No response received. If you approved, please contact support.');
                     } else {
                         setTimeout(poll, 10000);
                     }
@@ -832,275 +636,655 @@ function showPaymentModal(orderDetails) {
             step1.style.display = 'block';
             alert(err.message || 'Could not initiate payment. Please try again.');
         }
+
+        function showResult(success, icon, title, message) {
+            step2.style.display = 'none';
+            step3.style.display = 'block';
+            document.getElementById('payResultIcon').textContent = icon;
+            document.getElementById('payResultTitle').textContent = title;
+            document.getElementById('payResultTitle').style.color = success ? '#27ae60' : '#e74c3c';
+            document.getElementById('payResultMsg').textContent = message;
+        }
     });
 }
 
-// Initialize everything when the page loads
-
-// ── Moolre Payment Link helper ────────────────────────────────────────────────
-async function getMoolrePaymentLink() {
-    try {
-        const res = await fetch('https://youngster-backend.vercel.app/api/payment-gateways');
-        if (res.ok) {
-            const gateways = await res.json();
-            const moolre = gateways.find(g => /moolre/i.test(g.name));
-            if (moolre?.posLink) return moolre.posLink;
-        }
-    } catch {}
-    return 'https://pos.moolre.com/OBsl0jRg95WiLfytc7Tu33434';
-}
 
 document.addEventListener('DOMContentLoaded', function() {
     
+    // Initialize theme, sidebar, and notification
     initializeTheme();
     initializeSidebar();
     applyUserStoreBranding(); // Load user's store branding
     
-    // Set provider context for storefront-prices.js
-    localStorage.setItem('providerName', 'MTN AFA');
+    // Set provider context for storefront-prices.js to inject referral prices
+    localStorage.setItem('providerName', 'AT Ishare');
     
-    initializeLogout(); // Initialize logout separately
+    const { showNotification } = initializeNotification();
+    initializeExcelTemplateDownload();
     
-    // Update welcome message if username exists
-    const username = localStorage.getItem('username');
-    const welcomeElement = document.getElementById('welcomeMessage');
-    if (welcomeElement && username) {
-        welcomeElement.textContent = `Welcome, ${username}`;
-    }
+    // Define bundle offers with their prices (data quantity in GB -> price)
+    const bundleOffers = {
+        '1': 4.70,
+        '2': 9.30,
+        '3': 13.80,
+        '4': 18.00,
+        '5': 22.50,
+    };
     
-});
-
-// Also add logout button listener when DOM is fully loaded (additional safety)
-window.addEventListener('load', function() {
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', handleLogout);
-    }
-});
-
-// ── Dynamic AFA price loading ─────────────────────────────────────────────────
-// Fallback is the hardcoded 15 GHS — overwritten as soon as the API responds.
-let afaPrice = 15;
-
-async function loadAFAPrice() {
-    const params     = new URLSearchParams(window.location.search);
-    const store      = params.get('store')  || localStorage.getItem('storeSlug')  || '';
-    const clientType = params.get('client') || localStorage.getItem('clientType') || 'Customers';
-
-    // Only fetch if we're in a storefront context — otherwise the dealer is
-    // viewing their own page and the hardcoded fallback is fine.
-    if (!store) return;
-
-    try {
-        const res = await fetch(
-            `https://youngster-backend.vercel.app/api/storefront-prices` +
-            `?store=${encodeURIComponent(store)}` +
-            `&clientType=${encodeURIComponent(clientType)}`
-        );
-        if (!res.ok) return;
-
-        const allPrices = await res.json();
-
-        // Find the MTN AFA entry — provider stored as "MTN AFA" in DB
-        const afaEntry = allPrices.find(p =>
-            (p.provider || '').trim().toLowerCase() === 'mtn afa'
-        );
-
-        if (!afaEntry) {
-            return;
-        }
-
-        afaPrice = parseFloat(afaEntry.price);
-
-        // Update the fee badge in the card header
-        const feeEl = document.getElementById('registrationFee');
-        if (feeEl) {
-            feeEl.textContent = `Registration Fee: ${afaPrice.toFixed(2)} GHS`;
-        }
-
-    } catch (err) {
-    }
-}
-
-// INITIALIZE MTN AFA REGISTRATION PAGE SPECIFIC CODE
-document.addEventListener('DOMContentLoaded', function() {
+    // Get DOM elements
+    const phoneInput = document.getElementById('phone');
+    const portedCheckbox = document.getElementById('portedNetwork');
+    const portedCheckboxContainer = document.getElementById('portedCheckbox');
+    const customCheckbox = document.getElementById('customCheckbox');
+    const bundleSelect = document.getElementById('bundle');
+    const bundleDetails = document.getElementById('bundleDetails');
+    const bundleSize = document.getElementById('bundleSize');
+    const bundlePrice = document.getElementById('bundlePrice');
+    const bundleValidity = document.getElementById('bundleValidity');
+    const bundleNetwork = document.getElementById('bundleNetwork');
     
-    // First check if user is logged in
-    const isLoggedIn = checkAuthentication();
-    if (!isLoggedIn) {
-        return; // Stop initialization if not logged in
-    }
-
-    // Load the dealer's price for this registration from the storefront API
-    loadAFAPrice();
-    
-    const registrationForm = document.getElementById('registrationForm');
-    if (!registrationForm) {
-        return;
-    }
-    
-    // Add date input restrictions
-    const dobInput = document.getElementById('dob');
-    if (dobInput) {
-        const today = new Date().toISOString().split('T')[0];
-        dobInput.max = today;
-        
-        const minDate = new Date();
-        minDate.setFullYear(minDate.getFullYear() - 100);
-        dobInput.min = minDate.toISOString().split('T')[0];
-    }
-    
-    // Setup functionality
-    setupCheckboxFunctionality();
-    formatPhoneInput();
-    setupNetworkDetection();
-    setupRealTimeValidation();
-    
-    // FORM SUBMISSION
-    registrationForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Validate form
-        const isValid = validateForm();
-        
-        if (!isValid) {
-            return;
-        }
-        
-        // Form is valid - collect data
-        const formData = {
-            fullname: document.getElementById('fullname').value.trim(),
-            phone: document.getElementById('phone').value.trim(),
-            location: document.getElementById('location').value.trim(),
-            region: document.getElementById('region').value,
-            ghanaCard: document.getElementById('ghanaCard').value.trim(),
-            dob: document.getElementById('dob').value,
-            isPorted: document.getElementById('portedNumber')?.checked || false,
-            timestamp: new Date().toISOString()
-        };
-        
-        // Use the payment modal — same flow as MTN, Telecel, AT
-        showPaymentModal({
-            beneficiary: formData.phone,
-            package:     'MTN AFA',
-            bundle_size: 'AFA Registration',
-            amount:      afaPrice,
-            isPorted:    formData.isPorted,
-            extra:       {
-                fullname:  formData.fullname,
-                location:  formData.location,
-                region:    formData.region,
-                ghanaCard: formData.ghanaCard,
-                dob:       formData.dob,
-            },
+    // Make only the checkbox clickable, not the entire area
+    if (customCheckbox && portedCheckbox) {
+        customCheckbox.addEventListener('click', function(e) {
+            e.stopPropagation();
+            portedCheckbox.checked = !portedCheckbox.checked;
+            updateCheckboxState();
+            updateNumberType(); // Update number type when checkbox changes
         });
-
-        // Clear form after opening modal
-        registrationForm.reset();
-        clearAllFieldErrors();
-        
-        // Reset all field borders
-        const allFields = document.querySelectorAll('#registrationForm input, #registrationForm select');
-        allFields.forEach(field => {
-            field.style.borderColor = '';
+    }
+    
+    // Update checkbox state function
+    function updateCheckboxState() {
+        if (portedCheckbox && portedCheckboxContainer) {
+            if (portedCheckbox.checked) {
+                portedCheckboxContainer.classList.add('checked');
+                if (phoneInput) phoneInput.placeholder = "Enter any Ghanaian phone number";
+            } else {
+                portedCheckboxContainer.classList.remove('checked');
+                if (phoneInput) phoneInput.placeholder = "Enter AT phone number ";
+            }
+            
+            // Re-validate phone number when checkbox state changes
+            if (phoneInput && phoneInput.value) {
+                const validation = validatePhoneNumber(phoneInput.value, portedCheckbox.checked);
+                if (!validation.isValid) {
+                    phoneInput.style.borderColor = '#e74c3c';
+                    phoneInput.style.boxShadow = '0 0 0 3px rgba(231, 76, 60, 0.2)';
+                } else {
+                    phoneInput.style.borderColor = '';
+                    phoneInput.style.boxShadow = '';
+                }
+            }
+        }
+    }
+    
+    // Initialize checkbox state and number type
+    updateCheckboxState();
+    updateNumberType();
+    
+    // Bundle dropdown functionality
+    if (bundleSelect && bundleDetails && bundleSize && bundlePrice && bundleValidity && bundleNetwork) {
+        bundleSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            if (selectedOption && selectedOption.value) {
+                const rawSize = selectedOption.value;
+                bundleSize.textContent = rawSize.toLowerCase().includes('gb') ? rawSize : rawSize + ' GB';
+                bundlePrice.textContent = (selectedOption.getAttribute('data-price') || '0') + ' GHS';
+                bundleValidity.textContent = selectedOption.getAttribute('data-validity') || 'N/A';
+                bundleNetwork.textContent = selectedOption.getAttribute('data-network') || 'AT';
+                bundleDetails.classList.add('active');
+            } else {
+                bundleDetails.classList.remove('active');
+            }
+        });
+    }
+    
+    // Phone number input validation
+    if (phoneInput) {
+        phoneInput.addEventListener('input', function(e) {
+            // Remove any non-numeric characters
+            this.value = this.value.replace(/[^0-9]/g, '');
+            
+            // Validate the phone number
+            if (this.value.length > 0) {
+                const isPorted = portedCheckbox ? portedCheckbox.checked : false;
+                const validation = validatePhoneNumber(this.value, isPorted);
+                
+                if (validation.isValid) {
+                    this.style.borderColor = '#4CAF50';
+                    this.style.boxShadow = '0 0 0 3px rgba(76, 175, 80, 0.2)';
+                } else {
+                    this.style.borderColor = '#e74c3c';
+                    this.style.boxShadow = '0 0 0 3px rgba(231, 76, 60, 0.2)';
+                }
+            } else {
+                this.style.borderColor = '';
+                this.style.boxShadow = '';
+            }
         });
         
-        // Reset checkbox state
-        const portedCheckbox = document.getElementById('portedNumber');
-        const portedContainer = document.getElementById('portedCheckboxContainer');
-        const portedHint = document.getElementById('portedNumberHint');
-        
-        if (portedCheckbox) portedCheckbox.checked = false;
-        if (portedContainer) portedContainer.classList.remove('checked');
-        if (portedHint) {
-            portedHint.textContent = "Check if your number was originally from another network";
-        }
-        
-        // Hide network display
-        const networkDisplay = document.getElementById('networkDisplay');
-        if (networkDisplay) {
-            networkDisplay.style.display = 'none';
-        }
-    });
+        // Phone number blur validation (remove error message display)
+        phoneInput.addEventListener('blur', function() {
+            if (this.value.length > 0) {
+                const isPorted = portedCheckbox ? portedCheckbox.checked : false;
+                const validation = validatePhoneNumber(this.value, isPorted);
+                
+                if (!validation.isValid) {
+                    this.style.borderColor = '#e74c3c';
+                    this.style.boxShadow = '0 0 0 3px rgba(231, 76, 60, 0.2)';
+                } else {
+                    this.style.borderColor = '#4CAF50';
+                    this.style.boxShadow = '0 0 0 3px rgba(76, 175, 80, 0.2)';
+                }
+            }
+        });
+    }
     
-    // Add CSS for checkbox styling and error states
-    const style = document.createElement('style');
-    style.textContent = `
-        .field-error {
-            color: #ef4444;
-            font-size: 0.875rem;
-            margin-top: 0.25rem;
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        input.error, select.error {
-            border-color: #ef4444 !important;
-            animation: shake 0.3s ease-in-out;
-        }
-        
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
-        }
-        
-        /* Checkbox styling */
-        .ported-checkbox {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin-top: 10px;
-            padding: 12px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid #ffc107;
-            transition: all 0.3s ease;
-        }
-        
-        .ported-checkbox.checked {
-            border-left-color: #28a745;
-            background-color: #f0fff4;
-        }
-        
-        .ported-checkbox input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            margin-top: 2px;
-            accent-color: #ffc107;
-        }
-        
-        .ported-checkbox.checked input[type="checkbox"] {
-            accent-color: #28a745;
-        }
-        
-        .ported-checkbox label {
-            cursor: pointer;
-            user-select: none;
-            font-weight: 500;
-            color: #333;
-        }
-        
-        .ported-checkbox small {
-            display: block;
-            font-size: 0.85rem;
-            color: #666;
-            margin-top: 4px;
-            line-height: 1.4;
-        }
-        
-        .network-hint {
-            font-size: 0.85rem;
-            margin-top: 6px;
-            min-height: 16px;
-        }
-    `;
-    document.head.appendChild(style);
+    // Numeric-only input for paste orders textarea
+    const ordersTextarea = document.getElementById('ordersTextarea');
+    const portedCheckboxModal = document.getElementById('portedNetworkModal');
+    const portedCheckboxModalContainer = document.getElementById('portedCheckboxModal');
     
+    // Toggle ported checkbox styling in modal
+    if (portedCheckboxModal && portedCheckboxModalContainer) {
+        portedCheckboxModal.addEventListener('change', function() {
+            if (this.checked) {
+                portedCheckboxModalContainer.classList.add('checked');
+            } else {
+                portedCheckboxModalContainer.classList.remove('checked');
+            }
+            updateOrdersPreview();
+        });
+    }
+    
+    if (ordersTextarea) {
+        ordersTextarea.addEventListener('input', function(e) {
+            const cursorPosition = this.selectionStart;
+            const originalValue = this.value;
+            
+            // Process each line separately
+            const lines = originalValue.split('\n');
+            const processedLines = lines.map(line => {
+                const parts = line.split(/\s+/);
+                if (parts.length >= 2) {
+                    // Keep only numbers in the phone part
+                    parts[0] = parts[0].replace(/[^0-9]/g, '');
+                    // Keep only numbers in the data quantity part
+                    parts[1] = parts[1].replace(/[^0-9]/g, '');
+                } else if (parts.length === 1) {
+                    // If only phone number, keep only numbers
+                    parts[0] = parts[0].replace(/[^0-9]/g, '');
+                }
+                return parts.join(' ');
+            });
+            
+            this.value = processedLines.join('\n');
+            
+            // Restore cursor position
+            this.setSelectionRange(cursorPosition, cursorPosition);
+            updateOrdersPreview();
+        });
+    }
+    
+    // Paste Orders Modal functionality
+    const pasteOrders = document.getElementById('pasteOrders');
+    const pasteOrdersModal = document.getElementById('pasteOrdersModal');
+    const cancelPaste = document.getElementById('cancelPaste');
+    const proceedToPay = document.getElementById('ProceedToPay');
+    const ordersPreview = document.getElementById('ordersPreview');
+    const previewList = document.getElementById('previewList');
+    const ordersCount = document.getElementById('ordersCount');
+    const totalAmount = document.getElementById('totalAmount');
+    const totalValue = document.getElementById('totalValue');
+    
+    if (pasteOrders && pasteOrdersModal) {
+        pasteOrders.addEventListener('click', function() {
+            pasteOrdersModal.classList.add('active');
+            // Clear the textarea when modal opens
+            if (ordersTextarea) ordersTextarea.value = '';
+            if (portedCheckboxModal) {
+                const isChecked = portedCheckbox ? portedCheckbox.checked : false;
+                portedCheckboxModal.checked = isChecked;
+                if (portedCheckboxModalContainer) {
+                    if (isChecked) {
+                        portedCheckboxModalContainer.classList.add('checked');
+                    } else {
+                        portedCheckboxModalContainer.classList.remove('checked');
+                    }
+                }
+            }
+            updateOrdersPreview();
+        });
+    }
+    
+    if (cancelPaste && pasteOrdersModal) {
+        cancelPaste.addEventListener('click', function() {
+            pasteOrdersModal.classList.remove('active');
+        });
+    }
+    
+    if (proceedToPay) {
+        proceedToPay.addEventListener('click', function() {
+            if (!ordersTextarea) return;
+            
+            const ordersText = ordersTextarea.value.trim();
+            if (!ordersText) {
+                alert('Please enter some orders');
+                return;
+            }
+            
+            // Process the orders
+            const isPorted = portedCheckboxModal ? portedCheckboxModal.checked : false;
+            const orders = parseOrders(ordersText, isPorted);
+            if (orders.length === 0) {
+                alert('No valid orders found. Please check the format.');
+                return;
+            }
+            
+            // Check for invalid orders
+            const invalidOrders = orders.filter(order => !order.isValid);
+            if (invalidOrders.length > 0) {
+                alert(`Found ${invalidOrders.length} invalid orders. Please fix them before proceeding.`);
+                return;
+            }
+            
+            // Calculate total cost
+            const totalCost = calculateTotalAmount(orders);
+            
+            // Show confirmation with order details and total amount
+            const orderSummary = orders.map(order => 
+                `${order.phone} - ${order.dataQuantity} GB (${order.price} GHS)`
+            ).join('\n');
+            
+            if (confirm(`Add these ${orders.length} orders to cart?\n\n${orderSummary}\n\nTotal Amount: ${totalCost.toFixed(2)} GHS`)) {
+                // Show success notification
+                showNotification();
+                if (pasteOrdersModal) pasteOrdersModal.classList.remove('active');
+            }
+        });
+    }
+    
+    function updateOrdersPreview() {
+        if (!ordersTextarea || !previewList || !ordersCount || !totalValue || !ordersPreview || !totalAmount) return;
+        
+        const ordersText = ordersTextarea.value.trim();
+        previewList.innerHTML = '';
+        
+        if (!ordersText) {
+            ordersPreview.classList.remove('active');
+            totalAmount.classList.remove('active');
+            ordersCount.textContent = '0';
+            totalValue.textContent = '0.00 GHS';
+            return;
+        }
+        
+        const isPorted = portedCheckboxModal ? portedCheckboxModal.checked : false;
+        const orders = parseOrders(ordersText, isPorted);
+        
+        if (orders.length === 0) {
+            ordersPreview.classList.remove('active');
+            totalAmount.classList.remove('active');
+            ordersCount.textContent = '0';
+            totalValue.textContent = '0.00 GHS';
+            return;
+        }
+        
+        ordersPreview.classList.add('active');
+        ordersCount.textContent = orders.length;
+        
+        // Calculate and display total amount
+        const totalCost = calculateTotalAmount(orders);
+        totalValue.textContent = totalCost.toFixed(2) + ' GHS';
+        totalAmount.classList.add('active');
+        
+        orders.forEach(order => {
+            const li = document.createElement('li');
+            
+            li.innerHTML = `
+                <div>
+                    <span style="color: ${order.isValid ? '#333' : '#e74c3c'}">${order.phone}</span>
+                    <span style="color: ${order.isValid ? '#333' : '#e74c3c'}"> - ${order.dataQuantity} GB</span>
+                    ${!order.isValid ? `<div class="order-error">${order.error || 'Invalid order'}</div>` : ''}
+                </div>
+                <div style="color: #6200ff; font-weight: 600;">
+                    ${order.isValid ? order.price.toFixed(2) + ' GHS' : 'Invalid'}
+                </div>
+            `;
+            previewList.appendChild(li);
+        });
+    }
+    
+    function parseOrders(text, isPorted = false) {
+        const lines = text.split('\n');
+        const orders = [];
+        
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+            
+            const parts = trimmedLine.split(/\s+/);
+            if (parts.length >= 2) {
+                const phone = parts[0];
+                const dataQuantity = parts[1];
+                
+                // Validate phone number
+                const phoneValidation = validatePhoneNumber(phone, isPorted);
+                
+                // Validate data quantity
+                const isValidDataQuantity = bundleOffers.hasOwnProperty(dataQuantity);
+                const dataQuantityError = !isValidDataQuantity ? 'Invalid data quantity. Use: 1, 2, 3, 4, or 5' : null;
+                
+                // Get price from bundle offers
+                const price = isValidDataQuantity ? bundleOffers[dataQuantity] : 0;
+                
+                // Determine if order is valid
+                const isValid = phoneValidation.isValid && isValidDataQuantity;
+                const error = phoneValidation.error || dataQuantityError;
+                
+                orders.push({
+                    phone: phone,
+                    dataQuantity: dataQuantity,
+                    price: price,
+                    isValid: isValid,
+                    error: error
+                });
+            }
+        }
+        
+        return orders;
+    }
+    
+    function calculateTotalAmount(orders) {
+        return orders.reduce((total, order) => {
+            return order.isValid ? total + order.price : total;
+        }, 0);
+    }
+    
+    // Excel Upload functionality
+    const excelFormat = document.getElementById('excelFormat');
+    const excelUploadModal = document.getElementById('excelUploadModal');
+    const excelUploadArea = document.getElementById('excelUploadArea');
+    const excelUploadInput = document.getElementById('excelUploadInput');
+    const cancelExcel = document.getElementById('cancelExcel');
+    const uploadExcel = document.getElementById('uploadExcel');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileDetails = document.getElementById('fileDetails');
+    const excelOrdersPreview = document.getElementById('excelOrdersPreview');
+    const excelPreviewList = document.getElementById('excelPreviewList');
+    const excelOrdersCount = document.getElementById('excelOrdersCount');
+    const excelTotalAmount = document.getElementById('excelTotalAmount');
+    const excelTotalValue = document.getElementById('excelTotalValue');
+    const portedCheckboxExcelModal = document.getElementById('portedNetworkExcelModal');
+    const portedCheckboxExcelModalContainer = document.getElementById('portedCheckboxExcelModal');
+    
+    // Toggle ported checkbox styling in excel modal
+    if (portedCheckboxExcelModal && portedCheckboxExcelModalContainer) {
+        portedCheckboxExcelModal.addEventListener('change', function() {
+            if (this.checked) {
+                portedCheckboxExcelModalContainer.classList.add('checked');
+            } else {
+                portedCheckboxExcelModalContainer.classList.remove('checked');
+            }
+            // Re-process any existing orders in preview
+            const existingOrders = excelPreviewList ? excelPreviewList.querySelectorAll('li') : [];
+            if (existingOrders.length > 0) {
+                displayExcelOrders(getMockOrdersWithValidation(this.checked));
+            }
+        });
+    }
+    
+    if (excelFormat && excelUploadModal) {
+        excelFormat.addEventListener('click', function() {
+            excelUploadModal.classList.add('active');
+            if (portedCheckboxExcelModal) {
+                const isChecked = portedCheckbox ? portedCheckbox.checked : false;
+                portedCheckboxExcelModal.checked = isChecked;
+                if (portedCheckboxExcelModalContainer) {
+                    if (isChecked) {
+                        portedCheckboxExcelModalContainer.classList.add('checked');
+                    } else {
+                        portedCheckboxExcelModalContainer.classList.remove('checked');
+                    }
+                }
+            }
+            resetExcelUpload();
+        });
+    }
+    
+    if (excelUploadArea && excelUploadInput) {
+        excelUploadArea.addEventListener('click', function() {
+            excelUploadInput.click();
+        });
+        
+        excelUploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            excelUploadArea.style.backgroundColor = '#fff0cc';
+        });
+        
+        excelUploadArea.addEventListener('dragleave', function() {
+            excelUploadArea.style.backgroundColor = '#fff9e6';
+        });
+        
+        excelUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            excelUploadArea.style.backgroundColor = '#fff9e6';
+            
+            if (e.dataTransfer.files.length) {
+                handleExcelFile(e.dataTransfer.files[0]);
+            }
+        });
+        
+        excelUploadInput.addEventListener('change', function(e) {
+            if (e.target.files.length) {
+                handleExcelFile(e.target.files[0]);
+            }
+        });
+    }
+    
+    if (cancelExcel && excelUploadModal) {
+        cancelExcel.addEventListener('click', function() {
+            excelUploadModal.classList.remove('active');
+            resetExcelUpload();
+        });
+    }
+    
+    if (uploadExcel) {
+        uploadExcel.addEventListener('click', function() {
+            const fileName = excelUploadInput?.files[0]?.name || 'uploaded file';
+            
+            // Get mock orders with validation
+            const isPorted = portedCheckboxExcelModal ? portedCheckboxExcelModal.checked : false;
+            const mockOrders = getMockOrdersWithValidation(isPorted);
+            
+            // Filter only valid orders
+            const validOrders = mockOrders.filter(order => order.isValid);
+            const invalidOrders = mockOrders.filter(order => !order.isValid);
+            
+            if (validOrders.length === 0) {
+                alert('No valid orders found in the file.');
+                return;
+            }
+            
+            if (invalidOrders.length > 0) {
+                if (!confirm(`Found ${invalidOrders.length} invalid orders. Only ${validOrders.length} valid orders will be processed. Continue?`)) {
+                    return;
+                }
+            }
+            
+            const totalCost = calculateTotalAmount(validOrders);
+            const orderSummary = validOrders.map(order => 
+                `${order.phone} - ${order.dataQuantity} GB (${order.price} GHS)`
+            ).join('\n');
+            
+            if (confirm(`Process these ${validOrders.length} orders?\n\n${orderSummary}\n\nTotal Amount: ${totalCost.toFixed(2)} GHS`)) {
+                // Show success notification
+                showNotification();
+                if (excelUploadModal) excelUploadModal.classList.remove('active');
+                resetExcelUpload();
+            }
+        });
+    }
+    
+    function handleExcelFile(file) {
+        if (!file) return;
+        
+        // Validate file type
+        const validTypes = [
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'text/csv'
+        ];
+        
+        if (!validTypes.includes(file.type) && !file.name.match(/\.(xlsx|xls|csv)$/)) {
+            alert('Please upload a valid Excel file (.xlsx, .xls, .csv)');
+            return;
+        }
+        
+        // Display file info
+        if (fileDetails && fileInfo) {
+            fileDetails.innerHTML = `
+                <li><strong>File Name:</strong> ${file.name}</li>
+                <li><strong>File Size:</strong> ${(file.size / 1024).toFixed(2)} KB</li>
+                <li><strong>File Type:</strong> ${file.type || 'Unknown'}</li>
+            `;
+            fileInfo.classList.add('active');
+        }
+        
+        // Simulate parsing Excel file and extracting orders
+        setTimeout(() => {
+            const isPorted = portedCheckboxExcelModal ? portedCheckboxExcelModal.checked : false;
+            const mockOrders = getMockOrdersWithValidation(isPorted);
+            displayExcelOrders(mockOrders);
+            if (uploadExcel) uploadExcel.disabled = false;
+        }, 1500);
+    }
+    
+    function getMockOrders() {
+        return [
+            { phone: '0261234567', dataQuantity: '1' },
+            { phone: '0569876543', dataQuantity: '2' },
+            { phone: '0275551234', dataQuantity: '3' },
+            { phone: '0238884567', dataQuantity: '4' },
+            { phone: '0501112222', dataQuantity: '5' } // Invalid prefix for AT
+        ];
+    }
+    
+    function getMockOrdersWithValidation(isPorted = false) {
+        const mockOrders = getMockOrders();
+        
+        return mockOrders.map(order => {
+            const phoneValidation = validatePhoneNumber(order.phone, isPorted);
+            const isValidDataQuantity = bundleOffers.hasOwnProperty(order.dataQuantity);
+            const dataQuantityError = !isValidDataQuantity ? 'Invalid data quantity' : null;
+            
+            const isValid = phoneValidation.isValid && isValidDataQuantity;
+            const error = phoneValidation.error || dataQuantityError;
+            const price = isValidDataQuantity ? bundleOffers[order.dataQuantity] : 0;
+            
+            return {
+                ...order,
+                price: price,
+                isValid: isValid,
+                error: error
+            };
+        });
+    }
+    
+    function displayExcelOrders(orders) {
+        if (!excelPreviewList || !excelOrdersCount || !excelTotalValue || !excelOrdersPreview || !excelTotalAmount) return;
+        
+        excelPreviewList.innerHTML = '';
+        
+        if (orders.length === 0) {
+            excelOrdersPreview.classList.remove('active');
+            excelTotalAmount.classList.remove('active');
+            excelOrdersCount.textContent = '0';
+            excelTotalValue.textContent = '0.00 GHS';
+            return;
+        }
+        
+        excelOrdersPreview.classList.add('active');
+        
+        // Count valid orders
+        const validOrdersCount = orders.filter(order => order.isValid).length;
+        excelOrdersCount.textContent = `${validOrdersCount}/${orders.length}`;
+        
+        // Calculate and display total amount for valid orders
+        const totalCost = orders.reduce((total, order) => {
+            return order.isValid ? total + order.price : total;
+        }, 0);
+        excelTotalValue.textContent = totalCost.toFixed(2) + ' GHS';
+        excelTotalAmount.classList.add('active');
+        
+        orders.forEach(order => {
+            const li = document.createElement('li');
+            
+            li.innerHTML = `
+                <div>
+                    <span style="color: ${order.isValid ? '#333' : '#e74c3c'}">${order.phone}</span>
+                    <span style="color: ${order.isValid ? '#333' : '#e74c3c'}"> - ${order.dataQuantity} GB</span>
+                    ${!order.isValid ? `<div class="order-error">${order.error || 'Invalid order'}</div>` : ''}
+                </div>
+                <div style="color: #6200ff; font-weight: 600;">
+                    ${order.isValid ? order.price.toFixed(2) + ' GHS' : 'Invalid'}
+                </div>
+            `;
+            excelPreviewList.appendChild(li);
+        });
+    }
+    
+    function resetExcelUpload() {
+        if (excelUploadInput) excelUploadInput.value = '';
+        if (fileInfo) fileInfo.classList.remove('active');
+        if (excelOrdersPreview) excelOrdersPreview.classList.remove('active');
+        if (excelTotalAmount) excelTotalAmount.classList.remove('active');
+        if (uploadExcel) uploadExcel.disabled = true;
+    }
+    
+    // Form submission
+    const purchaseBundle = document.getElementById('purchaseBundle');
+    
+    if (purchaseBundle && phoneInput && bundleSelect) {
+        purchaseBundle.addEventListener('click', async function() {
+            const phoneNumber = phoneInput.value.trim();
+            const selectedBundle = bundleSelect.value;
+            const selectedBundlePrice = bundleSelect.options[bundleSelect.selectedIndex]?.getAttribute('data-price');
+            
+            if (!phoneNumber) {
+                alert('Please enter a phone number');
+                phoneInput.focus();
+                return;
+            }
+            
+            // Validate phone number
+            const isPorted = portedCheckbox ? portedCheckbox.checked : false;
+            const validation = validatePhoneNumber(phoneNumber, isPorted);
+            if (!validation.isValid) {
+                alert(validation.error);
+                phoneInput.focus();
+                return;
+            }
+            
+            if (!selectedBundle) {
+                alert('Please select a bundle');
+                bundleSelect.focus();
+                return;
+            }
+            
+            const selectedOption = bundleSelect.options[bundleSelect.selectedIndex];
+            const bundleSize = selectedOption ? selectedOption.text.split(' - ')[0].trim() : '';
+            const amount = parseFloat(selectedOption?.getAttribute('data-price')) || 0;
+            const portedEl = document.getElementById('portedNetwork');
+
+            showPaymentModal({
+                beneficiary:    phoneInput.value.trim(),
+                package:        new URLSearchParams(window.location.search).get('provider') || 'AT Ishare',
+                bundle_size:    bundleSize,
+                amount:         amount,
+                isPorted:       portedEl ? portedEl.checked : false,
+                paymentNetwork: 'AirtelTigo',
+            });
+        });
+    }
 });
