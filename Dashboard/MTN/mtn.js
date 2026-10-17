@@ -962,6 +962,9 @@ function showPaymentModal(orderDetails) {
                                 localStorage.getItem(
                                     'clientType'
                                 ) || 'Customers',
+                            referralToken:
+                                localStorage.getItem('referralToken') ||
+                                new URLSearchParams(window.location.search).get('ref') || null,
 
                             guestSessionId:
                                 localStorage.getItem(
