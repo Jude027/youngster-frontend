@@ -1825,98 +1825,27 @@ document.addEventListener(
                              * proceed.
                              */
 
-                            if (result.valid !== true || result.known !== true) {
-
-                                orderBtn.disabled =
-                                    false;
-
-                                orderBtn.innerHTML =
-                                    originalBtnHTML;
-
-
-                                const proceed =
-                                    confirm(
-                                        'This number could not be validated on the standard MTN portal.\n\n' +
-                                        'There is another alternative (MTN EXPRESS) that accepts all numbers.\n\n' +
-                                        'Click OK to continue with MTN EXPRESS.'
-                                    );
-
-
-                                if (proceed) {
-
-                                    const slug =
-                                        params.get(
-                                            'store'
-                                        ) ||
-                                        localStorage.getItem(
-                                            'storeSlug'
-                                        ) ||
-                                        '';
-
-                                    const client =
-                                        params.get(
-                                            'client'
-                                        ) ||
-                                        localStorage.getItem(
-                                            'clientType'
-                                        ) ||
-                                        '';
-
-                                    const newParams =
-                                        new URLSearchParams();
-
-                                    newParams.set(
-                                        'provider',
-                                        'MTN EXPRESS'
-                                    );
-
-                                    if (slug) {
-                                        newParams.set(
-                                            'store',
-                                            slug
-                                        );
-                                    }
-
-                                    if (client) {
-                                        newParams.set(
-                                            'client',
-                                            client
-                                        );
-                                    }
-
-                                    window.location.href =
-                                        window.location.pathname +
-                                        '?' +
-                                        newParams.toString();
-                                }
-
-                                return;
+                            if (result.valid !== true) {
+                                // Do not show the old unverified-number popup or
+                                // redirect to MTN EXPRESS. The payment still proceeds;
+                                // after payment confirmation the backend routes this
+                                // order to the API config marked forUnverifiedNumbers.
+                                orderBtn._isUnverified = true;
+                                console.log('Mamsco precheck rejected number; will use configured MTN fallback after payment:', {
+                                    phone: result.phone || phoneNumber,
+                                    valid: result.valid,
+                                    known: result.known
+                                });
+                            } else {
+                                orderBtn._isUnverified = false;
+                                console.log('MTN precheck successful:', {
+                                    phone: result.phone,
+                                    normalized: result.normalized,
+                                    valid: result.valid,
+                                    known: result.known
+                                });
                             }
 
-
-                            // =================================================
-                            // VALID MTN NUMBER
-                            // =================================================
-
-                            orderBtn._isUnverified =
-                                false;
-
-                            console.log(
-                                'MTN Precheck successful:',
-                                {
-                                    phone:
-                                        result.phone,
-
-                                    normalized:
-                                        result.normalized,
-
-                                    valid:
-                                        result.valid,
-
-                                    known:
-                                        result.known
-                                }
-                            );
                         }
 
 
@@ -2005,8 +1934,8 @@ document.addEventListener(
 
 
                     // =================================================
-                    // MTN PRECHECK PASSED
-                    // Continue to Moolre payment.
+                    // MTN PRECHECK FINISHED
+                    // Continue to Moolre payment; isUnverified selects the API after payment.
                     // =================================================
 
                     orderBtn.disabled =
