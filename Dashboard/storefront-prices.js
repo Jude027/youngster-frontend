@@ -9,7 +9,7 @@
  *   1. Reads ?provider= from URL — set by handlePackageCardClick in dashboard.js
  *      (e.g. "MTN", "MTN EXPRESS", "Telecel", "AT Ishare", "AT Bigtime", "MTN AFA")
  *   2. Reads store slug from ?store= (URL) or localStorage.storeSlug
- *   3. Reads client type from ?client= (URL) or localStorage.clientType
+ *   3. Reads opaque referral token from ?ref= or localStorage.referralToken
  *   4. Fetches matching prices from /api/storefront-prices
  *   5. Builds dropdown options from those prices
  *      — If the dropdown already has options, patches their data-price
@@ -38,7 +38,8 @@
         const p = new URLSearchParams(window.location.search);
         return {
             store:      p.get('store')    || localStorage.getItem('storeSlug')  || '',
-            clientType: p.get('client')   || localStorage.getItem('clientType') || '',
+            clientType: '',
+            referralToken: p.get('ref') || localStorage.getItem('referralToken') || '',
             provider:   p.get('provider') || localStorage.getItem('providerName') || '',   // e.g. "MTN", "MTN EXPRESS"
         };
     }
@@ -194,38 +195,21 @@
             return;
         }
 
-        // Read clientType from URL ?client= param first — set by the referral link.
-        // This ensures sub-agents, agents etc. only see prices set for their type.
-        // Fall back to localStorage then empty string (server returns nothing if no
-        // prices set for that type, which is the correct behaviour).
-        const resolvedClientType = clientType
-            || localStorage.getItem('clientType')
-            || '';
+        // The backend resolves the opaque referral token to the permitted price category.
+        const referralToken = (new URLSearchParams(window.location.search).get('ref')) || localStorage.getItem('referralToken') || '';
 
         const bundleSelect = document.getElementById('bundle');
         if (!bundleSelect) {
             return;
         }
 
-        // If no clientType is present the customer arrived without a typed referral
-        // link — show no prices rather than leaking another type's pricing.
-        if (!resolvedClientType) {
-            const placeholder = bundleSelect.options[0];
-            if (placeholder) {
-                placeholder.textContent = 'No bundles available';
-                placeholder.disabled = false;
-            }
-            while (bundleSelect.options.length > 1) bundleSelect.remove(1);
-            return;
-        }
-
-        // Fetch all prices for this store + client type
+        // Fetch prices for the backend-resolved referral category
         let allPrices = [];
         try {
             const res = await fetch(
                 `${API}/storefront-prices` +
                 `?store=${encodeURIComponent(store)}` +
-                `&clientType=${encodeURIComponent(resolvedClientType)}`
+                `&ref=${encodeURIComponent(referralToken)}`
             );
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             allPrices = await res.json();
